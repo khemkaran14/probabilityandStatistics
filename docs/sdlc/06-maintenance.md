@@ -15,19 +15,13 @@
 
 Ordered by value for learners and for store growth:
 
-1. ~~Chapters 1–6~~ (1.1 and 1.2).
-2. **Chapter 7–8 distributions:** Bernoulli, geometric, Poisson, normal curve,
-   68-95-99.7 rule, exponential.
-3. **Chapter 9–10:** covariance, correlation vs causation, Law of Large Numbers
-   (link the coin-flip lesson), Chebyshev.
-4. **Chapters 11–17:** sampling, estimation, hypothesis testing, regression,
-   Bayesian thinking, real-world stats and the remaining paradoxes.
-5. **Daily reminder notification** (`flutter_local_notifications`) to protect streaks.
-6. **"Why" panels** under each formula, answering the top complaint about
+1. ~~All 17 chapters~~ (1.1–1.3).
+2. **Daily reminder notification** (`flutter_local_notifications`) to protect streaks.
+3. **"Why" panels** under each formula, answering the top complaint about
    competing apps: no explanation of *why* a result holds.
-7. Localisation (Hindi first), sound effects, accessibility pass
+4. Localisation (Hindi first), sound effects, accessibility pass
    (screen-reader descriptions of each animation).
-8. Server-side receipt validation if piracy becomes visible.
+5. Server-side receipt validation if piracy becomes visible.
 
 ## Keeping it healthy
 

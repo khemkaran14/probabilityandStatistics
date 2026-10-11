@@ -336,7 +336,8 @@ class RandomWalkSim extends TickSim {
 
   int get steps => paths.first.length - 1;
 
-  double get rmsDistance => math.sqrt(meanOf(paths.map((p) => p.last.distanceSquared)));
+  /// Root-mean-square distance from the start (in 1D, x is just the step counter).
+  double get rmsDistance => math.sqrt(meanOf(paths.map((p) => twoD ? p.last.distanceSquared : p.last.dy * p.last.dy)));
 
   @override
   double get interval => 0.04;

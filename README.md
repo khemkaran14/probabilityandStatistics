@@ -5,12 +5,13 @@ with short animated lessons. Every lesson follows **watch → understand →
 play → check**: an animation you can play, pause, step and speed up; one big
 idea with a live formula; a control to change the experiment; and a quiz.
 
-**Version 1.2**
+**Version 1.3**
 
-- 38 animated lessons. Chapters 1–6 are complete: data & averages, seeing
-  data, probability basics, counting, conditional probability and random
-  variables. Plus the Galton board, the Central Limit Theorem and Monty Hall
-  from later chapters
+- 90 animated lessons covering all 17 chapters: data & averages, seeing data,
+  probability basics, counting, conditional probability, random variables,
+  discrete and continuous distributions, two variables, limit theorems,
+  sampling, estimation, hypothesis testing, regression, Bayesian thinking,
+  real-world statistics and paradoxes
 - 17-chapter, 94-lesson catalogue; chapters 1–3 and preview lessons are free,
   the rest unlock with one in-app purchase
 - XP, levels, a daily goal and a daily streak, saved on the device

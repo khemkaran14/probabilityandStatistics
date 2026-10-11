@@ -155,7 +155,8 @@ final LessonSpec nullAlternativeLesson = LessonSpec(
       explanation: '"Not guilty" isn\'t the same as "innocent".',
     ),
     QuizQuestion(
-      prompt: 'The coin is fair and we use this test. How often will we wrongly reject H₀?',
+      prompt:
+          'A fair coin is tested by rejecting "fair" when 20 flips give ≤ 5 or ≥ 15 heads. How often is H₀ wrongly rejected?',
       options: ['Never', 'About 4% of the time', 'About 50%', 'Always'],
       answer: 1,
       explanation: 'The pink zone holds about 4.1% of the fair-coin probability.',
@@ -847,7 +848,8 @@ final LessonSpec tTestsLesson = LessonSpec(
       explanation: 'Estimating σ adds uncertainty that the t distribution accounts for.',
     ),
     QuizQuestion(
-      prompt: 'The diets truly have no effect. How often will this test call it significant?',
+      prompt:
+          'Two diets truly have the same effect. How often will a t-test at α = 0.05 call the difference significant?',
       options: ['Never', 'About 5% of the time', 'About 50%', 'Always'],
       answer: 1,
       explanation: 'That\'s the Type I error rate α = 0.05.',
@@ -878,7 +880,7 @@ class ChiSquareSim extends ExperimentSim {
   bool experiment() {
     counts = List.filled(6, 0);
     for (var i = 0; i < rolls; i++) {
-      final face = loaded && rng.nextDouble() < 0.12 ? 5 : rng.nextInt(6);
+      final face = loaded && rng.nextDouble() < 0.2 ? 5 : rng.nextInt(6);
       counts[face]++;
     }
     chi2 = counts.fold(0.0, (a, o) => a + (o - 10) * (o - 10) / 10);

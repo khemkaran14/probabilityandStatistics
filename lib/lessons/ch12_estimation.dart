@@ -52,7 +52,7 @@ void _paintPointEstimate(Canvas canvas, Size size, PointEstimateSim sim) {
   final h = size.height;
   const hi = 300.0;
   void row(String name, List<double> xs, double top, Color color) {
-    final plot = Plot(Rect.fromLTRB(16, top + 22, w - 16, top + 96), x0: 0, x1: hi, y1: 1);
+    final plot = Plot(Rect.fromLTRB(16, top + 32, w - 16, top + 100), x0: 0, x1: hi, y1: 1);
     label(canvas, name, Offset(16, top + 8), size: 12, color: color, align: TextAlign.left);
     final recent = xs.length > 200 ? xs.sublist(xs.length - 200) : xs;
     for (var i = 0; i < recent.length; i++) {
@@ -209,7 +209,7 @@ void _paintMle(Canvas canvas, Size size, MleSim sim) {
   final w = size.width;
   final h = size.height;
   label(canvas, '${sim.heads} heads, ${sim.tails} tails', Offset(w / 2, 12), size: 14);
-  final plot = Plot(Rect.fromLTRB(16, 34, w - 16, h - 34), x0: 0, x1: 1, y1: 1.08);
+  final plot = Plot(Rect.fromLTRB(16, 56, w - 16, h - 34), x0: 0, x1: 1, y1: 1.08);
   plot.curve(canvas, (p) => math.exp(sim.logL(p)), AppColors.blue, fill: true);
   dashedLine(canvas, plot.at(sim.mle, 0), plot.at(sim.mle, 1.04), AppColors.pink, width: 2.5);
   label(canvas, 'best p = ${sim.mle.toStringAsFixed(2)}', plot.at(sim.mle, 1.06), size: 12, color: AppColors.pink);

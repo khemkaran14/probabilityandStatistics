@@ -218,8 +218,8 @@ void _paintGambler(Canvas canvas, Size size, GamblerSim sim) {
   roundRect(canvas, Rect.fromLTWH(16, y + 18, barW, 30), AppColors.chip, radius: 8);
   roundRect(canvas, Rect.fromLTWH(16, y + 18, barW * share, 30), AppColors.violet, radius: 8);
   line(canvas, Offset(16 + barW / 2, y + 12), Offset(16 + barW / 2, y + 54), AppColors.ink, width: 2);
-  label(canvas, 'kept the streak going: ${(share * 100).toStringAsFixed(1)}%', Offset(24, y + 33),
-      size: 12, color: Colors.white, align: TextAlign.left);
+  label(canvas, 'kept the streak going: ${(share * 100).toStringAsFixed(1)}%', Offset(16, y + 84),
+      size: 12, color: AppColors.violet, align: TextAlign.left);
   label(canvas, '50%', Offset(16 + barW / 2, y + 64), size: 11);
   label(canvas, '${sim.afterStreak} streaks seen in ${sim.spins.length} spins', Offset(w / 2, h - 12),
       size: 11, color: AppColors.muted);

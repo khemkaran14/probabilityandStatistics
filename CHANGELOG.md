@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.0
+
+- All 17 chapters are complete: 52 new animated lessons, 90 in total
+  - Ch 7: Bernoulli, geometric, negative binomial, hypergeometric, Poisson,
+    discrete uniform
+  - Ch 8: continuous uniform, normal curve, standard normal, 68-95-99.7 rule,
+    exponential, gamma & beta, t / chi-square / F
+  - Ch 9–10: joint & marginal tables, covariance, correlation, correlation vs
+    causation, Chebyshev; the Law of Large Numbers links the coin-flip lesson
+  - Ch 11–12: populations & samples, sampling methods, sampling bias, sampling
+    distributions, standard error, point estimates (why n − 1), maximum
+    likelihood, confidence intervals, margin of error, sample size
+  - Ch 13: hypothesis tests, p-values, type I & II errors, power, z-test,
+    t-test, chi-square, ANOVA
+  - Ch 14–15: best-fit line, residuals, R², multiple regression, logistic
+    regression; priors & posteriors, updating, Bayesian vs frequentist
+  - Ch 16–17: A/B testing, Monte Carlo, random walks, Markov chains,
+    next-word prediction; Simpson's paradox, the gambler's fallacy,
+    St Petersburg, base-rate fallacy (links the Bayes lesson)
+- Kit: distribution formulas (normal, binomial, Poisson, gamma, beta, t,
+  chi-square, F) and a `Plot` helper for axes, curves and bars
+- 46 new tests check the distributions and each new lesson against its maths
+  (209 tests)
+
 ## 1.2.0
 
 - Chapters 1–6 are complete: 30 new animated lessons, 38 in total

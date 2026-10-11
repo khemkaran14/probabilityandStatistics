@@ -78,6 +78,8 @@ void _paintJoint(Canvas canvas, Size size, JointSim sim) {
   for (var y = 0; y <= 6; y++) {
     label(canvas, '$y', Offset(left + cellW * (y + 0.5), top + 6 * cellH + 10), size: 10, color: AppColors.muted);
   }
+  final maxRow = [for (var x = 1; x <= 6; x++) sim.rowTotal(x)].reduce(math.max);
+  final maxCol = [for (var y = 0; y <= 6; y++) sim.colTotal(y)].reduce(math.max);
   for (var x = 1; x <= 6; x++) {
     label(canvas, 'X=$x', Offset(left - 6, top + cellH * (x - 0.5)),
         size: 10, color: AppColors.muted, align: TextAlign.right);
@@ -92,16 +94,18 @@ void _paintJoint(Canvas canvas, Size size, JointSim sim) {
       if (sim.last == (x, y)) ring(canvas, r.center, cellW * 0.42, AppColors.pink, width: 2.5);
     }
     // Row marginal: P(X = x).
-    final rw = sim.trials == 0 ? 0.0 : sim.rowTotal(x) / sim.trials;
-    roundRect(
-        canvas, Rect.fromLTWH(left + gridW + 8, top + cellH * (x - 1) + 3, rw * 300, cellH - 6), AppColors.orange);
+    final rw = maxRow == 0 ? 0.0 : sim.rowTotal(x) / maxRow;
+    roundRect(canvas, Rect.fromLTWH(left + gridW + 8, top + cellH * (x - 1) + 3, rw * 56, cellH - 6), AppColors.orange);
   }
   label(canvas, 'P(X)', Offset(left + gridW + 30, top - 10), size: 10, color: AppColors.orange);
   // Column marginal: P(Y = y).
   final colTop = top + 6 * cellH + 24;
   for (var y = 0; y <= 6; y++) {
-    final p = sim.trials == 0 ? 0.0 : sim.colTotal(y) / sim.trials;
-    roundRect(canvas, Rect.fromLTWH(left + cellW * y + 3, colTop, cellW - 6, p * 120), AppColors.cyan);
+    final p = maxCol == 0 ? 0.0 : sim.colTotal(y) / maxCol;
+    roundRect(
+        canvas,
+        Rect.fromLTWH(left + cellW * y + 3, colTop, cellW - 6, p * math.min(60.0, math.max(0.0, h - colTop - 4))),
+        AppColors.cyan);
   }
   label(canvas, 'P(Y)', Offset(left - 8, colTop + 10), size: 10, color: AppColors.cyan, align: TextAlign.right);
 }
@@ -153,7 +157,7 @@ final LessonSpec jointMarginalLesson = LessonSpec(
       explanation: 'P(X = x) collects every pair that has that x.',
     ),
     QuizQuestion(
-      prompt: 'In this experiment, what is P(X = 2, Y = 2)?',
+      prompt: 'Roll a die to get X, then flip X coins; Y = heads. What is P(X = 2, Y = 2)?',
       options: ['1/6', '1/24', '1/4', '1/36'],
       answer: 1,
       explanation: 'P(X=2) = 1/6, then both coins heads = 1/4: 1/24.',

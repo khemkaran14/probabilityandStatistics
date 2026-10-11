@@ -21,8 +21,14 @@ Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
 
 ## The lessons
 
-Chapters 1–6 are complete (36 lessons), plus the Galton board (ch 7), the
-Central Limit Theorem (ch 10) and Monty Hall (ch 5 and 17). Most newer lessons
+All 17 chapters are complete: 90 lessons, with four shared between two
+chapters (coin flips, birthday paradox, Monty Hall, Bayes). Chapters 7–17 keep
+several lessons per file: `ch07_discrete.dart`, `ch08_continuous.dart`,
+`ch09_two_variables.dart`, `ch11_sampling.dart`, `ch12_estimation.dart`,
+`ch13_testing.dart`, `ch14_regression.dart`, `ch15_bayesian.dart`,
+`ch16_real_world.dart`, `ch17_paradoxes.dart`. Distribution maths (pdfs,
+pmfs, `normalCdf`, `lgamma`, random draws) and the `Plot` helper live in the
+kit. Most newer lessons
 build on `lib/lessons/kit.dart`: `TickSim` (one discrete step every
 `interval` seconds), canvas helpers (`label`, `bar`, `paintDie`, …),
 `simCanvas` (no painter class needed) and the try-it controls
