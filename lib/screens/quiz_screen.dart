@@ -1,13 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:chance/engine/lesson_spec.dart';
-import 'package:chance/state/progress.dart';
+import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/common.dart';
 
+/// Runs a list of questions, then shows a result card.
+///
+/// [onFinish] records the result and returns the XP awarded (0 is fine,
+/// e.g. on a lesson replay). [shareText] builds the brag message.
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key, required this.spec});
-  final LessonSpec spec;
+  const QuizScreen({
+    super.key,
+    required this.title,
+    required this.questions,
+    required this.onFinish,
+    required this.shareText,
+    this.noXpNote = 'Replays don\'t earn XP, but practice still counts.',
+  });
+
+  /// Quiz at the end of a lesson: first completion earns XP.
+  factory QuizScreen.forLesson(LessonSpec spec, AppState state) {
+    final name = spec.title.map((t) => t.text).join();
+    return QuizScreen(
+      title: 'Quick check',
+      questions: spec.quiz,
+      onFinish: (correct) => state.completeLesson(spec.id, correct: correct, total: spec.quiz.length),
+      shareText: (correct) => 'I just learned "$name" on Chance and scored '
+          '$correct/${spec.quiz.length} on the quiz. Probability, animated!',
+    );
+  }
+
+  final String title;
+  final List<QuizQuestion> questions;
+  final int Function(int correct) onFinish;
+  final String Function(int correct) shareText;
+  final String noXpNote;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -18,16 +47,21 @@ class _QuizScreenState extends State<QuizScreen> {
   int? _picked;
   int _score = 0;
   bool _finished = false;
+  int _reward = 0;
 
   static const _optionColors = [AppColors.pink, AppColors.orange, AppColors.blue, AppColors.violet];
 
-  List<QuizQuestion> get _quiz => widget.spec.quiz;
+  List<QuizQuestion> get _quiz => widget.questions;
 
   void _pick(int option) {
     if (_picked != null) return;
+    final correct = option == _quiz[_index].answer;
+    if (AppScope.read(context).haptics) {
+      correct ? HapticFeedback.lightImpact() : HapticFeedback.heavyImpact();
+    }
     setState(() {
       _picked = option;
-      if (option == _quiz[_index].answer) _score++;
+      if (correct) _score++;
     });
   }
 
@@ -38,8 +72,11 @@ class _QuizScreenState extends State<QuizScreen> {
         _picked = null;
       });
     } else {
-      Progress.complete(widget.spec.id, 10 + _score * 10);
-      setState(() => _finished = true);
+      final reward = widget.onFinish(_score);
+      setState(() {
+        _reward = reward;
+        _finished = true;
+      });
     }
   }
 
@@ -89,15 +126,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ],
         ),
         const SizedBox(height: 24),
-        Text(
-          'QUESTION ${_index + 1} OF ${_quiz.length}',
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.0,
-            color: AppColors.muted,
-          ),
-        ),
+        SectionLabel('${widget.title} · question ${_index + 1} of ${_quiz.length}'),
         const SizedBox(height: 8),
         Text(q.prompt, style: kDisplay.copyWith(fontSize: 24)),
         const SizedBox(height: 20),
@@ -122,9 +151,7 @@ class _QuizScreenState extends State<QuizScreen> {
               if (answered) ...[
                 const SizedBox(height: 6),
                 SoftCard(
-                  color: correct
-                      ? AppColors.green.withValues(alpha: 0.16)
-                      : AppColors.orange.withValues(alpha: 0.16),
+                  color: correct ? AppColors.green.withValues(alpha: 0.16) : AppColors.orange.withValues(alpha: 0.16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -151,6 +178,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildResult(BuildContext context) {
+    final state = AppScope.of(context);
     final perfect = _score == _quiz.length;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -166,19 +194,68 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          perfect ? 'Perfect score!' : 'Lesson complete!',
+          perfect ? 'Perfect score!' : 'Nice work!',
           textAlign: TextAlign.center,
           style: kDisplay,
         ),
         const SizedBox(height: 8),
         Text(
-          'You got $_score of ${_quiz.length} right · +${10 + _score * 10} XP',
+          'You got $_score of ${_quiz.length} right'
+          '${_reward > 0 ? ' · +$_reward XP' : ''}',
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 16, color: AppColors.muted),
         ),
-        const SizedBox(height: 32),
+        if (_reward == 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            widget.noXpNote,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
+        ],
+        const SizedBox(height: 20),
+        SoftCard(
+          child: Row(
+            children: [
+              ProgressRing(
+                value: state.todayXp / state.dailyGoal,
+                color: AppColors.green,
+                size: 56,
+                child: Icon(
+                  state.goalMetToday ? Icons.check_rounded : Icons.flag_rounded,
+                  color: state.goalMetToday ? AppColors.green : AppColors.muted,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state.goalMetToday ? 'Daily goal reached!' : 'Daily goal',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      '${state.todayXp} / ${state.dailyGoal} XP today · '
+                      '${state.currentStreak}-day streak',
+                      style: const TextStyle(color: AppColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
         BigButton(
-          label: 'Back to lessons',
+          label: 'Share my score',
+          color: AppColors.violet,
+          icon: Icons.ios_share_rounded,
+          onPressed: () => state.share.shareText(widget.shareText(_score)),
+        ),
+        const SizedBox(height: 12),
+        BigButton(
+          label: 'Done',
           color: AppColors.pink,
           onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),

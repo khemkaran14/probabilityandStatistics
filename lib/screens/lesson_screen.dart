@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:chance/engine/lesson_sim.dart';
 import 'package:chance/engine/lesson_spec.dart';
 import 'package:chance/screens/quiz_screen.dart';
+import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/common.dart';
 
@@ -19,8 +20,7 @@ class LessonScreen extends StatefulWidget {
   State<LessonScreen> createState() => _LessonScreenState();
 }
 
-class _LessonScreenState extends State<LessonScreen>
-    with SingleTickerProviderStateMixin {
+class _LessonScreenState extends State<LessonScreen> with SingleTickerProviderStateMixin {
   late final LessonSim _sim;
   late final Ticker _ticker;
   Duration _last = Duration.zero;
@@ -101,7 +101,9 @@ class _LessonScreenState extends State<LessonScreen>
                 onPressed: () {
                   if (_sim.playing) _sim.togglePlay();
                   Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => QuizScreen(spec: spec)),
+                    MaterialPageRoute<void>(
+                      builder: (_) => QuizScreen.forLesson(spec, AppScope.read(context)),
+                    ),
                   );
                 },
               ),
@@ -280,18 +282,14 @@ class _Controls extends StatelessWidget {
                           duration: const Duration(milliseconds: 180),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: sim.speed == _speeds[i]
-                                ? AppColors.cyan
-                                : Colors.transparent,
+                            color: sim.speed == _speeds[i] ? AppColors.cyan : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             _speedLabels[i],
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
-                              color: sim.speed == _speeds[i]
-                                  ? AppColors.ink
-                                  : AppColors.muted,
+                              color: sim.speed == _speeds[i] ? AppColors.ink : AppColors.muted,
                             ),
                           ),
                         ),

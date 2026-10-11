@@ -10,8 +10,8 @@ import 'package:chance/theme/app_theme.dart';
 // Simulation
 // ---------------------------------------------------------------------------
 
-class _Ball {
-  _Ball(this.path, this.color);
+class GaltonBall {
+  GaltonBall(this.path, this.color);
 
   /// One entry per row: true = bounced right.
   final List<bool> path;
@@ -37,7 +37,7 @@ class GaltonSim extends LessonSim {
   /// Probability of bouncing right at each peg ("tilt").
   double p = 0.5;
 
-  final List<_Ball> balls = [];
+  final List<GaltonBall> balls = [];
   List<int> bins;
   int landed = 0;
 
@@ -83,7 +83,7 @@ class GaltonSim extends LessonSim {
     final path = List<bool>.generate(rows, (_) => _rng.nextDouble() < p);
     final color = AppColors.rainbow[_colorIndex % AppColors.rainbow.length];
     _colorIndex++;
-    balls.add(_Ball(path, color));
+    balls.add(GaltonBall(path, color));
   }
 
   @override
@@ -184,8 +184,7 @@ class GaltonPainter extends CustomPainter {
       final path = Path();
       var first = true;
       for (var x = -0.5; x <= n + 0.5; x += 0.05) {
-        final density = math.exp(-math.pow(x - mu, 2) / (2 * sigma * sigma)) /
-            (sigma * math.sqrt(2 * math.pi));
+        final density = math.exp(-math.pow(x - mu, 2) / (2 * sigma * sigma)) / (sigma * math.sqrt(2 * math.pi));
         final y = histBottom - sim.landed * density / scaleMax * histH;
         final px = xFor(x - n / 2);
         if (first) {

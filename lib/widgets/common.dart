@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:chance/state/progress.dart';
+import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
 
 /// Yellow XP pill that updates live.
@@ -9,25 +9,103 @@ class XpChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: Progress.xp,
-      builder: (context, xp, _) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.yellow,
-          borderRadius: BorderRadius.circular(99),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.bolt_rounded, size: 18, color: AppColors.ink),
-            const SizedBox(width: 4),
-            Text(
-              '$xp XP',
-              style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
-            ),
-          ],
-        ),
+    final xp = AppScope.of(context).xp;
+    return _Pill(color: AppColors.yellow, icon: Icons.bolt_rounded, text: '$xp XP');
+  }
+}
+
+/// Orange flame pill with the current daily streak.
+class StreakChip extends StatelessWidget {
+  const StreakChip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final streak = AppScope.of(context).currentStreak;
+    return Tooltip(
+      message: '$streak-day streak',
+      child: _Pill(
+        color: streak > 0 ? AppColors.orange.withValues(alpha: 0.22) : AppColors.chip,
+        icon: Icons.local_fire_department_rounded,
+        iconColor: streak > 0 ? AppColors.orange : AppColors.muted,
+        text: '$streak',
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.color, required this.icon, required this.text, this.iconColor = AppColors.ink});
+
+  final Color color;
+  final IconData icon;
+  final Color iconColor;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: iconColor),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small uppercase heading above a group of cards.
+class SectionLabel extends StatelessWidget {
+  const SectionLabel(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.0, color: AppColors.muted),
+    );
+  }
+}
+
+/// Circular progress ring with a label in the middle.
+class ProgressRing extends StatelessWidget {
+  const ProgressRing({
+    super.key,
+    required this.value,
+    required this.color,
+    required this.child,
+    this.size = 64,
+    this.stroke = 8,
+  });
+
+  final double value;
+  final Color color;
+  final Widget child;
+  final double size;
+  final double stroke;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CircularProgressIndicator(
+            value: value.clamp(0.0, 1.0),
+            strokeWidth: stroke,
+            strokeCap: StrokeCap.round,
+            backgroundColor: AppColors.chip,
+            color: color,
+          ),
+          Center(child: child),
+        ],
       ),
     );
   }
@@ -63,7 +141,7 @@ class SoftCard extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 }
@@ -119,7 +197,7 @@ class BigButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label),
+            Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
             const SizedBox(width: 10),
             Icon(icon, size: 22),
           ],

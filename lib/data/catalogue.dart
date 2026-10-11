@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:chance/theme/app_theme.dart';
 
 class Lesson {
-  const Lesson(this.title, {this.id});
+  const Lesson(this.title, {this.id, this.preview = false});
   final String title;
 
   /// Set only for lessons that have a built animation.
   final String? id;
+
+  /// Free to play even when its chapter is premium.
+  final bool preview;
+
+  bool isFreeIn(Chapter chapter) => chapter.free || preview;
 }
 
 class Chapter {
@@ -48,7 +53,7 @@ const List<Chapter> kChapters = [
   ]),
   Chapter(number: 3, title: 'Probability basics', tagline: 'Chance, counted', free: true, lessons: [
     Lesson('Experiments, outcomes & events'),
-    Lesson('Theory vs experiment: coin flips'),
+    Lesson('Theory vs experiment: coin flips', id: 'coin_flips'),
     Lesson('The complement rule'),
     Lesson('Addition rule & Venn diagrams'),
     Lesson('Mutually exclusive events'),
@@ -61,15 +66,20 @@ const List<Chapter> kChapters = [
     Lesson('Pigeonhole principle'),
     Lesson('The birthday paradox'),
   ]),
-  Chapter(number: 5, title: 'Conditional probability', tagline: 'When new info changes the odds', free: false, lessons: [
-    Lesson('Conditional probability'),
-    Lesson('Independence'),
-    Lesson('Tree diagrams'),
-    Lesson('Multiplication rule'),
-    Lesson('Law of total probability'),
-    Lesson("Bayes' theorem: the medical test"),
-    Lesson('Monty Hall'),
-  ]),
+  Chapter(
+      number: 5,
+      title: 'Conditional probability',
+      tagline: 'When new info changes the odds',
+      free: false,
+      lessons: [
+        Lesson('Conditional probability'),
+        Lesson('Independence'),
+        Lesson('Tree diagrams'),
+        Lesson('Multiplication rule'),
+        Lesson('Law of total probability'),
+        Lesson("Bayes' theorem: the medical test"),
+        Lesson('Monty Hall', id: 'monty_hall', preview: true),
+      ]),
   Chapter(number: 6, title: 'Random variables', tagline: 'Turning chance into numbers', free: false, lessons: [
     Lesson('Discrete vs continuous'),
     Lesson('PMF, PDF & CDF'),
@@ -79,7 +89,7 @@ const List<Chapter> kChapters = [
   ]),
   Chapter(number: 7, title: 'Discrete distributions', tagline: 'Counting successes', free: false, lessons: [
     Lesson('Bernoulli trials'),
-    Lesson('Binomial: the Galton board', id: 'galton'),
+    Lesson('Binomial: the Galton board', id: 'galton', preview: true),
     Lesson('Geometric'),
     Lesson('Negative binomial'),
     Lesson('Hypergeometric'),
@@ -102,8 +112,8 @@ const List<Chapter> kChapters = [
     Lesson('Correlation vs causation'),
   ]),
   Chapter(number: 10, title: 'The big theorems', tagline: 'Why averages are so reliable', free: false, lessons: [
-    Lesson('Law of Large Numbers'),
-    Lesson('Central Limit Theorem'),
+    Lesson('Law of Large Numbers', id: 'coin_flips'),
+    Lesson('Central Limit Theorem', id: 'clt_dice'),
     Lesson("Chebyshev's inequality"),
   ]),
   Chapter(number: 11, title: 'Sampling', tagline: 'Learning about everyone from a few', free: false, lessons: [
@@ -150,7 +160,7 @@ const List<Chapter> kChapters = [
     Lesson('Probability in AI & ML'),
   ]),
   Chapter(number: 17, title: 'Paradoxes & puzzles', tagline: 'Where intuition fails', free: false, lessons: [
-    Lesson('Monty Hall'),
+    Lesson('Monty Hall', id: 'monty_hall', preview: true),
     Lesson('Birthday paradox'),
     Lesson("Simpson's paradox"),
     Lesson("Gambler's fallacy"),
@@ -160,3 +170,29 @@ const List<Chapter> kChapters = [
 ];
 
 int get kLessonCount => kChapters.fold(0, (sum, c) => sum + c.lessons.length);
+
+/// A lesson together with the chapter it is listed in.
+class LessonRef {
+  const LessonRef(this.chapter, this.lesson);
+  final Chapter chapter;
+  final Lesson lesson;
+
+  bool get isFree => lesson.isFreeIn(chapter);
+}
+
+/// First catalogue entry for every lesson id. Some lessons appear in two
+/// chapters (e.g. Monty Hall); the first listing decides where it "lives".
+Map<String, LessonRef> get kLessonsById {
+  final out = <String, LessonRef>{};
+  for (final c in kChapters) {
+    for (final l in c.lessons) {
+      if (l.id != null) out.putIfAbsent(l.id!, () => LessonRef(c, l));
+    }
+  }
+  return out;
+}
+
+/// A lesson id is free if any of its listings is free.
+bool isLessonFree(String id) => kChapters.any(
+      (c) => c.lessons.any((l) => l.id == id && l.isFreeIn(c)),
+    );
