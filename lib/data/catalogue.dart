@@ -106,15 +106,15 @@ const List<Chapter> kChapters = [
     Lesson('t, chi-square & F', id: 't_chi_f'),
   ]),
   Chapter(number: 9, title: 'Two variables together', tagline: 'How things move together', free: false, lessons: [
-    Lesson('Joint & marginal distributions'),
-    Lesson('Covariance'),
-    Lesson('Correlation'),
-    Lesson('Correlation vs causation'),
+    Lesson('Joint & marginal distributions', id: 'joint_marginal'),
+    Lesson('Covariance', id: 'covariance'),
+    Lesson('Correlation', id: 'correlation'),
+    Lesson('Correlation vs causation', id: 'correlation_causation'),
   ]),
   Chapter(number: 10, title: 'The big theorems', tagline: 'Why averages are so reliable', free: false, lessons: [
     Lesson('Law of Large Numbers', id: 'coin_flips'),
     Lesson('Central Limit Theorem', id: 'clt_dice'),
-    Lesson("Chebyshev's inequality"),
+    Lesson("Chebyshev's inequality", id: 'chebyshev'),
   ]),
   Chapter(number: 11, title: 'Sampling', tagline: 'Learning about everyone from a few', free: false, lessons: [
     Lesson('Population vs sample'),

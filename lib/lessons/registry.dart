@@ -7,6 +7,7 @@ import 'package:chance/lessons/birthday.dart';
 import 'package:chance/lessons/box_plots.dart';
 import 'package:chance/lessons/ch07_discrete.dart';
 import 'package:chance/lessons/ch08_continuous.dart';
+import 'package:chance/lessons/ch09_two_variables.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/combinations.dart';
@@ -95,6 +96,11 @@ final Map<String, LessonSpec> lessonRegistry = {
     exponentialLesson,
     gammaBetaLesson,
     tChiFLesson,
+    jointMarginalLesson,
+    covarianceLesson,
+    correlationLesson,
+    causationLesson,
+    chebyshevLesson,
   ])
     spec.id: spec,
 };
