@@ -5,10 +5,12 @@ with short animated lessons. Every lesson follows **watch → understand →
 play → check**: an animation you can play, pause, step and speed up; one big
 idea with a live formula; a control to change the experiment; and a quiz.
 
-**Version 1.0**
+**Version 1.1**
 
-- 4 animated lessons: Galton board (binomial), Coin flips (Law of Large
-  Numbers), Monty Hall (with a play-it-yourself game), Central Limit Theorem
+- 8 animated lessons: Mean, median & mode; Standard deviation; Coin flips
+  (Law of Large Numbers); Venn diagrams & the addition rule; Bayes' theorem
+  (the medical test); Monty Hall (with a play-it-yourself game); Galton board
+  (binomial); Central Limit Theorem
 - 17-chapter, 94-lesson catalogue; chapters 1–3 and preview lessons are free,
   the rest unlock with one in-app purchase
 - XP, levels, a daily goal and a daily streak, saved on the device
@@ -38,6 +40,13 @@ How it was planned, designed, tested and released, phase by phase:
    flutter pub get
    flutter run            # picks your phone/emulator
    flutter run -d chrome  # or in the browser
+   ```
+
+   Add `--dart-define=CHANCE_DEV=true` to make the unlock button work
+   without a store, so you can try the paid lessons:
+
+   ```
+   flutter run -d chrome --dart-define=CHANCE_DEV=true
    ```
 
 ## Checks (same as CI)

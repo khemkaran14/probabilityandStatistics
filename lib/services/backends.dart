@@ -18,13 +18,21 @@ class Backends {
   final PurchaseService purchases;
   final ShareService share;
 
+  /// `flutter run --dart-define=CHANCE_DEV=true` swaps the store for one
+  /// where buying always succeeds, so locked lessons can be tried anywhere.
+  static const bool devStore = bool.fromEnvironment('CHANCE_DEV');
+
   static Future<Backends> create() async {
     final prefs = await SharedPreferences.getInstance();
     final storeSupported =
         !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
     return Backends(
       store: _PrefsStore(prefs),
-      purchases: storeSupported ? StorePurchaseService() : FakePurchaseService(available: false),
+      purchases: devStore
+          ? FakePurchaseService()
+          : storeSupported
+              ? StorePurchaseService()
+              : FakePurchaseService(available: false),
       share: _PlusShareService(),
     );
   }

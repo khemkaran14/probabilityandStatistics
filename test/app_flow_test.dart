@@ -37,7 +37,7 @@ void main() {
     await tester.tap(find.text('TRY THE FIRST LESSON'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('Law of Large Numbers ·'), findsOneWidget);
+    expect(find.textContaining('Mean, median & mode ·'), findsOneWidget);
 
     // Let the animation run a little, then start the quiz.
     await tester.pump(const Duration(seconds: 2));
@@ -48,7 +48,7 @@ void main() {
 
     await answerQuiz(tester, 3);
 
-    expect(state.completed, contains('coin_flips'));
+    expect(state.completed, contains('averages'));
     expect(state.xp, greaterThanOrEqualTo(10));
     expect(find.textContaining('XP today'), findsOneWidget);
 

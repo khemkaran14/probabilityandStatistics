@@ -1,11 +1,12 @@
 # 4. Quality Assurance & Testing
 
-## Automated tests (`flutter test`, 30 tests)
+## Automated tests (`flutter test`, 50 tests)
 
 | Level | File | Covers |
 |---|---|---|
 | Unit: state | `test/app_state_test.dart` | Level thresholds, first-time vs replay XP, streak grow/break, DST-safe day maths, daily goal, once-a-day challenge, 7-day history, persistence round trip, corrupt data, reset, access rules, purchase outcomes |
-| Unit: content & simulations | `test/lessons_test.dart` | Catalogue ↔ registry consistency, valid quiz answers, stable daily challenge, Galton ball conservation, coin share → p, Monty Hall host rules and switch ≈ 2/3, CLT mean 3.5 and sd σ/√n |
+| Unit: content & simulations | `test/lessons_test.dart` | Catalogue ↔ registry consistency, valid quiz answers, stable daily challenge, Galton ball conservation, coin share → p, Monty Hall host rules and switch ≈ 2/3, CLT mean 3.5 and sd σ/√n, mean/median/mode definitions and outlier effect, sd formula and target spread, Venn estimates vs exact areas, Bayes counts vs the formula |
+| Widget: every lesson | `test/lesson_screens_test.dart` | Each lesson screen runs its animation for 5 s and scrolls end to end on a 360 dp phone with no overflow or exception |
 | Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset |
 
 Tests run against in-memory fakes (`MemoryStore`, `FakePurchaseService`,

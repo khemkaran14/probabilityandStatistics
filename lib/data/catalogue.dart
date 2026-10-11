@@ -36,8 +36,8 @@ class Chapter {
 const List<Chapter> kChapters = [
   Chapter(number: 1, title: 'Data & averages', tagline: 'Find the centre and the spread', free: true, lessons: [
     Lesson('Types of data'),
-    Lesson('Mean, median, mode'),
-    Lesson('Range, variance & standard deviation'),
+    Lesson('Mean, median, mode', id: 'averages'),
+    Lesson('Range, variance & standard deviation', id: 'spread'),
     Lesson('Percentiles & quartiles'),
     Lesson('Skew & shape'),
     Lesson('Outliers'),
@@ -55,7 +55,7 @@ const List<Chapter> kChapters = [
     Lesson('Experiments, outcomes & events'),
     Lesson('Theory vs experiment: coin flips', id: 'coin_flips'),
     Lesson('The complement rule'),
-    Lesson('Addition rule & Venn diagrams'),
+    Lesson('Addition rule & Venn diagrams', id: 'venn'),
     Lesson('Mutually exclusive events'),
   ]),
   Chapter(number: 4, title: 'Counting', tagline: 'How many ways?', free: false, lessons: [
@@ -77,7 +77,7 @@ const List<Chapter> kChapters = [
         Lesson('Tree diagrams'),
         Lesson('Multiplication rule'),
         Lesson('Law of total probability'),
-        Lesson("Bayes' theorem: the medical test"),
+        Lesson("Bayes' theorem: the medical test", id: 'bayes', preview: true),
         Lesson('Monty Hall', id: 'monty_hall', preview: true),
       ]),
   Chapter(number: 6, title: 'Random variables', tagline: 'Turning chance into numbers', free: false, lessons: [

@@ -185,8 +185,8 @@ class Chapter {
 const List<Chapter> kChapters = [
   Chapter(number: 1, title: 'Data & averages', tagline: 'Find the centre and the spread', free: true, lessons: [
     Lesson('Types of data'),
-    Lesson('Mean, median, mode'),
-    Lesson('Range, variance & standard deviation'),
+    Lesson('Mean, median, mode', id: 'averages'),
+    Lesson('Range, variance & standard deviation', id: 'spread'),
     Lesson('Percentiles & quartiles'),
     Lesson('Skew & shape'),
     Lesson('Outliers'),
@@ -204,7 +204,7 @@ const List<Chapter> kChapters = [
     Lesson('Experiments, outcomes & events'),
     Lesson('Theory vs experiment: coin flips', id: 'coin_flips'),
     Lesson('The complement rule'),
-    Lesson('Addition rule & Venn diagrams'),
+    Lesson('Addition rule & Venn diagrams', id: 'venn'),
     Lesson('Mutually exclusive events'),
   ]),
   Chapter(number: 4, title: 'Counting', tagline: 'How many ways?', free: false, lessons: [
@@ -226,7 +226,7 @@ const List<Chapter> kChapters = [
         Lesson('Tree diagrams'),
         Lesson('Multiplication rule'),
         Lesson('Law of total probability'),
-        Lesson("Bayes' theorem: the medical test"),
+        Lesson("Bayes' theorem: the medical test", id: 'bayes', preview: true),
         Lesson('Monty Hall', id: 'monty_hall', preview: true),
       ]),
   Chapter(number: 6, title: 'Random variables', tagline: 'Turning chance into numbers', free: false, lessons: [
@@ -556,6 +556,674 @@ class LessonSpec {
   final String tryItTitle;
   final Widget Function(LessonSim sim) buildTryIt;
   final List<QuizQuestion> quiz;
+}
+
+// ===== lib/lessons/averages.dart =====
+// ---------------------------------------------------------------------------
+// Simulation
+// ---------------------------------------------------------------------------
+
+/// Shape of the data being dropped onto the number line.
+enum DataShape { symmetric, skewed }
+
+class AveragesSim extends LessonSim {
+  AveragesSim({math.Random? rng}) : _rng = rng ?? math.Random();
+
+  /// Values run 0 … [maxValue] (think "salary in lakh").
+  static const int maxValue = 20;
+
+  /// Dots stop arriving at this many.
+  static const int target = 40;
+
+  final math.Random _rng;
+  DataShape shape = DataShape.skewed;
+
+  /// Values in arrival order.
+  final List<int> values = [];
+
+  /// The newest dot falls from the top: 0 → 1.
+  double drop = 1;
+
+  /// Outliers added by the learner (drawn past the end of the axis).
+  int outliers = 0;
+
+  /// Value an outlier counts as.
+  static const int outlierValue = 200;
+
+  double _timer = 0;
+
+  int _sample() {
+    switch (shape) {
+      case DataShape.symmetric:
+        // Sum of 4 dice-ish draws centred on 10.
+        var s = 0;
+        for (var i = 0; i < 4; i++) {
+          s += _rng.nextInt(6);
+        }
+        return (s * maxValue / 20).round().clamp(0, maxValue);
+      case DataShape.skewed:
+        // Most values small, a long tail to the right.
+        final x = -math.log(1 - _rng.nextDouble()) * 4 + 2;
+        return x.round().clamp(0, maxValue);
+    }
+  }
+
+  List<int> get _all => [...values, for (var i = 0; i < outliers; i++) outlierValue];
+
+  double get mean {
+    final all = _all;
+    if (all.isEmpty) return 0;
+    return all.fold(0, (a, b) => a + b) / all.length;
+  }
+
+  double get median {
+    final all = _all..sort();
+    if (all.isEmpty) return 0;
+    final mid = all.length ~/ 2;
+    return all.length.isOdd ? all[mid].toDouble() : (all[mid - 1] + all[mid]) / 2;
+  }
+
+  /// Most common value among the regular dots (smallest on a tie).
+  int? get mode {
+    if (values.isEmpty) return null;
+    final counts = List<int>.filled(maxValue + 1, 0);
+    for (final v in values) {
+      counts[v]++;
+    }
+    var best = 0;
+    for (var v = 1; v <= maxValue; v++) {
+      if (counts[v] > counts[best]) best = v;
+    }
+    return best;
+  }
+
+  int get count => values.length + outliers;
+
+  @override
+  void advance(double dt) {
+    if (drop < 1) drop = math.min(1, drop + dt * 4);
+    if (values.length < target) {
+      _timer += dt;
+      final every = values.length < 8 ? 0.45 : 0.15;
+      while (_timer >= every && values.length < target) {
+        _timer -= every;
+        _add();
+      }
+    }
+    notifyListeners();
+  }
+
+  void _add() {
+    values.add(_sample());
+    drop = 0;
+  }
+
+  void addOutlier() {
+    outliers++;
+    notifyListeners();
+  }
+
+  void setShape(DataShape s) {
+    shape = s;
+    reset();
+  }
+
+  @override
+  void step() {
+    if (values.length < target) _add();
+    drop = 1;
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    values.clear();
+    outliers = 0;
+    drop = 1;
+    _timer = 0;
+    notifyListeners();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Painter
+// ---------------------------------------------------------------------------
+
+class AveragesPainter extends CustomPainter {
+  AveragesPainter(this.sim) : super(repaint: sim);
+
+  final AveragesSim sim;
+
+  static const double aspectRatio = 1.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    const left = 18.0;
+    final right = w - (sim.outliers > 0 ? 58 : 18);
+    final axisY = h * 0.72;
+    final unit = (right - left) / AveragesSim.maxValue;
+    final dotR = math.min(unit * 0.42, 9.0);
+    double xFor(double v) => left + v * unit;
+
+    // Axis and ticks.
+    final axis = Paint()
+      ..color = AppColors.peg
+      ..strokeWidth = 2;
+    canvas.drawLine(Offset(left, axisY), Offset(right, axisY), axis);
+    for (var v = 0; v <= AveragesSim.maxValue; v += 5) {
+      canvas.drawLine(Offset(xFor(v.toDouble()), axisY), Offset(xFor(v.toDouble()), axisY + 6), axis);
+      _text(canvas, '$v', Offset(xFor(v.toDouble()), axisY + 16), 11, AppColors.muted);
+    }
+
+    // Stacked dots (dot plot).
+    final stacks = List<int>.filled(AveragesSim.maxValue + 1, 0);
+    for (var i = 0; i < sim.values.length; i++) {
+      final v = sim.values[i];
+      final level = stacks[v]++;
+      final restY = axisY - dotR - 2 - level * dotR * 2.1;
+      final isNewest = i == sim.values.length - 1;
+      final y = isNewest ? 14 + (restY - 14) * Curves.easeIn.transform(sim.drop) : restY;
+      canvas.drawCircle(
+        Offset(xFor(v.toDouble()), y),
+        dotR,
+        Paint()..color = AppColors.rainbow[i % AppColors.rainbow.length],
+      );
+    }
+
+    // Outliers: drawn just past the axis end with a "200" tag.
+    if (sim.outliers > 0) {
+      final ox = w - 32;
+      for (var i = 0; i < sim.outliers; i++) {
+        canvas.drawCircle(Offset(ox, axisY - dotR - 2 - i * dotR * 2.1), dotR, Paint()..color = AppColors.ink);
+      }
+      _text(canvas, '${AveragesSim.outlierValue}', Offset(ox, axisY + 16), 11, AppColors.ink);
+      _text(canvas, '⋯', Offset((right + ox) / 2, axisY), 14, AppColors.muted);
+    }
+
+    if (sim.count == 0) return;
+
+    // Markers under the axis.
+    final markers = <(String, double, Color)>[
+      ('mean', sim.mean, AppColors.pink),
+      ('median', sim.median, AppColors.violet),
+      if (sim.mode != null) ('mode', sim.mode!.toDouble(), AppColors.cyan),
+    ];
+    for (var i = 0; i < markers.length; i++) {
+      final (name, value, color) = markers[i];
+      final shown = value.clamp(0, AveragesSim.maxValue + (sim.outliers > 0 ? 1.8 : 0)).toDouble();
+      final x = xFor(shown);
+      final y = axisY + 34 + i * 22;
+      canvas.drawLine(
+        Offset(x, axisY + 2),
+        Offset(x, y - 6),
+        Paint()
+          ..color = color.withValues(alpha: 0.6)
+          ..strokeWidth = 2,
+      );
+      final path = Path()
+        ..moveTo(x, y - 8)
+        ..lineTo(x - 7, y + 4)
+        ..lineTo(x + 7, y + 4)
+        ..close();
+      canvas.drawPath(path, Paint()..color = color);
+      final label = '$name ${value.toStringAsFixed(name == 'mode' ? 0 : 1)}';
+      final onRight = x < w * 0.6;
+      _text(canvas, label, Offset(x + (onRight ? 12 : -12), y - 1), 12, color,
+          align: onRight ? TextAlign.left : TextAlign.right);
+    }
+  }
+
+  void _text(Canvas canvas, String text, Offset anchor, double size, Color color,
+      {TextAlign align = TextAlign.center}) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: TextStyle(fontSize: size, fontWeight: FontWeight.w800, color: color)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final dx = switch (align) {
+      TextAlign.left => 0.0,
+      TextAlign.right => tp.width,
+      _ => tp.width / 2,
+    };
+    tp.paint(canvas, anchor - Offset(dx, tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant AveragesPainter oldDelegate) => oldDelegate.sim != sim;
+}
+
+// ---------------------------------------------------------------------------
+// Lesson definition
+// ---------------------------------------------------------------------------
+
+final LessonSpec averagesLesson = LessonSpec(
+  id: 'averages',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('Three '),
+    TitlePart('averages', AppColors.pink),
+    TitlePart(', three '),
+    TitlePart('different', AppColors.violet),
+    TitlePart(' answers'),
+  ],
+  subtitle: 'Mean, median & mode · 2-minute animated lesson',
+  createSim: () => AveragesSim(),
+  visualAspectRatio: AveragesPainter.aspectRatio,
+  buildVisual: (sim) => CustomPaint(
+    painter: AveragesPainter(sim as AveragesSim),
+    child: const SizedBox.expand(),
+  ),
+  stats: (sim) {
+    final a = sim as AveragesSim;
+    return [
+      StatChip('values', '${a.count}', AppColors.yellow),
+      StatChip('mean', a.mean.toStringAsFixed(1), AppColors.pink),
+      StatChip('median', a.median.toStringAsFixed(1), AppColors.violet),
+    ];
+  },
+  bigIdea: 'The mean adds everything up and shares it equally, so one huge value '
+      'drags it along. The median is just the middle value once sorted, so it '
+      'barely notices. The mode is the most common value. When data has a long '
+      'tail, like salaries, the median tells you what is typical.',
+  formula: (sim) {
+    final a = sim as AveragesSim;
+    return 'mean = sum / n = ${(a.mean * a.count).round()} / ${a.count} = ${a.mean.toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: add a billionaire',
+  buildTryIt: (sim) => _AveragesControls(sim: sim as AveragesSim),
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Five friends earn 3, 4, 4, 5 and 4 lakh. One more joins earning 100 lakh. '
+          'Which average changes the most?',
+      options: ['The mean', 'The median', 'The mode', 'None of them'],
+      answer: 0,
+      explanation: 'The mean jumps from 4 to 20 lakh. The median and mode stay at 4, '
+          'which still describes a typical friend.',
+    ),
+    QuizQuestion(
+      prompt: 'Data with a long tail to the right usually has…',
+      options: ['mean < median', 'mean = median', 'mean > median', 'no median'],
+      answer: 2,
+      explanation: 'The few big values in the tail pull the mean to the right of the '
+          'median.',
+    ),
+    QuizQuestion(
+      prompt: 'Which average can you use for data like "favourite colour"?',
+      options: ['Mean', 'Median', 'Mode', 'Any of them'],
+      answer: 2,
+      explanation: 'Colours cannot be added or sorted, but you can still count which '
+          'one is the most common.',
+    ),
+  ],
+);
+
+class _AveragesControls extends StatelessWidget {
+  const _AveragesControls({required this.sim});
+  final AveragesSim sim;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: sim,
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SegmentedButton<DataShape>(
+            segments: const [
+              ButtonSegment(value: DataShape.symmetric, label: Text('Symmetric')),
+              ButtonSegment(value: DataShape.skewed, label: Text('Long tail')),
+            ],
+            selected: {sim.shape},
+            onSelectionChanged: (s) => sim.setShape(s.first),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.tonalIcon(
+            onPressed: sim.addOutlier,
+            icon: const Icon(Icons.diamond_rounded),
+            label: Text(
+              sim.outliers == 0 ? 'Add a value of ${AveragesSim.outlierValue}' : 'Add another (${sim.outliers} so far)',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Watch the pink mean race to the right while the purple median hardly moves.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===== lib/lessons/bayes_test.dart =====
+// ---------------------------------------------------------------------------
+// Simulation
+// ---------------------------------------------------------------------------
+
+/// 1,000 people take a medical test. Counts are exact for the chosen rates;
+/// only who is who is shuffled.
+class BayesSim extends LessonSim {
+  BayesSim({int seed = 7}) : _seed = seed {
+    _build();
+  }
+
+  static const int people = 1000;
+  static const int cols = 40;
+  static const int rows = people ~/ cols;
+
+  /// Choices offered by the sliders.
+  static const List<double> prevalences = [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5];
+  static const List<double> falsePositiveRates = [0.01, 0.02, 0.05, 0.09, 0.2];
+
+  /// Chance a sick person tests positive.
+  static const double sensitivity = 0.9;
+
+  int _seed;
+  double prevalence = 0.01;
+  double falsePositiveRate = 0.09;
+
+  late List<bool> sick;
+  late List<bool> positive;
+
+  /// People tested so far (fractional while animating).
+  double tested = 0;
+
+  /// 0 → 1 fade of negative results once everyone is tested.
+  double focus = 0;
+
+  int get sickCount => (people * prevalence).round();
+  int get truePositives => (sickCount * sensitivity).round();
+  int get falsePositives => ((people - sickCount) * falsePositiveRate).round();
+  int get positives => truePositives + falsePositives;
+
+  /// P(sick | positive test), from the counts.
+  double get sickGivenPositive => positives == 0 ? 0 : truePositives / positives;
+
+  int get testedCount => tested.floor().clamp(0, people);
+
+  /// Results visible so far.
+  int get positivesSoFar {
+    var n = 0;
+    for (var i = 0; i < testedCount; i++) {
+      if (positive[i]) n++;
+    }
+    return n;
+  }
+
+  void _build() {
+    final order = List<int>.generate(people, (i) => i)..shuffle(math.Random(_seed));
+    sick = List<bool>.filled(people, false);
+    positive = List<bool>.filled(people, false);
+    final s = sickCount;
+    for (var k = 0; k < s; k++) {
+      sick[order[k]] = true;
+      if (k < truePositives) positive[order[k]] = true;
+    }
+    for (var k = 0; k < falsePositives; k++) {
+      positive[order[s + k]] = true;
+    }
+  }
+
+  @override
+  void advance(double dt) {
+    if (tested < people) {
+      // Slow for the first row so each test is visible, then fast.
+      final rate = tested < cols ? 20 : 220;
+      tested = math.min(people.toDouble(), tested + dt * rate);
+    } else if (focus < 1) {
+      focus = math.min(1, focus + dt * 1.2);
+    }
+    notifyListeners();
+  }
+
+  void setRates({double? prevalence, double? falsePositiveRate}) {
+    this.prevalence = prevalence ?? this.prevalence;
+    this.falsePositiveRate = falsePositiveRate ?? this.falsePositiveRate;
+    _seed++;
+    _build();
+    // Jump straight to the result so the effect of the slider is instant.
+    tested = people.toDouble();
+    focus = 1;
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    if (tested < people) {
+      tested = math.min(people.toDouble(), (tested / cols).floor() * cols + cols.toDouble());
+    } else {
+      focus = 1;
+    }
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    tested = 0;
+    focus = 0;
+    notifyListeners();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Painter
+// ---------------------------------------------------------------------------
+
+class BayesPainter extends CustomPainter {
+  BayesPainter(this.sim) : super(repaint: sim);
+
+  final BayesSim sim;
+
+  static const double aspectRatio = 1.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    const pad = 12.0;
+    final cell = (w - pad * 2) / BayesSim.cols;
+    final gridTop = 26.0;
+    final dotR = cell * 0.34;
+    final done = sim.testedCount;
+
+    _text(canvas, '1,000 people · ${sim.sickCount} sick (pink) · ring = tested positive', Offset(w / 2, 13), 11,
+        AppColors.muted);
+
+    for (var i = 0; i < BayesSim.people; i++) {
+      final c = Offset(pad + (i % BayesSim.cols + 0.5) * cell, gridTop + (i ~/ BayesSim.cols + 0.5) * cell);
+      final isTested = i < done;
+      final isPos = sim.positive[i];
+      final fade = isTested && !isPos ? 1 - sim.focus * 0.75 : 1.0;
+      // Sick people are always shown, so the learner sees how few there are.
+      if (sim.sick[i]) {
+        canvas.drawCircle(c, dotR * 1.45, Paint()..color = AppColors.pink.withValues(alpha: fade));
+      } else {
+        canvas.drawCircle(c, dotR, Paint()..color = AppColors.peg.withValues(alpha: (isTested ? 0.9 : 0.35) * fade));
+      }
+      if (isTested && isPos) {
+        canvas.drawCircle(
+          c,
+          dotR + cell * 0.12,
+          Paint()
+            ..color = AppColors.ink
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(1.2, cell * 0.12),
+        );
+      }
+    }
+
+    // Result bar: everyone who tested positive, split by who is really sick.
+    final barTop = gridTop + BayesSim.rows * cell + 22;
+    final barH = math.max(18.0, math.min(34.0, h - barTop - 30));
+    final barW = w - pad * 2;
+    final tp = sim.truePositives;
+    final fp = sim.falsePositives;
+    final shown = sim.focus;
+    _text(canvas, 'Everyone who tested positive (${sim.positives})', Offset(w / 2, barTop - 10), 12, AppColors.ink);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(pad, barTop, barW, barH), const Radius.circular(10)),
+      Paint()..color = Colors.white,
+    );
+    if (sim.positives > 0 && shown > 0) {
+      final sickW = barW * tp / sim.positives * shown;
+      final healthyW = barW * fp / sim.positives * shown;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(pad, barTop, sickW, barH), const Radius.circular(10)),
+        Paint()..color = AppColors.pink,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(pad + barW - healthyW, barTop, healthyW, barH), const Radius.circular(10)),
+        Paint()..color = AppColors.peg,
+      );
+      if (shown >= 1) {
+        _text(canvas, '$tp sick', Offset(pad + 34, barTop + barH + 14), 12, AppColors.pink);
+        _text(canvas, '$fp healthy', Offset(w - pad - 44, barTop + barH + 14), 12, AppColors.muted);
+        _text(canvas, '${(sim.sickGivenPositive * 100).toStringAsFixed(0)}% are really sick',
+            Offset(w / 2, barTop + barH / 2), 13, AppColors.ink);
+      }
+    }
+  }
+
+  void _text(Canvas canvas, String text, Offset centre, double size, Color color) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: TextStyle(fontSize: size, fontWeight: FontWeight.w900, color: color)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, centre - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant BayesPainter oldDelegate) => oldDelegate.sim != sim;
+}
+
+// ---------------------------------------------------------------------------
+// Lesson definition
+// ---------------------------------------------------------------------------
+
+String _pct(double v) => v < 0.01 ? '${(v * 100).toStringAsFixed(1)}%' : '${(v * 100).round()}%';
+
+final LessonSpec bayesLesson = LessonSpec(
+  id: 'bayes',
+  chapterLabel: 'Ch 5 · Conditional probability',
+  title: const [
+    TitlePart('You tested '),
+    TitlePart('positive', AppColors.pink),
+    TitlePart('. Are you '),
+    TitlePart('really', AppColors.violet),
+    TitlePart(' sick?'),
+  ],
+  subtitle: "Bayes' theorem: the medical test · 3-minute animated lesson",
+  createSim: () => BayesSim(),
+  visualAspectRatio: BayesPainter.aspectRatio,
+  buildVisual: (sim) => CustomPaint(
+    painter: BayesPainter(sim as BayesSim),
+    child: const SizedBox.expand(),
+  ),
+  stats: (sim) {
+    final b = sim as BayesSim;
+    return [
+      StatChip('tested', '${b.testedCount}', AppColors.yellow),
+      StatChip('positive', '${b.positivesSoFar}', AppColors.violet),
+      StatChip('sick if +', b.focus > 0 ? _pct(b.sickGivenPositive) : '…', AppColors.pink),
+    ];
+  },
+  bigIdea: 'The test catches 90% of sick people and wrongly flags 9% of healthy '
+      'ones. That sounds accurate, but healthy people vastly outnumber sick ones, '
+      'so 9% of a huge group beats 90% of a tiny one. Most positive results come '
+      'from healthy people. How rare the disease is (the base rate) matters as '
+      'much as how good the test is.',
+  formula: (sim) {
+    final b = sim as BayesSim;
+    return 'P(sick | +) = true + / all +\n= ${b.truePositives} / (${b.truePositives} + ${b.falsePositives}) '
+        '= ${_pct(b.sickGivenPositive)}';
+  },
+  tryItTitle: 'Try it: change how rare the disease is',
+  buildTryIt: (sim) => _BayesControls(sim: sim as BayesSim),
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A disease affects 1 in 100 people. A test catches 90% of cases and '
+          'falsely flags 9% of healthy people. You test positive. Roughly how likely '
+          'are you to be sick?',
+      options: ['About 90%', 'About 50%', 'About 10%', 'About 1%'],
+      answer: 2,
+      explanation: 'Out of 1,000 people: 9 sick people test positive and about 89 '
+          'healthy people do too. 9 / 98 ≈ 9%.',
+    ),
+    QuizQuestion(
+      prompt: 'The disease becomes much more common (20% of people). Your positive '
+          'result now means…',
+      options: [
+        'You are more likely to be sick',
+        'You are less likely to be sick',
+        'Nothing changes',
+        'The test is broken',
+      ],
+      answer: 0,
+      explanation: 'With more sick people, true positives grow and false positives '
+          'shrink. The same test result becomes much more convincing.',
+    ),
+    QuizQuestion(
+      prompt: 'What is the best next step after one positive result for a rare disease?',
+      options: [
+        'Assume you are sick',
+        'Ignore it completely',
+        'Take a second, independent test',
+        'Take the same test less often',
+      ],
+      answer: 2,
+      explanation: 'A second positive from an independent test multiplies the '
+          'evidence. That is why doctors confirm screening results.',
+    ),
+  ],
+);
+
+class _BayesControls extends StatelessWidget {
+  const _BayesControls({required this.sim});
+  final BayesSim sim;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: sim,
+      builder: (context, _) {
+        final pi = BayesSim.prevalences.indexOf(sim.prevalence);
+        final fi = BayesSim.falsePositiveRates.indexOf(sim.falsePositiveRate);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Disease affects ${_pct(sim.prevalence)} of people',
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            Slider(
+              value: pi.toDouble(),
+              min: 0,
+              max: BayesSim.prevalences.length - 1.0,
+              divisions: BayesSim.prevalences.length - 1,
+              label: _pct(sim.prevalence),
+              onChanged: (v) => sim.setRates(prevalence: BayesSim.prevalences[v.round()]),
+            ),
+            Text('Test wrongly flags ${_pct(sim.falsePositiveRate)} of healthy people',
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            Slider(
+              value: fi.toDouble(),
+              min: 0,
+              max: BayesSim.falsePositiveRates.length - 1.0,
+              divisions: BayesSim.falsePositiveRates.length - 1,
+              label: _pct(sim.falsePositiveRate),
+              onChanged: (v) => sim.setRates(falsePositiveRate: BayesSim.falsePositiveRates[v.round()]),
+            ),
+            const Text(
+              'Rare disease + a few false alarms = most positives are healthy. '
+              'Make the disease common and watch the pink share grow.',
+              style: TextStyle(color: AppColors.muted),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 // ===== lib/lessons/clt_dice.dart =====
@@ -2119,8 +2787,605 @@ class _DoorPainter extends CustomPainter {
 /// Every lesson with a built animation, keyed by its catalogue id.
 /// Add new lessons here as they're built.
 final Map<String, LessonSpec> lessonRegistry = {
-  for (final spec in [coinFlipsLesson, montyHallLesson, galtonLesson, cltLesson]) spec.id: spec,
+  for (final spec in [
+    averagesLesson,
+    spreadLesson,
+    coinFlipsLesson,
+    vennLesson,
+    bayesLesson,
+    montyHallLesson,
+    galtonLesson,
+    cltLesson,
+  ])
+    spec.id: spec,
 };
+
+// ===== lib/lessons/spread.dart =====
+// ---------------------------------------------------------------------------
+// Simulation
+// ---------------------------------------------------------------------------
+
+/// A rolling sample of [size] values: every tick the oldest is replaced.
+class SpreadSim extends LessonSim {
+  SpreadSim({math.Random? rng}) : _rng = rng ?? math.Random() {
+    _fill();
+  }
+
+  static const int size = 12;
+
+  /// Values live on 0 … 100 around a centre of 50.
+  static const double centre = 50;
+
+  final math.Random _rng;
+
+  /// Standard deviation the values are drawn with.
+  double targetSd = 12;
+
+  List<double> values = [];
+
+  /// Index of the value that was replaced most recently.
+  int newest = -1;
+
+  /// 0 → 1 slide-in of the newest value.
+  double t = 1;
+
+  double _timer = 0;
+
+  static const double every = 1.2;
+
+  double _draw() {
+    // Box–Muller normal draw, clamped to the visible range.
+    final u1 = 1 - _rng.nextDouble();
+    final u2 = _rng.nextDouble();
+    final z = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2);
+    return (centre + z * targetSd).clamp(0, 100).toDouble();
+  }
+
+  void _fill() {
+    values = List.generate(size, (_) => _draw());
+    newest = -1;
+    t = 1;
+  }
+
+  double get mean => values.fold(0.0, (a, b) => a + b) / values.length;
+
+  double get sumSquares {
+    final m = mean;
+    return values.fold(0.0, (a, v) => a + (v - m) * (v - m));
+  }
+
+  /// Sample standard deviation (divides by n − 1).
+  double get sd => math.sqrt(sumSquares / (values.length - 1));
+
+  double get range => values.reduce(math.max) - values.reduce(math.min);
+
+  @override
+  void advance(double dt) {
+    if (t < 1) t = math.min(1, t + dt * 3);
+    _timer += dt;
+    while (_timer >= every) {
+      _timer -= every;
+      _replace();
+    }
+    notifyListeners();
+  }
+
+  void _replace() {
+    newest = (newest + 1) % size;
+    values[newest] = _draw();
+    t = 0;
+  }
+
+  void setSpread(double sdValue) {
+    targetSd = sdValue;
+    _fill();
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    _replace();
+    t = 1;
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    _timer = 0;
+    _fill();
+    notifyListeners();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Painter
+// ---------------------------------------------------------------------------
+
+class SpreadPainter extends CustomPainter {
+  SpreadPainter(this.sim) : super(repaint: sim);
+
+  final SpreadSim sim;
+
+  static const double aspectRatio = 0.95;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    const left = 16.0;
+    final right = w - 16;
+    const top = 30.0;
+    final bottom = h - 34;
+    double xFor(double v) => left + v / 100 * (right - left);
+
+    final mean = sim.mean;
+    final sd = sim.sd;
+    final mx = xFor(mean);
+
+    // ±1 sd band.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(xFor((mean - sd).clamp(0, 100)), top - 8, xFor((mean + sd).clamp(0, 100)), bottom + 4),
+        const Radius.circular(10),
+      ),
+      Paint()..color = AppColors.yellow.withValues(alpha: 0.28),
+    );
+    _text(canvas, '−1 sd', Offset(xFor((mean - sd).clamp(0, 100)), top - 18), 11, AppColors.muted);
+    _text(canvas, '+1 sd', Offset(xFor((mean + sd).clamp(0, 100)), top - 18), 11, AppColors.muted);
+
+    // One row per value: a dot, and a bar from the mean to it.
+    final rowH = (bottom - top) / SpreadSim.size;
+    final dotR = math.min(rowH * 0.32, 8.0);
+    for (var i = 0; i < SpreadSim.size; i++) {
+      final v = sim.values[i];
+      final y = top + rowH * (i + 0.5);
+      final isNew = i == sim.newest && sim.t < 1;
+      final x = isNew ? right + (xFor(v) - right) * Curves.easeOutCubic.transform(sim.t) : xFor(v);
+      final color = v >= mean ? AppColors.pink : AppColors.blue;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTRB(math.min(mx, x), y - rowH * 0.16, math.max(mx, x), y + rowH * 0.16),
+          const Radius.circular(4),
+        ),
+        Paint()..color = color.withValues(alpha: 0.35),
+      );
+      canvas.drawCircle(Offset(x, y), dotR, Paint()..color = color);
+    }
+
+    // Mean line.
+    canvas.drawLine(
+      Offset(mx, top - 8),
+      Offset(mx, bottom + 4),
+      Paint()
+        ..color = AppColors.ink
+        ..strokeWidth = 2.5,
+    );
+    _text(canvas, 'mean ${mean.toStringAsFixed(1)}', Offset(mx, bottom + 18), 12, AppColors.ink);
+  }
+
+  void _text(Canvas canvas, String text, Offset centre, double size, Color color) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: TextStyle(fontSize: size, fontWeight: FontWeight.w800, color: color)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, centre - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant SpreadPainter oldDelegate) => oldDelegate.sim != sim;
+}
+
+// ---------------------------------------------------------------------------
+// Lesson definition
+// ---------------------------------------------------------------------------
+
+final LessonSpec spreadLesson = LessonSpec(
+  id: 'spread',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('How far is a '),
+    TitlePart('typical', AppColors.pink),
+    TitlePart(' value from the '),
+    TitlePart('mean', AppColors.blue),
+    TitlePart('?'),
+  ],
+  subtitle: 'Range, variance & standard deviation · 2-minute animated lesson',
+  createSim: () => SpreadSim(),
+  visualAspectRatio: SpreadPainter.aspectRatio,
+  buildVisual: (sim) => CustomPaint(
+    painter: SpreadPainter(sim as SpreadSim),
+    child: const SizedBox.expand(),
+  ),
+  stats: (sim) {
+    final s = sim as SpreadSim;
+    return [
+      StatChip('range', s.range.toStringAsFixed(1), AppColors.orange),
+      StatChip('variance', (s.sd * s.sd).toStringAsFixed(0), AppColors.violet),
+      StatChip('sd', s.sd.toStringAsFixed(1), AppColors.yellow),
+    ];
+  },
+  bigIdea: 'Each bar is one value\'s distance from the mean. Square those distances '
+      '(so left and right both count), average them, and you get the variance. '
+      'Take the square root to get back to normal units: that is the standard '
+      'deviation, roughly how far a typical value sits from the mean. Most values '
+      'land inside the yellow ±1 sd band.',
+  formula: (sim) {
+    final s = sim as SpreadSim;
+    return 'sd = √(Σ(x − x̄)² / (n − 1)) = √(${s.sumSquares.toStringAsFixed(0)} / ${SpreadSim.size - 1}) '
+        '= ${s.sd.toStringAsFixed(1)}';
+  },
+  tryItTitle: 'Try it: squeeze or stretch the data',
+  buildTryIt: (sim) => _SpreadControls(sim: sim as SpreadSim),
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Two classes both average 60 marks. Class A has sd 5, class B has sd 20. '
+          'Which is true?',
+      options: [
+        'Class A\'s marks are more bunched together',
+        'Class B did better',
+        'Class A has more students',
+        'They are identical',
+      ],
+      answer: 0,
+      explanation: 'Same centre, different spread. A small sd means most marks are '
+          'close to 60.',
+    ),
+    QuizQuestion(
+      prompt: 'Why square the distances before averaging them?',
+      options: [
+        'To make the numbers bigger',
+        'So distances below the mean don\'t cancel those above',
+        'Because the formula looks nicer',
+        'To remove outliers',
+      ],
+      answer: 1,
+      explanation: 'Raw distances from the mean always add up to exactly zero. '
+          'Squaring makes every distance positive.',
+    ),
+    QuizQuestion(
+      prompt: 'You add 10 to every value. What happens to the sd?',
+      options: ['It goes up by 10', 'It doubles', 'It stays the same', 'It goes to zero'],
+      answer: 2,
+      explanation: 'Everything shifts together, including the mean, so every '
+          'distance from the mean is unchanged.',
+    ),
+  ],
+);
+
+class _SpreadControls extends StatelessWidget {
+  const _SpreadControls({required this.sim});
+  final SpreadSim sim;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: sim,
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('tight', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+              Expanded(
+                child: Slider(
+                  value: sim.targetSd,
+                  min: 3,
+                  max: 24,
+                  divisions: 7,
+                  label: sim.targetSd.toStringAsFixed(0),
+                  onChanged: sim.setSpread,
+                ),
+              ),
+              const Text('wide', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const Text(
+            'New values slide in every second. Notice the sd wobbles but stays near the '
+            'spread you chose, while the range jumps around much more.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===== lib/lessons/venn.dart =====
+// ---------------------------------------------------------------------------
+// Simulation
+// ---------------------------------------------------------------------------
+
+/// Darts land uniformly in a unit square holding two circles, A and B.
+class VennSim extends LessonSim {
+  VennSim({math.Random? rng}) : _rng = rng ?? math.Random();
+
+  /// Small enough that both circles stay inside the square at [maxSeparation].
+  static const double radius = 0.22;
+  static const double maxSeparation = 0.56;
+
+  /// Most darts kept for drawing; counting continues beyond this.
+  static const int maxDrawn = 700;
+
+  final math.Random _rng;
+
+  /// Distance between the circle centres (0 = same circle).
+  double separation = 0.26;
+
+  final List<Offset> darts = [];
+  int total = 0;
+  int inA = 0;
+  int inB = 0;
+  int inBoth = 0;
+
+  double _timer = 0;
+
+  Offset get centreA => Offset(0.5 - separation / 2, 0.5);
+  Offset get centreB => Offset(0.5 + separation / 2, 0.5);
+
+  bool isInA(Offset p) => (p - centreA).distance <= radius;
+  bool isInB(Offset p) => (p - centreB).distance <= radius;
+
+  /// Exact areas (the true probabilities).
+  double get pA => math.pi * radius * radius;
+  double get pBoth {
+    final d = separation;
+    if (mutuallyExclusive) return 0;
+    if (d == 0) return pA;
+    final r = radius;
+    return 2 * r * r * math.acos(d / (2 * r)) - d / 2 * math.sqrt(4 * r * r - d * d);
+  }
+
+  double get pEither => 2 * pA - pBoth;
+
+  bool get mutuallyExclusive => separation >= 2 * radius - 1e-9;
+
+  double get estA => total == 0 ? 0 : inA / total;
+  double get estB => total == 0 ? 0 : inB / total;
+  double get estBoth => total == 0 ? 0 : inBoth / total;
+  double get estEither => total == 0 ? 0 : (inA + inB - inBoth) / total;
+
+  double get _rate => total < 30 ? 6 : (total < 200 ? 30 : 90);
+
+  @override
+  void advance(double dt) {
+    _timer += dt * _rate;
+    while (_timer >= 1) {
+      _timer -= 1;
+      _throw();
+    }
+    notifyListeners();
+  }
+
+  void _throw() {
+    final p = Offset(_rng.nextDouble(), _rng.nextDouble());
+    total++;
+    final a = isInA(p);
+    final b = isInB(p);
+    if (a) inA++;
+    if (b) inB++;
+    if (a && b) inBoth++;
+    if (darts.length < maxDrawn) darts.add(p);
+  }
+
+  void throwMany(int count) {
+    for (var i = 0; i < count; i++) {
+      _throw();
+    }
+    notifyListeners();
+  }
+
+  void setSeparation(double value) {
+    separation = value;
+    reset();
+  }
+
+  @override
+  void step() {
+    _throw();
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    darts.clear();
+    total = inA = inB = inBoth = 0;
+    _timer = 0;
+    notifyListeners();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Painter
+// ---------------------------------------------------------------------------
+
+class VennPainter extends CustomPainter {
+  VennPainter(this.sim) : super(repaint: sim);
+
+  final VennSim sim;
+
+  static const double aspectRatio = 1.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const pad = 14.0;
+    final side = math.min(size.width, size.height) - pad * 2;
+    final origin = Offset((size.width - side) / 2, (size.height - side) / 2);
+    Offset toCanvas(Offset p) => origin + Offset(p.dx * side, p.dy * side);
+
+    // Sample space.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(origin & Size(side, side), const Radius.circular(14)),
+      Paint()..color = Colors.white,
+    );
+    _text(canvas, 'everything that can happen', origin + Offset(side / 2, 14), 11, AppColors.muted);
+
+    // Circles.
+    final r = VennSim.radius * side;
+    for (final (c, color) in [(sim.centreA, AppColors.pink), (sim.centreB, AppColors.cyan)]) {
+      canvas.drawCircle(toCanvas(c), r, Paint()..color = color.withValues(alpha: 0.18));
+      canvas.drawCircle(
+        toCanvas(c),
+        r,
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3,
+      );
+    }
+
+    // Darts.
+    final dotR = math.max(1.8, side * 0.007);
+    for (final p in sim.darts) {
+      final a = sim.isInA(p);
+      final b = sim.isInB(p);
+      final color = a && b
+          ? AppColors.violet
+          : a
+              ? AppColors.pink
+              : b
+                  ? AppColors.cyan
+                  : AppColors.peg.withValues(alpha: 0.7);
+      canvas.drawCircle(toCanvas(p), dotR, Paint()..color = color);
+    }
+
+    // Labels.
+    _text(canvas, 'A', toCanvas(sim.centreA) - Offset(r * 0.55, r * 0.75), 22, AppColors.pink);
+    _text(canvas, 'B', toCanvas(sim.centreB) + Offset(r * 0.55, -r * 0.75), 22, AppColors.cyan);
+    if (!sim.mutuallyExclusive) {
+      _text(canvas, 'A and B', toCanvas(const Offset(0.5, 0.5)) + Offset(0, r * 1.25), 13, AppColors.violet);
+    } else {
+      _text(canvas, 'no overlap: mutually exclusive', origin + Offset(side / 2, side - 18), 12, AppColors.violet);
+    }
+  }
+
+  void _text(Canvas canvas, String text, Offset centre, double size, Color color) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: TextStyle(fontSize: size, fontWeight: FontWeight.w900, color: color)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, centre - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant VennPainter oldDelegate) => oldDelegate.sim != sim;
+}
+
+// ---------------------------------------------------------------------------
+// Lesson definition
+// ---------------------------------------------------------------------------
+
+final LessonSpec vennLesson = LessonSpec(
+  id: 'venn',
+  chapterLabel: 'Ch 3 · Probability basics',
+  title: const [
+    TitlePart('Why '),
+    TitlePart('A or B', AppColors.pink),
+    TitlePart(' isn\'t just '),
+    TitlePart('A + B', AppColors.cyan),
+  ],
+  subtitle: 'Addition rule & Venn diagrams · 2-minute animated lesson',
+  createSim: () => VennSim(),
+  visualAspectRatio: VennPainter.aspectRatio,
+  buildVisual: (sim) => CustomPaint(
+    painter: VennPainter(sim as VennSim),
+    child: const SizedBox.expand(),
+  ),
+  stats: (sim) {
+    final v = sim as VennSim;
+    return [
+      StatChip('darts', '${v.total}', AppColors.yellow),
+      StatChip('in A or B', '${(v.estEither * 100).toStringAsFixed(1)}%', AppColors.pink),
+      StatChip('in both', '${(v.estBoth * 100).toStringAsFixed(1)}%', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Each dart is one random outcome, so the share of darts in a region is '
+      'its probability. Add the darts in A to the darts in B and every purple '
+      'dart in the overlap gets counted twice. Subtract the overlap once and the '
+      'count is right. If the circles don\'t touch, there is nothing to subtract.',
+  formula: (sim) {
+    final v = sim as VennSim;
+    return 'P(A or B) = P(A) + P(B) − P(A and B)\n'
+        '= ${v.estA.toStringAsFixed(3)} + ${v.estB.toStringAsFixed(3)} − ${v.estBoth.toStringAsFixed(3)} '
+        '= ${v.estEither.toStringAsFixed(3)}  (true ${v.pEither.toStringAsFixed(3)})';
+  },
+  tryItTitle: 'Try it: pull the circles apart',
+  buildTryIt: (sim) => _VennControls(sim: sim as VennSim),
+  quiz: const [
+    QuizQuestion(
+      prompt: 'In a class, 60% play cricket, 40% play football and 25% play both. '
+          'What share plays at least one?',
+      options: ['100%', '75%', '65%', '25%'],
+      answer: 1,
+      explanation: '60% + 40% − 25% = 75%. The 25% who play both were counted twice.',
+    ),
+    QuizQuestion(
+      prompt: 'When can you simply add P(A) + P(B)?',
+      options: [
+        'Always',
+        'When A and B can\'t happen together',
+        'When P(A) = P(B)',
+        'When both are below 50%',
+      ],
+      answer: 1,
+      explanation: 'Mutually exclusive events have no overlap, so P(A and B) = 0 and '
+          'there is nothing to subtract.',
+    ),
+    QuizQuestion(
+      prompt: 'Roll one die. A = "even", B = "greater than 3". What is P(A or B)?',
+      options: ['1/2', '2/3', '5/6', '1'],
+      answer: 1,
+      explanation: 'A = {2,4,6}, B = {4,5,6}, both = {4,6}. 3/6 + 3/6 − 2/6 = 4/6 = 2/3: '
+          'the outcomes 2, 4, 5, 6.',
+    ),
+  ],
+);
+
+class _VennControls extends StatelessWidget {
+  const _VennControls({required this.sim});
+  final VennSim sim;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: sim,
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('overlap', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+              Expanded(
+                child: Slider(
+                  value: sim.separation,
+                  min: 0.08,
+                  max: VennSim.maxSeparation,
+                  divisions: 8,
+                  onChanged: sim.setSeparation,
+                ),
+              ),
+              const Text('apart', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  sim.mutuallyExclusive ? 'Mutually exclusive!' : 'Overlap: ${(sim.pBoth * 100).toStringAsFixed(1)}%',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const Spacer(),
+              FilledButton.tonal(
+                onPressed: () => sim.throwMany(500),
+                child: const Text('Throw 500', style: TextStyle(fontWeight: FontWeight.w900)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // ===== lib/screens/learn_screen.dart =====
 class LearnScreen extends StatelessWidget {
@@ -4167,7 +5432,7 @@ class _OptionTile extends StatelessWidget {
 }
 
 // ===== lib/screens/settings_screen.dart =====
-const String kAppVersion = '1.0.0';
+const String kAppVersion = '1.1.0';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';

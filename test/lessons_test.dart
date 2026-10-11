@@ -1,12 +1,16 @@
 import 'dart:math' as math;
 
 import 'package:chance/data/catalogue.dart';
+import 'package:chance/lessons/averages.dart';
+import 'package:chance/lessons/bayes_test.dart';
 import 'package:chance/data/practice_bank.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/galton_board.dart';
 import 'package:chance/lessons/monty_hall.dart';
 import 'package:chance/lessons/registry.dart';
+import 'package:chance/lessons/spread.dart';
+import 'package:chance/lessons/venn.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -118,6 +122,149 @@ void main() {
       expect(sim.samples, 0);
       expect(sim.counts.length, 26);
       expect(sim.faces.length, 5);
+    });
+  });
+
+  group('Mean, median, mode', () {
+    test('dots arrive up to the target and the averages are right', () {
+      final sim = AveragesSim(rng: math.Random(8));
+      for (var i = 0; i < 2000; i++) {
+        sim.advance(1 / 30);
+      }
+      expect(sim.values.length, AveragesSim.target);
+      final sorted = [...sim.values]..sort();
+      expect(sim.mean, closeTo(sorted.fold(0, (a, b) => a + b) / sorted.length, 1e-9));
+      expect(sim.median, (sorted[19] + sorted[20]) / 2);
+      final mode = sim.mode!;
+      final modeCount = sim.values.where((v) => v == mode).length;
+      for (var v = 0; v <= AveragesSim.maxValue; v++) {
+        expect(sim.values.where((x) => x == v).length, lessThanOrEqualTo(modeCount));
+      }
+    });
+
+    test('an outlier moves the mean far more than the median', () {
+      final sim = AveragesSim(rng: math.Random(9));
+      for (var i = 0; i < AveragesSim.target; i++) {
+        sim.step();
+      }
+      final mean0 = sim.mean, median0 = sim.median;
+      sim.addOutlier();
+      expect(sim.mean - mean0, greaterThan(3));
+      expect((sim.median - median0).abs(), lessThanOrEqualTo(1));
+    });
+
+    test('a long tail puts the mean above the median', () {
+      final sim = AveragesSim(rng: math.Random(10))..setShape(DataShape.skewed);
+      for (var i = 0; i < AveragesSim.target; i++) {
+        sim.step();
+      }
+      expect(sim.mean, greaterThan(sim.median));
+    });
+  });
+
+  group('Standard deviation', () {
+    test('sd matches the formula and tracks the chosen spread', () {
+      final sim = SpreadSim(rng: math.Random(11));
+      final m = sim.values.reduce((a, b) => a + b) / sim.values.length;
+      final ss = sim.values.fold(0.0, (a, v) => a + (v - m) * (v - m));
+      expect(sim.sd, closeTo(math.sqrt(ss / (SpreadSim.size - 1)), 1e-9));
+
+      // Averaged over many samples, the sd lands near the target.
+      for (final target in [4.0, 16.0]) {
+        sim.setSpread(target);
+        var total = 0.0;
+        for (var i = 0; i < 400; i++) {
+          sim.reset();
+          total += sim.sd;
+        }
+        expect(total / 400, closeTo(target, target * 0.12), reason: 'target $target');
+      }
+    });
+
+    test('step replaces exactly one value', () {
+      final sim = SpreadSim(rng: math.Random(12));
+      final before = [...sim.values];
+      sim.step();
+      final changed = [
+        for (var i = 0; i < before.length; i++)
+          if (before[i] != sim.values[i]) i
+      ];
+      expect(changed, [0]);
+    });
+  });
+
+  group('Venn diagram', () {
+    test('circles stay inside the sample space at every separation', () {
+      final sim = VennSim();
+      for (final d in [0.08, 0.3, VennSim.maxSeparation]) {
+        sim.setSeparation(d);
+        expect(sim.centreA.dx - VennSim.radius, greaterThanOrEqualTo(-1e-9));
+        expect(sim.centreB.dx + VennSim.radius, lessThanOrEqualTo(1 + 1e-9));
+      }
+    });
+
+    test('dart estimates match the exact areas', () {
+      final sim = VennSim(rng: math.Random(13))..setSeparation(0.26);
+      sim.throwMany(60000);
+      expect(sim.estA, closeTo(sim.pA, 0.01));
+      expect(sim.estBoth, closeTo(sim.pBoth, 0.01));
+      expect(sim.estEither, closeTo(sim.pEither, 0.01));
+      expect(sim.estEither, closeTo(sim.estA + sim.estB - sim.estBoth, 1e-9));
+    });
+
+    test('pulled apart, the events are mutually exclusive', () {
+      final sim = VennSim(rng: math.Random(14))..setSeparation(0.44);
+      expect(sim.mutuallyExclusive, isTrue);
+      expect(sim.pBoth, 0);
+      sim.throwMany(5000);
+      expect(sim.inBoth, 0);
+    });
+  });
+
+  group("Bayes' medical test", () {
+    test('counts follow the rates and match Bayes\' formula', () {
+      final sim = BayesSim();
+      expect(sim.sickCount, 10);
+      expect(sim.truePositives, 9);
+      expect(sim.falsePositives, 89);
+      expect(sim.sick.where((s) => s).length, sim.sickCount);
+      expect(sim.positive.where((p) => p).length, sim.positives);
+      var tp = 0;
+      for (var i = 0; i < BayesSim.people; i++) {
+        if (sim.sick[i] && sim.positive[i]) tp++;
+      }
+      expect(tp, sim.truePositives);
+
+      const prev = 0.01, sens = BayesSim.sensitivity, fpr = 0.09;
+      final bayes = sens * prev / (sens * prev + fpr * (1 - prev));
+      expect(sim.sickGivenPositive, closeTo(bayes, 0.005));
+    });
+
+    test('every slider setting builds a valid population', () {
+      final sim = BayesSim();
+      for (final p in BayesSim.prevalences) {
+        for (final f in BayesSim.falsePositiveRates) {
+          sim.setRates(prevalence: p, falsePositiveRate: f);
+          expect(sim.positive.where((x) => x).length, sim.positives, reason: 'p=$p f=$f');
+        }
+      }
+    });
+
+    test('a more common disease makes a positive more convincing', () {
+      final sim = BayesSim();
+      final rare = sim.sickGivenPositive;
+      sim.setRates(prevalence: 0.2);
+      expect(sim.sickGivenPositive, greaterThan(rare * 5));
+    });
+
+    test('the animation tests everyone, then focuses', () {
+      final sim = BayesSim();
+      for (var i = 0; i < 600; i++) {
+        sim.advance(1 / 60);
+      }
+      expect(sim.testedCount, BayesSim.people);
+      expect(sim.focus, 1);
+      expect(sim.positivesSoFar, sim.positives);
     });
   });
 }

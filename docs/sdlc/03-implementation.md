@@ -9,7 +9,7 @@ Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
 |---|---|
 | F1 catalogue | `lib/data/catalogue.dart` |
 | F2 lesson format | `lib/engine/`, `lib/screens/lesson_screen.dart`, `lib/screens/quiz_screen.dart` |
-| F3 lessons | `lib/lessons/galton_board.dart`, `coin_flips.dart`, `monty_hall.dart`, `clt_dice.dart` |
+| F3 lessons | `lib/lessons/*.dart`, one file per lesson |
 | F4–F6 XP, levels, goal, streak, saving | `lib/state/app_state.dart`, `lib/services/key_value_store.dart` |
 | F7 onboarding | `lib/screens/onboarding_screen.dart` |
 | F8 navigation | `lib/screens/shell_screen.dart` |
@@ -23,6 +23,10 @@ Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
 
 | Lesson | Simulation | What the learner controls |
 |---|---|---|
+| Mean, median & mode (ch 1) | Values drop onto a number line as a dot plot; mean, median and mode markers move live | Symmetric vs long-tail data; add an outlier of 200 |
+| Standard deviation (ch 1) | Rolling sample of 12; each row shows a value and its distance from the mean; ±1 sd band | Spread of the data |
+| Venn diagrams & addition rule (ch 3) | Darts land uniformly; share in each region estimates its probability; compared with exact circle areas | Pull the circles apart until mutually exclusive; "Throw 500" |
+| Bayes: the medical test (ch 5, preview) | 1,000 people with exact counts for the rates; tested row by row; positives split into sick vs healthy | Disease prevalence; false-positive rate |
 | Galton board (binomial) | Balls bounce left/right with p at each of 8 rows; bins fill; bell curve overlay after 20 balls | Tilt p |
 | Coin flips (Law of Large Numbers) | Flips speed up 3→40/s; running share of heads vs the true p; history thins itself so memory stays bounded | Coin bias, "Flip 100" |
 | Monty Hall | Auto-plays rounds phase by phase (pick → host opens → offer → reveal), tallies stay vs switch | Play rounds yourself; "Simulate 1,000" |

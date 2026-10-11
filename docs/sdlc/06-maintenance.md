@@ -15,10 +15,8 @@
 
 Ordered by value for learners and for store growth:
 
-1. **Lessons for the free chapters (1–3)** so the free tier is complete:
-   mean/median/mode, standard deviation, histograms, Venn diagrams.
-2. **Bayes' theorem: the medical test** – high search interest, works well
-   as a short video for social media.
+1. ~~Mean/median/mode, standard deviation, Venn diagrams, Bayes' medical test~~ (1.1).
+2. **Rest of the free chapters:** histograms, box plots, z-scores, complement rule.
 3. **Birthday paradox, Normal curve & 68-95-99.7, Poisson, Regression.**
 4. **Daily reminder notification** (`flutter_local_notifications`) to protect streaks.
 5. **"Why" panels** under each formula, answering the top complaint about
