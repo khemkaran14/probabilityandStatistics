@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import 'package:chance/data/why.dart';
 import 'package:chance/engine/lesson_sim.dart';
 import 'package:chance/engine/lesson_spec.dart';
 import 'package:chance/screens/quiz_screen.dart';
@@ -394,8 +395,72 @@ class _BigIdeaCard extends StatelessWidget {
               ),
             ),
           ),
+          if (kWhy[spec.id] case final why?) _WhyPanel(text: why),
         ],
       ),
+    );
+  }
+}
+
+/// "Why does this work?": tap to show the reasoning behind the formula.
+class _WhyPanel extends StatefulWidget {
+  const _WhyPanel({required this.text});
+  final String text;
+
+  @override
+  State<_WhyPanel> createState() => _WhyPanelState();
+}
+
+class _WhyPanelState extends State<_WhyPanel> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 6),
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: InkWell(
+            key: const ValueKey('why-toggle'),
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.lightbulb_rounded, size: 20, color: AppColors.ink),
+                  const SizedBox(width: 6),
+                  const Expanded(
+                    child: Text(
+                      'Why does this work?',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: AppColors.ink),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more_rounded, color: AppColors.ink),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? Text(
+                  widget.text,
+                  style: const TextStyle(fontSize: 15, height: 1.45, fontWeight: FontWeight.w600, color: AppColors.ink),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
     );
   }
 }

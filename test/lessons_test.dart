@@ -8,6 +8,7 @@ import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/galton_board.dart';
 import 'package:chance/lessons/monty_hall.dart';
+import 'package:chance/data/why.dart';
 import 'package:chance/lessons/registry.dart';
 import 'package:chance/lessons/spread.dart';
 import 'package:chance/lessons/venn.dart';
@@ -24,6 +25,13 @@ void main() {
     test('every catalogue id has a built lesson', () {
       for (final id in kLessonsById.keys) {
         expect(lessonRegistry.containsKey(id), isTrue, reason: id);
+      }
+    });
+
+    test('every lesson has a "why" explanation, and nothing else does', () {
+      expect(kWhy.keys.toSet(), lessonRegistry.keys.toSet());
+      for (final text in kWhy.values) {
+        expect(text.length, greaterThan(150));
       }
     });
 
