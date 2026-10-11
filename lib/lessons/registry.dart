@@ -1,14 +1,20 @@
 import 'package:chance/engine/lesson_spec.dart';
 import 'package:chance/lessons/averages.dart';
+import 'package:chance/lessons/bar_pie.dart';
 import 'package:chance/lessons/bayes_test.dart';
+import 'package:chance/lessons/box_plots.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/galton_board.dart';
+import 'package:chance/lessons/graphs_lie.dart';
+import 'package:chance/lessons/histograms.dart';
 import 'package:chance/lessons/monty_hall.dart';
 import 'package:chance/lessons/outliers.dart';
 import 'package:chance/lessons/percentiles.dart';
+import 'package:chance/lessons/scatter.dart';
 import 'package:chance/lessons/skew.dart';
 import 'package:chance/lessons/spread.dart';
+import 'package:chance/lessons/stem_leaf.dart';
 import 'package:chance/lessons/types_of_data.dart';
 import 'package:chance/lessons/venn.dart';
 import 'package:chance/lessons/zscores.dart';
@@ -30,6 +36,12 @@ final Map<String, LessonSpec> lessonRegistry = {
     skewLesson,
     outliersLesson,
     zScoresLesson,
+    barPieLesson,
+    histogramsLesson,
+    boxPlotsLesson,
+    scatterLesson,
+    stemLeafLesson,
+    graphsLieLesson,
   ])
     spec.id: spec,
 };

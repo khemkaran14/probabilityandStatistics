@@ -44,12 +44,12 @@ const List<Chapter> kChapters = [
     Lesson('Z-scores', id: 'zscores'),
   ]),
   Chapter(number: 2, title: 'Seeing data', tagline: 'Charts that tell the truth', free: true, lessons: [
-    Lesson('Bar & pie charts'),
-    Lesson('Histograms'),
-    Lesson('Box plots'),
-    Lesson('Scatter plots'),
-    Lesson('Stem-and-leaf plots'),
-    Lesson('How graphs lie'),
+    Lesson('Bar & pie charts', id: 'bar_pie'),
+    Lesson('Histograms', id: 'histograms'),
+    Lesson('Box plots', id: 'box_plots'),
+    Lesson('Scatter plots', id: 'scatter'),
+    Lesson('Stem-and-leaf plots', id: 'stem_leaf'),
+    Lesson('How graphs lie', id: 'graphs_lie'),
   ]),
   Chapter(number: 3, title: 'Probability basics', tagline: 'Chance, counted', free: true, lessons: [
     Lesson('Experiments, outcomes & events'),
