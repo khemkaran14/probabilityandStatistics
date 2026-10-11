@@ -1,7 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  page_width: 120
+
 analyzer:
   exclude:
+    # Generated single-file bundle for dartpad.dev (see tool/make_dartpad.py).
+    - dartpad_preview.dart
     - build/**
     - android/**
     - ios/**
     - web/**
-include: package:flutter_lints/flutter.yaml

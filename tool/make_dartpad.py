@@ -8,8 +8,11 @@ import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LIB = ROOT / "lib"
+STUBS = ROOT / "tool" / "dartpad_stubs"
 # main.dart first so DartPad finds main(); the rest in a stable order.
 files = [LIB / "main.dart"] + sorted(p for p in LIB.rglob("*.dart") if p.name != "main.dart")
+# DartPad has no plugins: swap files that use them for in-memory stubs.
+files = [STUBS / p.relative_to(LIB).name if (STUBS / p.relative_to(LIB).name).exists() else p for p in files]
 
 imports, bodies = [], []
 for path in files:
@@ -23,7 +26,8 @@ for path in files:
                 imports.append(line)
             continue
         body.append(line)
-    bodies.append(f"// ===== {path.relative_to(LIB)} =====\n" + "\n".join(body).strip() + "\n")
+    label = path.relative_to(ROOT)
+    bodies.append(f"// ===== {label} =====\n" + "\n".join(body).strip() + "\n")
 
 header = "// Chance – single-file preview for DartPad. Generated; edit lib/ instead.\n\n"
 out = header + "\n".join(sorted(imports)) + "\n\n" + "\n".join(bodies)

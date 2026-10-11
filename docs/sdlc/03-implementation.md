@@ -1,0 +1,38 @@
+# 3. Implementation
+
+Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
+`share_plus`. Everything else is the Flutter SDK.
+
+## Requirement → code
+
+| Req | Where |
+|---|---|
+| F1 catalogue | `lib/data/catalogue.dart` |
+| F2 lesson format | `lib/engine/`, `lib/screens/lesson_screen.dart`, `lib/screens/quiz_screen.dart` |
+| F3 lessons | `lib/lessons/galton_board.dart`, `coin_flips.dart`, `monty_hall.dart`, `clt_dice.dart` |
+| F4–F6 XP, levels, goal, streak, saving | `lib/state/app_state.dart`, `lib/services/key_value_store.dart` |
+| F7 onboarding | `lib/screens/onboarding_screen.dart` |
+| F8 navigation | `lib/screens/shell_screen.dart` |
+| F9 practice | `lib/screens/practice_screen.dart`, `lib/data/practice_bank.dart` |
+| F10 progress & badges | `lib/screens/progress_screen.dart`, `lib/data/achievements.dart` |
+| F11 freemium | `Lesson.preview`, `AppState.canOpen`, `lib/screens/paywall_screen.dart`, `lib/services/purchase_service.dart`, `lib/services/backends.dart` |
+| F12 share | `lib/services/share_service.dart`, quiz result and settings |
+| F13 settings | `lib/screens/settings_screen.dart` |
+
+## The lessons
+
+| Lesson | Simulation | What the learner controls |
+|---|---|---|
+| Galton board (binomial) | Balls bounce left/right with p at each of 8 rows; bins fill; bell curve overlay after 20 balls | Tilt p |
+| Coin flips (Law of Large Numbers) | Flips speed up 3→40/s; running share of heads vs the true p; history thins itself so memory stays bounded | Coin bias, "Flip 100" |
+| Monty Hall | Auto-plays rounds phase by phase (pick → host opens → offer → reveal), tallies stay vs switch | Play rounds yourself; "Simulate 1,000" |
+| Central Limit Theorem | Rolls n dice, histograms the averages over every possible value, overlays N(3.5, σ/√n) | Number of dice 1–10, "Roll 500" |
+
+## Conventions
+
+* One lesson = one file with a `LessonSim`, a `CustomPainter` and a `LessonSpec`.
+* Painters repaint from the sim (`super(repaint: sim)`); widgets never rebuild per frame.
+* Plugins only in `lib/services/backends.dart`; the rest of the app sees interfaces.
+* Private class names must be unique across `lib/`, because the DartPad
+  bundle merges every file into one.
+* `dart format` at 120 columns (set in `analysis_options.yaml`).

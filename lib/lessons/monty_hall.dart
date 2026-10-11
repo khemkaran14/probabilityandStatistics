@@ -360,21 +360,21 @@ class MontyGame extends StatefulWidget {
   State<MontyGame> createState() => _MontyGameState();
 }
 
-enum _Step { pick, decide, done }
+enum _GameStep { pick, decide, done }
 
 class _MontyGameState extends State<MontyGame> {
   late final math.Random _rng = widget.rng ?? math.Random();
   MontyRound? _round;
-  _Step _step = _Step.pick;
+  _GameStep _step = _GameStep.pick;
   int? _final;
 
   int _switchPlays = 0, _switchWins = 0, _stayPlays = 0, _stayWins = 0;
 
   void _pick(int door) {
-    if (_step != _Step.pick) return;
+    if (_step != _GameStep.pick) return;
     setState(() {
       _round = MontyRound(_rng, pick: door);
-      _step = _Step.decide;
+      _step = _GameStep.decide;
     });
   }
 
@@ -390,20 +390,20 @@ class _MontyGameState extends State<MontyGame> {
         _stayPlays++;
         if (won) _stayWins++;
       }
-      _step = _Step.done;
+      _step = _GameStep.done;
     });
   }
 
   void _again() => setState(() {
         _round = null;
         _final = null;
-        _step = _Step.pick;
+        _step = _GameStep.pick;
       });
 
   String get _prompt => switch (_step) {
-        _Step.pick => 'Tap a door to pick it.',
-        _Step.decide => 'The host opened door ${_round!.opened + 1}: a goat. Stay or switch?',
-        _Step.done => _final == _round!.car ? 'You won the car! 🎉' : 'A goat. Try again?',
+        _GameStep.pick => 'Tap a door to pick it.',
+        _GameStep.decide => 'The host opened door ${_round!.opened + 1}: a goat. Stay or switch?',
+        _GameStep.done => _final == _round!.car ? 'You won the car! 🎉' : 'A goat. Try again?',
       };
 
   @override
@@ -430,7 +430,7 @@ class _MontyGameState extends State<MontyGame> {
                       child: CustomPaint(
                         painter: _DoorPainter(
                           number: d,
-                          open: r != null && (_step == _Step.done || d == r.opened),
+                          open: r != null && (_step == _GameStep.done || d == r.opened),
                           hasCar: r != null && d == r.car,
                           picked: r != null && d == (_final ?? r.pick),
                         ),
@@ -443,7 +443,7 @@ class _MontyGameState extends State<MontyGame> {
           ],
         ),
         const SizedBox(height: 12),
-        if (_step == _Step.decide)
+        if (_step == _GameStep.decide)
           Row(
             children: [
               Expanded(
@@ -463,7 +463,7 @@ class _MontyGameState extends State<MontyGame> {
               ),
             ],
           )
-        else if (_step == _Step.done)
+        else if (_step == _GameStep.done)
           FilledButton.tonal(
             onPressed: _again,
             child: const Text('Play again', style: TextStyle(fontWeight: FontWeight.w900)),
