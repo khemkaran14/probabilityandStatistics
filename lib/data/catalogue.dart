@@ -35,13 +35,13 @@ class Chapter {
 
 const List<Chapter> kChapters = [
   Chapter(number: 1, title: 'Data & averages', tagline: 'Find the centre and the spread', free: true, lessons: [
-    Lesson('Types of data'),
+    Lesson('Types of data', id: 'types_of_data'),
     Lesson('Mean, median, mode', id: 'averages'),
     Lesson('Range, variance & standard deviation', id: 'spread'),
-    Lesson('Percentiles & quartiles'),
-    Lesson('Skew & shape'),
-    Lesson('Outliers'),
-    Lesson('Z-scores'),
+    Lesson('Percentiles & quartiles', id: 'percentiles'),
+    Lesson('Skew & shape', id: 'skew'),
+    Lesson('Outliers', id: 'outliers'),
+    Lesson('Z-scores', id: 'zscores'),
   ]),
   Chapter(number: 2, title: 'Seeing data', tagline: 'Charts that tell the truth', free: true, lessons: [
     Lesson('Bar & pie charts'),
