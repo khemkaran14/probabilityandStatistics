@@ -81,11 +81,11 @@ const List<Chapter> kChapters = [
         Lesson('Monty Hall', id: 'monty_hall', preview: true),
       ]),
   Chapter(number: 6, title: 'Random variables', tagline: 'Turning chance into numbers', free: false, lessons: [
-    Lesson('Discrete vs continuous'),
-    Lesson('PMF, PDF & CDF'),
-    Lesson('Expected value'),
-    Lesson('Variance of a random variable'),
-    Lesson('Linearity of expectation'),
+    Lesson('Discrete vs continuous', id: 'discrete_continuous'),
+    Lesson('PMF, PDF & CDF', id: 'pmf_cdf'),
+    Lesson('Expected value', id: 'expected_value'),
+    Lesson('Variance of a random variable', id: 'variance_rv'),
+    Lesson('Linearity of expectation', id: 'linearity'),
   ]),
   Chapter(number: 7, title: 'Discrete distributions', tagline: 'Counting successes', free: false, lessons: [
     Lesson('Bernoulli trials'),

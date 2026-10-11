@@ -37,7 +37,7 @@ void main() {
     await tester.tap(find.text('TRY THE FIRST LESSON'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('Mean, median & mode ·'), findsOneWidget);
+    expect(find.textContaining('Types of data ·'), findsOneWidget);
 
     // Let the animation run a little, then start the quiz.
     await tester.pump(const Duration(seconds: 2));
@@ -48,7 +48,7 @@ void main() {
 
     await answerQuiz(tester, 3);
 
-    expect(state.completed, contains('averages'));
+    expect(state.completed, contains('types_of_data'));
     expect(state.xp, greaterThanOrEqualTo(10));
     expect(find.textContaining('XP today'), findsOneWidget);
 
@@ -67,6 +67,8 @@ void main() {
 
     final chapter = find.text('The big theorems');
     await tester.scrollUntilVisible(chapter, 300, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(chapter);
+    await tester.pumpAndSettle();
     await tester.tap(chapter);
     await tester.pumpAndSettle();
     final lesson = find.text('Central Limit Theorem');
