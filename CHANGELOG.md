@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.4.0
+
+- "Why does this work?" panel under the formula in all 90 lessons
+- Daily reminder notification: on/off and time in Settings, skipped on days
+  the goal is already met
+- Sound effects for answers and finishing a quiz (switch in Settings)
+- 12 new badges (one per chapter group, plus "Halfway there"), 22 in total;
+  16 new practice questions for chapters 7–17
+- Accessibility: every animation is described for screen readers and the
+  playback controls are labelled
+- Tablets and landscape: navigation rail instead of the bottom bar
+- App icon and splash screens on Android, iOS and web; package ID
+  `com.khemkaran.chance`
+- CI builds a signed Android App Bundle when the signing secrets are set
+- Privacy policy page, store listing, feature graphic and 8 screenshots
+- Monty Hall: win-rate labels stay readable over the ⅓ and ⅔ markers
+- 219 tests
+
 ## 1.3.0
 
 - All 17 chapters are complete: 52 new animated lessons, 90 in total

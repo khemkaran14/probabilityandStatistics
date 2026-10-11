@@ -33,6 +33,10 @@ and the probability/statistics niche has no strong animated app.
 | F11 | Freemium: chapters 1–3 and marked preview lessons are free; everything else unlocks with a one-time in-app purchase; restore purchases | Must |
 | F12 | Share quiz results and the app | Could |
 | F13 | Settings: daily goal, haptics, restore purchases, reset progress | Should |
+| F14 | "Why does this work?" explanation in every lesson (1.4) | Should |
+| F15 | Daily reminder notification, skipped once the day's goal is met (1.4) | Should |
+| F16 | Sound effects with an off switch (1.4) | Could |
+| F17 | Screen-reader descriptions of animations and labelled controls (1.4) | Should |
 
 ## Non-functional requirements
 
@@ -47,5 +51,6 @@ and the probability/statistics niche has no strong animated app.
 
 ## Out of scope for 1.0
 
-Accounts / cloud sync, push-notification reminders, server-side receipt
-validation, localisation (English only), sound effects.
+Accounts / cloud sync, server-side receipt validation, localisation
+(English only). Reminders, sound effects and accessibility labels were added
+in 1.4.

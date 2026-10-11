@@ -15,12 +15,15 @@
 
 Ordered by value for learners and for store growth:
 
-1. ~~All 17 chapters~~ (1.1–1.3).
-2. **Daily reminder notification** (`flutter_local_notifications`) to protect streaks.
-3. **"Why" panels** under each formula, answering the top complaint about
-   competing apps: no explanation of *why* a result holds.
-4. Localisation (Hindi first), sound effects, accessibility pass
-   (screen-reader descriptions of each animation).
+1. ~~All 17 chapters~~ (1.1–1.3), ~~"why" panels, reminders, sounds,
+   accessibility, tablet layout~~ (1.4).
+2. **Accounts and cloud sync** (optional): Firebase Auth with Google/Apple
+   sign-in, progress in Firestore, account deletion. Only if learners ask to
+   keep progress across devices.
+3. **Localisation, Hindi first.** Move every lesson's text (titles, big
+   ideas, why panels, quizzes) into ARB files with `flutter_localizations`,
+   then have a native speaker translate and review the maths wording.
+4. More practice questions per chapter and spaced repetition of missed ones.
 5. Server-side receipt validation if piracy becomes visible.
 
 ## Keeping it healthy

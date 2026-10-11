@@ -112,8 +112,43 @@ def web():
         save(img, f"web/icons/Icon-maskable-{s}.png")
 
 
+def _font(size):
+    """A bold sans font if one is installed, else Pillow's default."""
+    from PIL import ImageFont
+
+    for name in ("InterDisplay-Bold.otf", "Inter-Bold.otf", "DejaVuSans-Bold.ttf", "Arial Bold.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            for folder in ("/usr/share/fonts/opentype/inter", "/usr/share/fonts/truetype/dejavu", "/Library/Fonts"):
+                try:
+                    return ImageFont.truetype(f"{folder}/{name}", size)
+                except OSError:
+                    pass
+    return ImageFont.load_default(size=size)
+
+
+def feature_graphic():
+    """Play Store feature graphic, 1024 × 500."""
+    w, h = 1024, 500
+    img = Image.new("RGBA", (w, h))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            t = (x / (w - 1)) * 0.8 + (y / (h - 1)) * 0.2
+            px[x, y] = tuple(round(a + (b - a) * t) for a, b in zip(PINK, VIOLET)) + (255,)
+    img.alpha_composite(motif(380, 0.62), (600, 70))
+    d = ImageDraw.Draw(img)
+    d.text((64, 120), "Chance", font=_font(104), fill=WHITE)
+    d.text((68, 262), "Probability & statistics,", font=_font(40), fill=WHITE)
+    d.text((68, 314), "animated.", font=_font(40), fill=YELLOW)
+    d.text((68, 392), "90 lessons you can play with", font=_font(26), fill=CREAM)
+    save(img.convert("RGB"), "docs/store/feature-graphic.png")
+
+
 def store():
     save(full_icon(512).convert("RGB"), "docs/store/icon-512.png")
+    feature_graphic()
 
 
 if __name__ == "__main__":

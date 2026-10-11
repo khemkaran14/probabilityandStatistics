@@ -259,8 +259,6 @@ class MontyHallPainter extends CustomPainter {
           Paint()..color = color,
         );
       }
-      _label(canvas, '${(rate * 100).toStringAsFixed(0)}% · $wins wins', Offset(barLeft + barW * 0.5, y + barH / 2), 12,
-          AppColors.ink);
     }
     // 1/3 and 2/3 reference ticks.
     final tick = Paint()
@@ -270,6 +268,24 @@ class MontyHallPainter extends CustomPainter {
       final x = barLeft + barW * f;
       canvas.drawLine(Offset(x, firstBarY - 6), Offset(x, firstBarY + 2 * barH + 24), tick);
       _label(canvas, f < 0.5 ? '⅓' : '⅔', Offset(x, firstBarY - 14), 12, AppColors.muted);
+    }
+    // Win rates on white pills, above the ticks so they stay readable.
+    for (var i = 0; i < rows.length; i++) {
+      final (_, rate, wins, _) = rows[i];
+      final centre = Offset(barLeft + barW * 0.5, firstBarY + i * (barH + 18) + barH / 2);
+      final text = '${(rate * 100).toStringAsFixed(0)}% · $wins wins';
+      final tp = TextPainter(
+        text: TextSpan(text: text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: centre, width: tp.width + 12, height: tp.height + 4),
+          const Radius.circular(8),
+        ),
+        Paint()..color = Colors.white.withValues(alpha: 0.92),
+      );
+      _label(canvas, text, centre, 12, AppColors.ink);
     }
   }
 

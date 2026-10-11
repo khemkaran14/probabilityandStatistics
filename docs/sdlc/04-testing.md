@@ -1,6 +1,6 @@
 # 4. Quality Assurance & Testing
 
-## Automated tests (`flutter test`, 209 tests)
+## Automated tests (`flutter test`, 219 tests)
 
 | Level | File | Covers |
 |---|---|---|
@@ -9,8 +9,8 @@
 | Unit: chapters 1–6 | `test/lessons_ch1_6_test.dart` | Each of the 30 newer lessons against its maths: quantiles and fences, z-scores, histogram counts, correlation sign, stem-and-leaf rebuild, complement and birthday formulas, card counts, nPr / nCr / repeats, pigeonhole guarantee, conditional counts, independence, tree and total-probability convergence, CDF, expected value, variance k, hat-check average 1 |
 | Unit: chapters 7–17 | `test/lessons_ch7_17_test.dart` | Each of the 52 newest lessons against its maths: distribution means and variances, waiting times, Poisson counts, the 68-95-99.7 rule, covariance vs correlation under unit changes, confounding, Chebyshev bound, sampling methods and bias, standard error, n − 1 unbiasedness, MLE, interval coverage, test error rates and power, least squares and R² = r², multiple and logistic regression, Bayesian updating and credible intervals, Monte Carlo π, random-walk distance, Markov stationary shares, softmax, Simpson's paradox, gambler's fallacy, St Petersburg |
 | Unit: distributions | `test/kit_test.dart` | Every pdf integrates to 1, `lgamma`, `normalCdf`, and textbook critical values (t, χ², F) |
-| Widget: every lesson | `test/lesson_screens_test.dart` | Each lesson screen runs its animation for 5 s and scrolls end to end on a 360 dp phone with no overflow or exception |
-| Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset |
+| Widget: every lesson | `test/lesson_screens_test.dart` | Each lesson screen runs its animation for 5 s, opens its "why" panel and scrolls end to end on a 360 dp phone with no overflow or exception |
+| Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → sounds → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset; reminder on/off, time picker, skipped after the goal, refused permission; tablet navigation rail; screen-reader labels |
 
 Tests run against in-memory fakes (`MemoryStore`, `FakePurchaseService`,
 `FakeShareService`) and an injected clock, on a 390×844 phone screen so
@@ -34,6 +34,13 @@ Run on a real Android phone (and iPhone if shipping iOS):
 - [ ] Share sheet opens from quiz result and settings
 - [ ] Smallest supported phone (360 dp wide) and a tablet: no overflow
 - [ ] Large system font size: text wraps, nothing clipped
+- [ ] Daily reminder: allow notifications, set the time 2 minutes ahead, lock
+  the phone → the reminder arrives; meet the goal → no reminder that day;
+  reboot → it still arrives
+- [ ] Sound effects play on answers, respect the silent switch (iPhone) and
+  don't stop music that is playing
+- [ ] TalkBack / VoiceOver: the animation is described, buttons are named
+- [ ] Tablet or landscape: navigation rail on the left
 
 ## Bugs found by testing in this release
 
@@ -46,6 +53,9 @@ Run on a real Android phone (and iPhone if shipping iOS):
   which wraps); the bulb factory painter read per-sim fault rates as
   constants; a muddled outliers quiz question had no correct option; labels
   overlapped in the conditional-probability and total-probability stages.
+* 1.4: the settings test relied on "Reset progress" being built before it was
+  scrolled to; the Monty Hall win-rate labels were crossed by the ⅓ and ⅔
+  markers.
 * 1.3: the random walk's 1D distance used both axes; three quiz prompts
   depended on the animation to make sense (now self-contained); the loaded
   die in the chi-square lesson was too weak to detect reliably; joint-table

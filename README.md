@@ -5,19 +5,26 @@ with short animated lessons. Every lesson follows **watch → understand →
 play → check**: an animation you can play, pause, step and speed up; one big
 idea with a live formula; a control to change the experiment; and a quiz.
 
-**Version 1.3**
+**Version 1.4**
 
 - 90 animated lessons covering all 17 chapters: data & averages, seeing data,
   probability basics, counting, conditional probability, random variables,
   discrete and continuous distributions, two variables, limit theorems,
   sampling, estimation, hypothesis testing, regression, Bayesian thinking,
   real-world statistics and paradoxes
+- A "Why does this work?" panel in every lesson
 - 17-chapter, 94-lesson catalogue; chapters 1–3 and preview lessons are free,
   the rest unlock with one in-app purchase
 - XP, levels, a daily goal and a daily streak, saved on the device
+- Daily reminder notification, sound effects, vibration
 - Practice tab: daily challenge and free practice
-- Progress tab: level, stats, 7-day chart, 10 badges
-- Onboarding, settings, and sharing results
+- Progress tab: level, stats, 7-day chart, 22 badges
+- Onboarding, settings, sharing, screen-reader labels, tablet layout
+- Release-ready: app icon, splash screens, signed CI builds, privacy policy
+  and store listing ([docs/store](docs/store/listing.md))
+
+**Before publishing:** see [docs/REMAINING.md](docs/REMAINING.md) for the
+steps only you can do (store accounts, signing key, product setup).
 
 How it was planned, designed, tested and released, phase by phase:
 [docs/sdlc](docs/sdlc/README.md).
@@ -74,12 +81,17 @@ lib/
                               kit.dart holds shared sim, drawing and control helpers
   screens/                    onboarding, shell (tabs), learn, lesson, quiz,
                               practice, progress, settings, paywall
-  services/                   storage, purchases and sharing behind interfaces;
+  data/why.dart               "Why does this work?" text for every lesson
+  services/                   storage, purchases, sharing, reminders and sounds behind interfaces;
                               backends.dart wires the real plugins
   state/app_state.dart        XP, levels, streak, goal, premium, settings (saved)
   widgets/common.dart         shared cards, chips, buttons, progress ring
 test/                         unit tests (state, simulations) and widget tests (user flows)
 tool/make_dartpad.py          rebuilds dartpad_preview.dart from lib/
+tool/make_icons.py            draws the app icon, splash logo and store graphics
+tool/make_sounds.py           synthesises the sound effects in assets/sounds/
+web/privacy.html              privacy policy page (ships with the web build)
+docs/store/                   store listing text, icon, feature graphic, screenshots
 tool/dartpad_stubs/           plugin-free stand-ins used in the DartPad bundle
 docs/sdlc/                    requirements, design, implementation, testing, release, maintenance
 ```

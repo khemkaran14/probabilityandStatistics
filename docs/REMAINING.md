@@ -1,75 +1,110 @@
 # What's remaining
 
-Status after version 1.3.0: all 17 chapters and 90 lessons are built and
-tested. Below is everything left before and after the first store release.
+Status after version 1.4.0: everything that can be done in code is done.
+All 90 lessons, "why" panels, daily reminders, sound effects, badges,
+accessibility, tablet layout, app icon, splash screens, signed CI builds, the
+privacy policy page, store text, feature graphic and screenshots are built,
+and CI is green.
 
-**Who:** 🧑 = you (needs your accounts, devices or decisions) ·
-🤖 = can be done in code.
+What's left needs **your** accounts, devices or decisions. Do them in this
+order.
 
-## 1. Must do before release
+## 1. Decide (5 minutes)
 
-### Decisions
-- [ ] 🧑 Accounts or no accounts? Today progress lives only on the phone
-  (lost on uninstall or a new phone; the premium unlock is restored through
-  the store). Decide whether 1.0 ships without login or with Firebase login
-  (see section 2).
-- [ ] 🧑 Price of the "Unlock everything" purchase.
-- [ ] 🧑 App name and package ID for the stores (e.g. `com.yourname.chance`).
-  Changing the ID after publishing is not possible.
+- [ ] **Package ID.** It is `com.khemkaran.chance`. It can never change
+  after the first Play upload. Happy with it? If not, tell Claude the new
+  one before step 4.
+- [ ] **Price** of "Unlock everything" (a one-time purchase). Typical for
+  education apps in India: ₹199–₹499.
+- [ ] **Accounts or not?** The app works without sign-in; progress stays on
+  the phone and the purchase is restored by the store. Cloud sync (Firebase)
+  is optional and can come later.
 
-### App polish
-- [ ] 🤖 App icon (Android adaptive icon, iOS icon, web favicon).
-- [ ] 🤖 Splash screen.
-- [ ] 🤖 Store screenshots of the best lessons.
-- [ ] 🤖 Short and full store descriptions.
-- [ ] 🤖 Privacy policy page (required for apps with purchases).
+## 2. Privacy policy (15 minutes)
 
-### Payments (code is done; store setup is not)
-- [ ] 🧑 Google Play developer account (one-time fee) and payments profile
-  with bank details.
-- [ ] 🧑 Create the in-app product `chance_premium_unlock` (one-time,
-  non-consumable) in Play Console.
-- [ ] 🧑 Add licence testers and test a real purchase and "Restore purchase".
-- [ ] 🧑 iOS only: Apple Developer account, the same product in App Store
-  Connect, a Sandbox tester.
+- [ ] Open `web/privacy.html`, replace `CONTACT_EMAIL` with your support
+  email, commit.
+- [ ] Put it online. Easiest: download the `chance-web` artifact from the
+  latest CI run (GitHub → Actions → run → Artifacts), unzip it, drag the
+  folder onto <https://app.netlify.com/drop>. Your policy is then at
+  `https://<name>.netlify.app/privacy.html`. (GitHub Pages also works for a
+  public repository.)
 
-### Android release build
-- [ ] 🧑 Create an upload signing key and keep it safe.
-- [ ] 🤖 Configure release signing and build the app bundle (`.aab`).
-- [ ] 🤖 Set version, app name and package ID in the Android project.
+## 3. Google Play developer account (1–2 days for verification)
 
-### Testing on real devices
-- [ ] 🧑 Run the manual checklist in `docs/sdlc/04-testing.md` on a real
-  Android phone: smooth animations, progress kept after restart, small screen,
-  large font.
-- [ ] 🧑 Play Console internal testing track with a few friends before
-  production.
+- [ ] Sign up at <https://play.google.com/console> (one-time US$25 fee,
+  identity verification).
+- [ ] Set up a **payments profile** with your bank details (needed to sell
+  the in-app purchase).
 
-### Play Console forms
-- [ ] 🧑 Content rating questionnaire.
-- [ ] 🧑 Data safety form.
-- [ ] 🧑 Target audience, app category (Education).
+## 4. Signing key (10 minutes, on your Mac)
 
-### Code
-- [ ] 🤖 Merge `claude/great-euler-4fae7n` into the main branch (pull request).
+- [ ] Create the upload key and **back it up** (losing it means you can't
+  update the app without contacting Google support):
+  ```
+  keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+  ```
+- [ ] Add four secrets in GitHub → repository Settings → Secrets and
+  variables → Actions:
 
-## 2. Optional: login and accounts (only if you choose them)
+  | Secret | Value |
+  |---|---|
+  | `ANDROID_KEYSTORE_BASE64` | output of `base64 -i ~/upload-keystore.jks` |
+  | `ANDROID_KEYSTORE_PASSWORD` | the keystore password you chose |
+  | `ANDROID_KEY_ALIAS` | `upload` |
+  | `ANDROID_KEY_PASSWORD` | the key password you chose |
 
-- [ ] 🧑 Create a Firebase project and add the Android/iOS apps.
-- [ ] 🤖 Sign in with Google, Apple (required on iOS if Google is offered)
-  and email.
-- [ ] 🤖 Sync progress (XP, streak, finished lessons) to the cloud.
-- [ ] 🤖 Link premium to the account.
-- [ ] 🤖 "Delete my account" option (required by both stores).
-- [ ] 🤖 Update the privacy policy and Data safety form.
+- [ ] Re-run CI (or push anything). The run's `chance-aab` artifact is now
+  signed and ready for the Play Store.
 
-## 3. After release (roadmap)
+## 5. Create the app in Play Console (1 hour)
 
-1. [ ] 🤖 Daily reminder notification to protect streaks.
-2. [ ] 🤖 "Why" panels under each formula: why the result holds.
-3. [ ] 🤖 More practice questions and badges for chapters 7–17.
-4. [ ] 🤖 Hindi translation, sound effects, screen-reader descriptions.
-5. [ ] 🤖 Tablet layout pass.
-6. [ ] 🤖 Server-side purchase validation, if piracy shows up.
-7. [ ] 🧑 Watch Play Console crashes and reviews; turn requests into
-   roadmap items.
+- [ ] Create app → name **Chance: Probability & Stats**, app, free, accept
+  the declarations.
+- [ ] Testing → Internal testing → create a release → upload the `.aab`.
+- [ ] Store listing: copy the text from `docs/store/listing.md`; upload
+  `docs/store/icon-512.png`, `docs/store/feature-graphic.png` and the 8
+  images in `docs/store/screenshots/`.
+- [ ] App content forms:
+  - Privacy policy: your URL from step 2
+  - Ads: no ads
+  - Data safety: no data collected or shared
+  - Content rating questionnaire: education, no objectionable content
+  - Target audience: 13+ (or include under-13s if you want; that adds
+    Families policy checks)
+- [ ] Monetize → Products → In-app products → create **`chance_premium_unlock`**
+  (exactly this id), set the price, **activate** it. This option appears only
+  after a build has been uploaded.
+- [ ] Settings → License testing → add your Gmail, so test purchases are free.
+
+## 6. Test on your phone (1 hour)
+
+- [ ] Join the internal test from its opt-in link and install from Play.
+- [ ] Run the checklist in `docs/sdlc/04-testing.md`, especially:
+  - buy the unlock, uninstall, reinstall, **Restore purchase**
+  - daily reminder: set it 2 minutes ahead, lock the phone, wait
+  - sounds on and off; TalkBack reads the animation description
+- [ ] Tell Claude about anything that looks or feels wrong.
+
+## 7. Go live (about 2 weeks)
+
+- [ ] New personal Play accounts must run a **closed test with at least 12
+  testers for 14 days** before production. Invite friends or classmates.
+- [ ] Then apply for production access and promote the release.
+
+## 8. Optional
+
+- [ ] **iPhone:** Apple Developer Program (US$99/year), a Mac with Xcode,
+  the same product id as a Non-Consumable in App Store Connect, TestFlight.
+  See `docs/sdlc/05-release.md`.
+- [ ] **Merge the work:** ask Claude to open a pull request from
+  `claude/great-euler-4fae7n` into your main branch.
+
+## Not done, on purpose
+
+- **Hindi translation.** It means moving every lesson's text into
+  translation files, then having a native speaker check the maths wording.
+  It's the next big roadmap item (`docs/sdlc/06-maintenance.md`).
+- **Server-side purchase checks.** They need a server; not worth it until
+  piracy shows up.
+- **Accounts / cloud sync.** Waiting on your decision in step 1.

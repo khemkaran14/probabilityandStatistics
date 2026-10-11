@@ -1,7 +1,8 @@
 # 3. Implementation
 
 Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
-`share_plus`. Everything else is the Flutter SDK.
+`share_plus`, `flutter_local_notifications` (+ `timezone`, `flutter_timezone`)
+and `audioplayers`. Everything else is the Flutter SDK.
 
 ## Requirement → code
 
@@ -18,6 +19,11 @@ Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
 | F11 freemium | `Lesson.preview`, `AppState.canOpen`, `lib/screens/paywall_screen.dart`, `lib/services/purchase_service.dart`, `lib/services/backends.dart` |
 | F12 share | `lib/services/share_service.dart`, quiz result and settings |
 | F13 settings | `lib/screens/settings_screen.dart` |
+| F14 why panels | `lib/data/why.dart`, `_WhyPanel` in `lib/screens/lesson_screen.dart` |
+| F15 reminders | `lib/services/reminder_service.dart`, `_LocalReminderService` in `backends.dart`, `AppState.setReminder` |
+| F16 sounds | `lib/services/sound_service.dart`, `_AudioSoundService` in `backends.dart`, `assets/sounds/` (`tool/make_sounds.py`) |
+| F17 accessibility | `Semantics` on the stage and controls in `lib/screens/lesson_screen.dart` |
+| Tablet layout | `NavigationRail` at ≥ 720 dp in `lib/screens/shell_screen.dart`; every screen capped at 520 dp (`PhoneWidth`) |
 
 ## The lessons
 
