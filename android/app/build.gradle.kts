@@ -16,18 +16,20 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.chance.chance"
+    namespace = "com.khemkaran.chance"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // flutter_local_notifications needs java.time on older Android versions.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
         // Change before the first Play Store upload; it can never change afterwards.
-        applicationId = "com.chance.chance"
+        applicationId = "com.khemkaran.chance"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -71,4 +73,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

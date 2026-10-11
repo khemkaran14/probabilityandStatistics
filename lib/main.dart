@@ -9,7 +9,12 @@ import 'package:chance/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final backends = await Backends.create();
-  final state = AppState(store: backends.store, purchases: backends.purchases, share: backends.share);
+  final state = AppState(
+    store: backends.store,
+    purchases: backends.purchases,
+    share: backends.share,
+    reminders: backends.reminders,
+  );
   runApp(ChanceApp(state: state));
 }
 

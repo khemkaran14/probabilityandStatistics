@@ -1,4 +1,5 @@
 import 'package:chance/services/purchase_service.dart';
+import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,7 +126,7 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     final reset = find.text('Reset progress');
-    await tester.ensureVisible(reset);
+    await tester.scrollUntilVisible(reset, 300, scrollable: _settingsScroll);
     await tester.pumpAndSettle();
     await tester.tap(reset);
     await tester.pumpAndSettle();
@@ -133,4 +134,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.xp, 0);
   });
+
+  testWidgets('daily reminder: switch on, pick a time, skipped once the goal is met', (tester) async {
+    final reminders = FakeReminderService();
+    final state = makeState(reminders: reminders);
+    await pumpApp(tester, state);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('reminder-switch')));
+    await tester.pumpAndSettle();
+    expect(state.reminderOn, isTrue);
+    expect(reminders.scheduled, (19, 0, false));
+
+    await tester.tap(find.byKey(const ValueKey('reminder-time')));
+    await tester.pumpAndSettle();
+    expect(find.text('Remind me at'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    state.completePractice(10); // 50 XP meets the default goal
+    await tester.pump();
+    expect(reminders.scheduled, (19, 0, true));
+
+    await tester.tap(find.byKey(const ValueKey('reminder-switch')));
+    await tester.pumpAndSettle();
+    expect(reminders.scheduled, isNull);
+  });
+
+  testWidgets('daily reminder stays off when notifications are refused', (tester) async {
+    final state = makeState(reminders: FakeReminderService(grant: false));
+    await pumpApp(tester, state);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('reminder-switch')));
+    await tester.pumpAndSettle();
+    expect(state.reminderOn, isFalse);
+    expect(find.textContaining('Allow them in your phone'), findsOneWidget);
+  });
 }
+
+final _settingsScroll =
+    find.descendant(of: find.byKey(const ValueKey('settings-list')), matching: find.byType(Scrollable)).first;

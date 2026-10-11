@@ -1,5 +1,6 @@
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
+import 'package:chance/services/reminder_service.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -173,6 +174,36 @@ void main() {
       final t = makeState(purchases: FakePurchaseService(available: false));
       expect(await t.buyPremium(), PurchaseOutcome.unavailable);
       expect(t.premium, isFalse);
+    });
+  });
+
+  group('reminders', () {
+    test('settings are saved and the reminder is rescheduled on launch', () async {
+      final store = MemoryStore();
+      final clock = TestClock(DateTime(2026, 3, 10, 9));
+      final s = makeState(store: store, clock: clock, reminders: FakeReminderService());
+      expect(await s.setReminder(true), isTrue);
+      s.setReminderTime(7, 30);
+      s.completePractice(10); // goal met today
+
+      final again = FakeReminderService();
+      final t = makeState(store: store, clock: clock, reminders: again);
+      expect((t.reminderOn, t.reminderHour, t.reminderMinute), (true, 7, 30));
+      await Future<void>.delayed(Duration.zero);
+      expect(again.scheduled, (7, 30, true));
+
+      clock.advanceDays(1);
+      final nextDay = FakeReminderService();
+      makeState(store: store, clock: clock, reminders: nextDay);
+      await Future<void>.delayed(Duration.zero);
+      expect(nextDay.scheduled, (7, 30, false));
+      expect(nextDay.body, contains('streak'));
+    });
+
+    test('cannot be switched on where reminders are unsupported', () async {
+      final s = makeState(reminders: FakeReminderService(supported: false));
+      expect(await s.setReminder(true), isFalse);
+      expect(s.reminderOn, isFalse);
     });
   });
 }

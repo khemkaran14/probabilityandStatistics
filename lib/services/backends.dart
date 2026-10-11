@@ -1,22 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
+import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
 
 /// Real device services. `tool/dartpad_stubs/backends.dart` replaces this
 /// file in the DartPad preview, where plugins aren't available.
 class Backends {
-  const Backends({required this.store, required this.purchases, required this.share});
+  const Backends({required this.store, required this.purchases, required this.share, required this.reminders});
 
   final KeyValueStore store;
   final PurchaseService purchases;
   final ShareService share;
+  final ReminderService reminders;
 
   /// `flutter run --dart-define=CHANCE_DEV=true` swaps the store for one
   /// where buying always succeeds, so locked lessons can be tried anywhere.
@@ -34,6 +40,7 @@ class Backends {
               ? StorePurchaseService()
               : FakePurchaseService(available: false),
       share: _PlusShareService(),
+      reminders: storeSupported ? _LocalReminderService() : FakeReminderService(supported: false),
     );
   }
 }
@@ -55,6 +62,84 @@ class _PrefsStore implements KeyValueStore {
 class _PlusShareService implements ShareService {
   @override
   Future<void> shareText(String text) => SharePlus.instance.share(ShareParams(text: text));
+}
+
+/// Daily reminder via `flutter_local_notifications`, scheduled on the device.
+class _LocalReminderService implements ReminderService {
+  static const _id = 1;
+  final _plugin = FlutterLocalNotificationsPlugin();
+  Future<void>? _ready;
+
+  Future<void> _init() => _ready ??= () async {
+        tzdata.initializeTimeZones();
+        try {
+          tz.setLocalLocation(tz.getLocation((await FlutterTimezone.getLocalTimezone()).identifier));
+        } on Object {
+          tz.setLocalLocation(tz.UTC);
+        }
+        await _plugin.initialize(
+          settings: const InitializationSettings(
+            android: AndroidInitializationSettings('ic_notification'),
+            iOS: DarwinInitializationSettings(
+              requestAlertPermission: false,
+              requestBadgePermission: false,
+              requestSoundPermission: false,
+            ),
+          ),
+        );
+      }();
+
+  @override
+  bool get supported => true;
+
+  @override
+  Future<bool> requestPermission() async {
+    await _init();
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) return await android.requestNotificationsPermission() ?? false;
+    final ios = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+    return await ios?.requestPermissions(alert: true, badge: false, sound: true) ?? false;
+  }
+
+  @override
+  Future<void> scheduleDaily({
+    required int hour,
+    required int minute,
+    required bool skipToday,
+    required String title,
+    required String body,
+  }) async {
+    await _init();
+    final now = tz.TZDateTime.now(tz.local);
+    var first = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (skipToday || !first.isAfter(now)) first = first.add(const Duration(days: 1));
+    await _plugin.cancel(id: _id);
+    await _plugin.zonedSchedule(
+      id: _id,
+      scheduledDate: first,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_reminder',
+          'Daily reminder',
+          channelDescription: 'A daily nudge to keep your learning streak',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      // Inexact is fine for a reminder and needs no exact-alarm permission.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  @override
+  Future<void> cancel() async {
+    await _init();
+    await _plugin.cancel(id: _id);
+  }
 }
 
 /// Google Play / App Store purchase via the `in_app_purchase` plugin.

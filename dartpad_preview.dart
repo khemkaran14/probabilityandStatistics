@@ -12,7 +12,12 @@ import 'package:flutter/widgets.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final backends = await Backends.create();
-  final state = AppState(store: backends.store, purchases: backends.purchases, share: backends.share);
+  final state = AppState(
+    store: backends.store,
+    purchases: backends.purchases,
+    share: backends.share,
+    reminders: backends.reminders,
+  );
   runApp(ChanceApp(state: state));
 }
 
@@ -19007,6 +19012,29 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _toggleReminder(BuildContext context, bool on) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final nowOn = await AppScope.read(context).setReminder(on);
+    if (on && !nowOn) {
+      messenger.showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Notifications are off for Chance. Allow them in your phone\'s settings.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickTime(BuildContext context) async {
+    final s = AppScope.read(context);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: s.reminderHour, minute: s.reminderMinute),
+      helpText: 'Remind me at',
+    );
+    if (picked != null) s.setReminderTime(picked.hour, picked.minute);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -19026,12 +19054,45 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 10),
             SoftCard(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: SwitchListTile(
-                value: s.haptics,
-                onChanged: s.setHaptics,
-                activeThumbColor: AppColors.green,
-                title: const Text('Vibration on answers', style: TextStyle(fontWeight: FontWeight.w800)),
-                secondary: const Icon(Icons.vibration_rounded, color: AppColors.orange),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    key: const ValueKey('reminder-switch'),
+                    value: s.reminderOn,
+                    onChanged: s.reminders.supported ? (on) => _toggleReminder(context, on) : null,
+                    activeThumbColor: AppColors.green,
+                    title: const Text('Daily reminder', style: TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(s.reminders.supported
+                        ? 'Skipped on days you have already met your goal'
+                        : 'Available in the Android and iPhone app'),
+                    secondary: const Icon(Icons.notifications_active_rounded, color: AppColors.violet),
+                  ),
+                  if (s.reminderOn)
+                    ListTile(
+                      key: const ValueKey('reminder-time'),
+                      leading: const Icon(Icons.schedule_rounded, color: AppColors.blue),
+                      title: const Text('Reminder time', style: TextStyle(fontWeight: FontWeight.w800)),
+                      trailing: Text(
+                        TimeOfDay(hour: s.reminderHour, minute: s.reminderMinute).format(context),
+                        style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.blue),
+                      ),
+                      onTap: () => _pickTime(context),
+                    ),
+                  SwitchListTile(
+                    value: s.sound,
+                    onChanged: s.setSound,
+                    activeThumbColor: AppColors.green,
+                    title: const Text('Sound effects', style: TextStyle(fontWeight: FontWeight.w800)),
+                    secondary: const Icon(Icons.volume_up_rounded, color: AppColors.cyan),
+                  ),
+                  SwitchListTile(
+                    value: s.haptics,
+                    onChanged: s.setHaptics,
+                    activeThumbColor: AppColors.green,
+                    title: const Text('Vibration on answers', style: TextStyle(fontWeight: FontWeight.w800)),
+                    secondary: const Icon(Icons.vibration_rounded, color: AppColors.orange),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 22),
@@ -19137,16 +19198,18 @@ class _ShellScreenState extends State<ShellScreen> {
 /// DartPad stand-in for lib/services/backends.dart: no plugins there, so
 /// progress lives in memory and purchases always succeed.
 class Backends {
-  const Backends({required this.store, required this.purchases, required this.share});
+  const Backends({required this.store, required this.purchases, required this.share, required this.reminders});
 
   final KeyValueStore store;
   final PurchaseService purchases;
   final ShareService share;
+  final ReminderService reminders;
 
   static Future<Backends> create() async => Backends(
         store: MemoryStore(),
         purchases: FakePurchaseService(),
         share: FakeShareService(),
+        reminders: FakeReminderService(supported: false),
       );
 }
 
@@ -19232,6 +19295,61 @@ class FakePurchaseService implements PurchaseService {
   void dispose() => _onPremium = null;
 }
 
+// ===== lib/services/reminder_service.dart =====
+/// A daily "time to learn" notification at a fixed time of day.
+abstract class ReminderService {
+  /// Whether this device can show reminders at all (false on web).
+  bool get supported;
+
+  /// Asks the user for permission to notify. Returns whether it was granted.
+  Future<bool> requestPermission();
+
+  /// Replaces any reminder with one every day at [hour]:[minute] local time.
+  /// With [skipToday] the first one comes tomorrow.
+  Future<void> scheduleDaily({
+    required int hour,
+    required int minute,
+    required bool skipToday,
+    required String title,
+    required String body,
+  });
+
+  Future<void> cancel();
+}
+
+/// Records what would have been scheduled. Used by tests and DartPad.
+class FakeReminderService implements ReminderService {
+  FakeReminderService({this.supported = true, this.grant = true});
+
+  @override
+  final bool supported;
+
+  /// What [requestPermission] answers.
+  bool grant;
+
+  /// The current reminder as (hour, minute, skipToday), or null if none.
+  (int, int, bool)? scheduled;
+  String? body;
+
+  @override
+  Future<bool> requestPermission() async => grant;
+
+  @override
+  Future<void> scheduleDaily({
+    required int hour,
+    required int minute,
+    required bool skipToday,
+    required String title,
+    required String body,
+  }) async {
+    scheduled = (hour, minute, skipToday);
+    this.body = body;
+  }
+
+  @override
+  Future<void> cancel() async => scheduled = null;
+}
+
 // ===== lib/services/share_service.dart =====
 /// Opens the system share sheet.
 abstract class ShareService {
@@ -19278,17 +19396,22 @@ class AppState extends ChangeNotifier {
     required this.store,
     required this.purchases,
     required this.share,
+    ReminderService? reminders,
     DateTime Function()? clock,
-  }) : clock = clock ?? DateTime.now {
+  })  : reminders = reminders ?? FakeReminderService(supported: false),
+        clock = clock ?? DateTime.now {
     _load();
     purchases.listen((premium) {
       if (premium) setPremium(true);
     });
+    // Today's reminder is skipped once the goal is met, so refresh it on launch.
+    _syncReminder();
   }
 
   final KeyValueStore store;
   final PurchaseService purchases;
   final ShareService share;
+  final ReminderService reminders;
   final DateTime Function() clock;
 
   static const _p = 'chance.';
@@ -19306,6 +19429,10 @@ class AppState extends ChangeNotifier {
   bool premium = false;
   bool onboarded = false;
   bool haptics = true;
+  bool sound = true;
+  bool reminderOn = false;
+  int reminderHour = 19;
+  int reminderMinute = 0;
 
   String get today => dayKey(clock());
 
@@ -19395,16 +19522,68 @@ class AppState extends ChangeNotifier {
       bestStreak = math.max(bestStreak, streak);
       lastActive = day;
     }
+    final goalWasMet = goalMetToday;
     xp += amount;
     history = {...history, day: (history[day] ?? 0) + amount};
     _save();
     notifyListeners();
+    if (!goalWasMet && goalMetToday) _syncReminder();
   }
 
   void setDailyGoal(int goal) {
     dailyGoal = goal;
     _save();
     notifyListeners();
+    _syncReminder();
+  }
+
+  void setSound(bool value) {
+    sound = value;
+    _save();
+    notifyListeners();
+  }
+
+  /// Turns the daily reminder on (asking for permission first) or off.
+  /// Returns whether it is on afterwards.
+  Future<bool> setReminder(bool on) async {
+    if (on && !(reminders.supported && await reminders.requestPermission())) return false;
+    reminderOn = on;
+    _save();
+    notifyListeners();
+    await _syncReminder();
+    return reminderOn;
+  }
+
+  void setReminderTime(int hour, int minute) {
+    reminderHour = hour;
+    reminderMinute = minute;
+    _save();
+    notifyListeners();
+    _syncReminder();
+  }
+
+  /// The text of the next reminder.
+  String get reminderBody => currentStreak > 0
+      ? 'Keep your streak going: one 2-minute lesson is enough.'
+      : 'One short animated lesson a day builds real intuition.';
+
+  /// Schedules or cancels the reminder to match the settings. The reminder
+  /// skips today once the daily goal is met.
+  Future<void> _syncReminder() async {
+    if (!reminders.supported) return;
+    try {
+      if (!reminderOn) return await reminders.cancel();
+      await reminders.scheduleDaily(
+        hour: reminderHour,
+        minute: reminderMinute,
+        skipToday: goalMetToday,
+        title: 'Time for a quick lesson',
+        body: reminderBody,
+      );
+    } on Object catch (e) {
+      // A reminder that fails to schedule must never break the app.
+      debugPrint('Reminder not scheduled: $e');
+    }
   }
 
   void setHaptics(bool value) {
@@ -19450,6 +19629,7 @@ class AppState extends ChangeNotifier {
     challengesDone = 0;
     _save();
     notifyListeners();
+    _syncReminder();
   }
 
   // ------------------------------------------------------------ persistence
@@ -19474,6 +19654,10 @@ class AppState extends ChangeNotifier {
     premium = s('premium') == 'true';
     onboarded = s('onboarded') == 'true';
     haptics = s('haptics') != 'false';
+    sound = s('sound') != 'false';
+    reminderOn = s('reminderOn') == 'true';
+    reminderHour = i('reminderHour', 19).clamp(0, 23);
+    reminderMinute = i('reminderMinute', 0).clamp(0, 59);
     try {
       final raw = jsonDecode(s('history') ?? '{}') as Map<String, dynamic>;
       history = raw.map((k, v) => MapEntry(k, (v as num).toInt()));
@@ -19501,6 +19685,10 @@ class AppState extends ChangeNotifier {
       'premium': '$premium',
       'onboarded': '$onboarded',
       'haptics': '$haptics',
+      'sound': '$sound',
+      'reminderOn': '$reminderOn',
+      'reminderHour': '$reminderHour',
+      'reminderMinute': '$reminderMinute',
     };
     values.forEach((k, v) => v == null ? store.remove('$_p$k') : store.setString('$_p$k', v));
   }

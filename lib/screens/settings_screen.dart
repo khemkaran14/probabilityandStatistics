@@ -50,6 +50,29 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _toggleReminder(BuildContext context, bool on) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final nowOn = await AppScope.read(context).setReminder(on);
+    if (on && !nowOn) {
+      messenger.showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Notifications are off for Chance. Allow them in your phone\'s settings.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickTime(BuildContext context) async {
+    final s = AppScope.read(context);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: s.reminderHour, minute: s.reminderMinute),
+      helpText: 'Remind me at',
+    );
+    if (picked != null) s.setReminderTime(picked.hour, picked.minute);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -69,12 +92,45 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 10),
             SoftCard(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: SwitchListTile(
-                value: s.haptics,
-                onChanged: s.setHaptics,
-                activeThumbColor: AppColors.green,
-                title: const Text('Vibration on answers', style: TextStyle(fontWeight: FontWeight.w800)),
-                secondary: const Icon(Icons.vibration_rounded, color: AppColors.orange),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    key: const ValueKey('reminder-switch'),
+                    value: s.reminderOn,
+                    onChanged: s.reminders.supported ? (on) => _toggleReminder(context, on) : null,
+                    activeThumbColor: AppColors.green,
+                    title: const Text('Daily reminder', style: TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(s.reminders.supported
+                        ? 'Skipped on days you have already met your goal'
+                        : 'Available in the Android and iPhone app'),
+                    secondary: const Icon(Icons.notifications_active_rounded, color: AppColors.violet),
+                  ),
+                  if (s.reminderOn)
+                    ListTile(
+                      key: const ValueKey('reminder-time'),
+                      leading: const Icon(Icons.schedule_rounded, color: AppColors.blue),
+                      title: const Text('Reminder time', style: TextStyle(fontWeight: FontWeight.w800)),
+                      trailing: Text(
+                        TimeOfDay(hour: s.reminderHour, minute: s.reminderMinute).format(context),
+                        style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.blue),
+                      ),
+                      onTap: () => _pickTime(context),
+                    ),
+                  SwitchListTile(
+                    value: s.sound,
+                    onChanged: s.setSound,
+                    activeThumbColor: AppColors.green,
+                    title: const Text('Sound effects', style: TextStyle(fontWeight: FontWeight.w800)),
+                    secondary: const Icon(Icons.volume_up_rounded, color: AppColors.cyan),
+                  ),
+                  SwitchListTile(
+                    value: s.haptics,
+                    onChanged: s.setHaptics,
+                    activeThumbColor: AppColors.green,
+                    title: const Text('Vibration on answers', style: TextStyle(fontWeight: FontWeight.w800)),
+                    secondary: const Icon(Icons.vibration_rounded, color: AppColors.orange),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 22),

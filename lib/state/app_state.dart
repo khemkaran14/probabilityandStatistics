@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:chance/data/catalogue.dart';
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
+import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
 
 /// Daily XP goals offered in onboarding and settings.
@@ -39,17 +40,22 @@ class AppState extends ChangeNotifier {
     required this.store,
     required this.purchases,
     required this.share,
+    ReminderService? reminders,
     DateTime Function()? clock,
-  }) : clock = clock ?? DateTime.now {
+  })  : reminders = reminders ?? FakeReminderService(supported: false),
+        clock = clock ?? DateTime.now {
     _load();
     purchases.listen((premium) {
       if (premium) setPremium(true);
     });
+    // Today's reminder is skipped once the goal is met, so refresh it on launch.
+    _syncReminder();
   }
 
   final KeyValueStore store;
   final PurchaseService purchases;
   final ShareService share;
+  final ReminderService reminders;
   final DateTime Function() clock;
 
   static const _p = 'chance.';
@@ -67,6 +73,10 @@ class AppState extends ChangeNotifier {
   bool premium = false;
   bool onboarded = false;
   bool haptics = true;
+  bool sound = true;
+  bool reminderOn = false;
+  int reminderHour = 19;
+  int reminderMinute = 0;
 
   String get today => dayKey(clock());
 
@@ -156,16 +166,68 @@ class AppState extends ChangeNotifier {
       bestStreak = math.max(bestStreak, streak);
       lastActive = day;
     }
+    final goalWasMet = goalMetToday;
     xp += amount;
     history = {...history, day: (history[day] ?? 0) + amount};
     _save();
     notifyListeners();
+    if (!goalWasMet && goalMetToday) _syncReminder();
   }
 
   void setDailyGoal(int goal) {
     dailyGoal = goal;
     _save();
     notifyListeners();
+    _syncReminder();
+  }
+
+  void setSound(bool value) {
+    sound = value;
+    _save();
+    notifyListeners();
+  }
+
+  /// Turns the daily reminder on (asking for permission first) or off.
+  /// Returns whether it is on afterwards.
+  Future<bool> setReminder(bool on) async {
+    if (on && !(reminders.supported && await reminders.requestPermission())) return false;
+    reminderOn = on;
+    _save();
+    notifyListeners();
+    await _syncReminder();
+    return reminderOn;
+  }
+
+  void setReminderTime(int hour, int minute) {
+    reminderHour = hour;
+    reminderMinute = minute;
+    _save();
+    notifyListeners();
+    _syncReminder();
+  }
+
+  /// The text of the next reminder.
+  String get reminderBody => currentStreak > 0
+      ? 'Keep your streak going: one 2-minute lesson is enough.'
+      : 'One short animated lesson a day builds real intuition.';
+
+  /// Schedules or cancels the reminder to match the settings. The reminder
+  /// skips today once the daily goal is met.
+  Future<void> _syncReminder() async {
+    if (!reminders.supported) return;
+    try {
+      if (!reminderOn) return await reminders.cancel();
+      await reminders.scheduleDaily(
+        hour: reminderHour,
+        minute: reminderMinute,
+        skipToday: goalMetToday,
+        title: 'Time for a quick lesson',
+        body: reminderBody,
+      );
+    } on Object catch (e) {
+      // A reminder that fails to schedule must never break the app.
+      debugPrint('Reminder not scheduled: $e');
+    }
   }
 
   void setHaptics(bool value) {
@@ -211,6 +273,7 @@ class AppState extends ChangeNotifier {
     challengesDone = 0;
     _save();
     notifyListeners();
+    _syncReminder();
   }
 
   // ------------------------------------------------------------ persistence
@@ -235,6 +298,10 @@ class AppState extends ChangeNotifier {
     premium = s('premium') == 'true';
     onboarded = s('onboarded') == 'true';
     haptics = s('haptics') != 'false';
+    sound = s('sound') != 'false';
+    reminderOn = s('reminderOn') == 'true';
+    reminderHour = i('reminderHour', 19).clamp(0, 23);
+    reminderMinute = i('reminderMinute', 0).clamp(0, 59);
     try {
       final raw = jsonDecode(s('history') ?? '{}') as Map<String, dynamic>;
       history = raw.map((k, v) => MapEntry(k, (v as num).toInt()));
@@ -262,6 +329,10 @@ class AppState extends ChangeNotifier {
       'premium': '$premium',
       'onboarded': '$onboarded',
       'haptics': '$haptics',
+      'sound': '$sound',
+      'reminderOn': '$reminderOn',
+      'reminderHour': '$reminderHour',
+      'reminderMinute': '$reminderMinute',
     };
     values.forEach((k, v) => v == null ? store.remove('$_p$k') : store.setString('$_p$k', v));
   }

@@ -1,4 +1,4 @@
-package com.chance.chance
+package com.khemkaran.chance
 
 import io.flutter.embedding.android.FlutterActivity
 

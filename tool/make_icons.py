@@ -79,6 +79,8 @@ def android():
         save(gradient(s), f"{res}/mipmap-{name}/ic_launcher_background.png")
         save(motif(s, 0.46), f"{res}/mipmap-{name}/ic_launcher_foreground.png")
         save(motif(s, 0.46, bar=WHITE, ball=WHITE), f"{res}/mipmap-{name}/ic_launcher_monochrome.png")
+        # Notification icon: white silhouette on transparent, 24 dp.
+        save(motif(round(24 * f), 0.86, bar=WHITE, ball=WHITE), f"{res}/drawable-{name}/ic_notification.png")
         # Splash logo for Android 11 and older (Android 12+ shows the adaptive icon).
         save(full_icon(round(96 * f), rounded=True), f"{res}/drawable-{name}/splash_logo.png")
 
