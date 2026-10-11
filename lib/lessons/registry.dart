@@ -13,6 +13,8 @@ import 'package:chance/lessons/ch12_estimation.dart';
 import 'package:chance/lessons/ch13_testing.dart';
 import 'package:chance/lessons/ch14_regression.dart';
 import 'package:chance/lessons/ch15_bayesian.dart';
+import 'package:chance/lessons/ch16_real_world.dart';
+import 'package:chance/lessons/ch17_paradoxes.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/combinations.dart';
@@ -132,6 +134,14 @@ final Map<String, LessonSpec> lessonRegistry = {
     priorPosteriorLesson,
     updatingEvidenceLesson,
     bayesVsFrequentistLesson,
+    abTestingLesson,
+    monteCarloLesson,
+    randomWalksLesson,
+    markovChainsLesson,
+    aiMlLesson,
+    simpsonsLesson,
+    gamblersFallacyLesson,
+    stPetersburgLesson,
   ])
     spec.id: spec,
 };

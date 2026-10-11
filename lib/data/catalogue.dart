@@ -153,19 +153,19 @@ const List<Chapter> kChapters = [
     Lesson('Bayesian vs frequentist', id: 'bayes_vs_frequentist'),
   ]),
   Chapter(number: 16, title: 'Stats in the real world', tagline: 'A/B tests, simulations & AI', free: false, lessons: [
-    Lesson('A/B testing'),
-    Lesson('Monte Carlo simulation'),
-    Lesson('Random walks'),
-    Lesson('Markov chains'),
-    Lesson('Probability in AI & ML'),
+    Lesson('A/B testing', id: 'ab_testing'),
+    Lesson('Monte Carlo simulation', id: 'monte_carlo'),
+    Lesson('Random walks', id: 'random_walks'),
+    Lesson('Markov chains', id: 'markov_chains'),
+    Lesson('Probability in AI & ML', id: 'ai_ml'),
   ]),
   Chapter(number: 17, title: 'Paradoxes & puzzles', tagline: 'Where intuition fails', free: false, lessons: [
     Lesson('Monty Hall', id: 'monty_hall', preview: true),
     Lesson('Birthday paradox', id: 'birthday'),
-    Lesson("Simpson's paradox"),
-    Lesson("Gambler's fallacy"),
-    Lesson('Base-rate fallacy'),
-    Lesson('St. Petersburg paradox'),
+    Lesson("Simpson's paradox", id: 'simpsons'),
+    Lesson("Gambler's fallacy", id: 'gamblers_fallacy'),
+    Lesson('Base-rate fallacy', id: 'bayes'),
+    Lesson('St. Petersburg paradox', id: 'st_petersburg'),
   ]),
 ];
 
