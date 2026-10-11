@@ -9,12 +9,15 @@ import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/combinations.dart';
 import 'package:chance/lessons/complement.dart';
+import 'package:chance/lessons/conditional.dart';
 import 'package:chance/lessons/events.dart';
 import 'package:chance/lessons/galton_board.dart';
 import 'package:chance/lessons/graphs_lie.dart';
 import 'package:chance/lessons/histograms.dart';
+import 'package:chance/lessons/independence.dart';
 import 'package:chance/lessons/monty_hall.dart';
 import 'package:chance/lessons/multiplication_principle.dart';
+import 'package:chance/lessons/multiplication_rule.dart';
 import 'package:chance/lessons/mutually_exclusive.dart';
 import 'package:chance/lessons/outliers.dart';
 import 'package:chance/lessons/percentiles.dart';
@@ -24,6 +27,8 @@ import 'package:chance/lessons/scatter.dart';
 import 'package:chance/lessons/skew.dart';
 import 'package:chance/lessons/spread.dart';
 import 'package:chance/lessons/stem_leaf.dart';
+import 'package:chance/lessons/total_probability.dart';
+import 'package:chance/lessons/tree_diagrams.dart';
 import 'package:chance/lessons/types_of_data.dart';
 import 'package:chance/lessons/venn.dart';
 import 'package:chance/lessons/zscores.dart';
@@ -60,6 +65,11 @@ final Map<String, LessonSpec> lessonRegistry = {
     repeatsLesson,
     pigeonholeLesson,
     birthdayLesson,
+    conditionalLesson,
+    independenceLesson,
+    treeDiagramsLesson,
+    multiplicationRuleLesson,
+    totalProbabilityLesson,
   ])
     spec.id: spec,
 };
