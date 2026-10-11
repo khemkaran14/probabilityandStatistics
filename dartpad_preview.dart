@@ -17,6 +17,7 @@ Future<void> main() async {
     purchases: backends.purchases,
     share: backends.share,
     reminders: backends.reminders,
+    sounds: backends.sounds,
   );
   runApp(ChanceApp(state: state));
 }
@@ -106,6 +107,23 @@ final List<Achievement> kAchievements = [
     earned: (s) => lessonRegistry.keys.every(s.completed.contains),
   ),
   Achievement(
+    id: 'halfway',
+    title: 'Halfway there',
+    description: 'Finish half of all lessons',
+    icon: Icons.hourglass_bottom_rounded,
+    color: AppColors.blue,
+    earned: (s) => lessonRegistry.keys.where(s.completed.contains).length * 2 >= lessonRegistry.length,
+  ),
+  for (final (title, description, icon, chapters) in _chapterBadges)
+    Achievement(
+      id: 'chapters_${chapters.join('_')}',
+      title: title,
+      description: description,
+      icon: icon,
+      color: kChapters[chapters.first - 1].color,
+      earned: (s) => chapters.every((n) => chapterDone(s, n)),
+    ),
+  Achievement(
     id: 'streak3',
     title: 'On fire',
     description: 'Reach a 3-day streak',
@@ -153,6 +171,25 @@ final List<Achievement> kAchievements = [
     color: AppColors.pink,
     earned: (s) => s.premium,
   ),
+];
+
+/// True when every built lesson in chapter [number] is finished.
+bool chapterDone(AppState s, int number) =>
+    kChapters[number - 1].lessons.map((l) => l.id).whereType<String>().every(s.completed.contains);
+
+/// Badges for finishing groups of chapters: (title, description, icon, chapters).
+const List<(String, String, IconData, List<int>)> _chapterBadges = [
+  ('Data detective', 'Finish chapters 1 and 2: data and charts', Icons.insights_rounded, [1, 2]),
+  ('Counting pro', 'Finish chapters 3 and 4: probability and counting', Icons.casino_rounded, [3, 4]),
+  ('Given that…', 'Finish chapters 5 and 6', Icons.account_tree_rounded, [5, 6]),
+  ('Distribution expert', 'Finish chapters 7 and 8: every distribution', Icons.stacked_bar_chart_rounded, [7, 8]),
+  ('Theorem tamer', 'Finish chapters 9 and 10', Icons.functions_rounded, [9, 10]),
+  ('Poll master', 'Finish chapters 11 and 12: sampling and estimation', Icons.how_to_vote_rounded, [11, 12]),
+  ('Hypothesis hunter', 'Finish chapter 13: hypothesis testing', Icons.science_rounded, [13]),
+  ('Line drawer', 'Finish chapter 14: regression', Icons.show_chart_rounded, [14]),
+  ('Bayesian', 'Finish chapter 15: Bayesian thinking', Icons.psychology_rounded, [15]),
+  ('Real-world stats', 'Finish chapter 16', Icons.public_rounded, [16]),
+  ('Paradox master', 'Finish chapter 17: paradoxes and puzzles', Icons.auto_awesome_rounded, [17]),
 ];
 
 // ===== lib/data/catalogue.dart =====
@@ -441,6 +478,113 @@ const List<QuizQuestion> kPracticeBank = [
     options: ['3', '3.5', '4', '6'],
     answer: 1,
     explanation: '(1 + 2 + 3 + 4 + 5 + 6) / 6 = 21 / 6 = 3.5.',
+  ),
+  QuizQuestion(
+    prompt: 'A basketball player scores 40% of free throws. What is the expected number of tries to the first score?',
+    options: ['2', '2.5', '4', '0.4'],
+    answer: 1,
+    explanation: 'Geometric waiting time: E = 1/p = 1/0.4 = 2.5 tries.',
+  ),
+  QuizQuestion(
+    prompt: 'A shop gets 4 customers an hour on average, at random. What is the variance of the hourly count?',
+    options: ['2', '4', '16', '√4'],
+    answer: 1,
+    explanation: 'For a Poisson distribution the variance equals the mean: λ = 4.',
+  ),
+  QuizQuestion(
+    prompt: 'Exam scores are normal with mean 60 and sd 10. About what share score above 80?',
+    options: ['2.5%', '5%', '16%', '32%'],
+    answer: 0,
+    explanation: '80 is 2 sd above the mean. 95% lie within 2 sd, so 5% are outside, '
+        'half of them on the high side: 2.5%.',
+  ),
+  QuizQuestion(
+    prompt: 'Buses come every 10 minutes and you arrive at a random time. What is your average wait?',
+    options: ['2 minutes', '5 minutes', '10 minutes', 'It depends on luck'],
+    answer: 1,
+    explanation: 'The wait is uniform from 0 to 10 minutes, so the mean is the middle: 5.',
+  ),
+  QuizQuestion(
+    prompt: 'You change heights from metres to centimetres. What happens to their correlation with weight?',
+    options: ['It is multiplied by 100', 'It is divided by 100', 'It stays the same', 'It becomes 1'],
+    answer: 2,
+    explanation: 'Correlation has no units: rescaling one variable cancels out. Covariance would change.',
+  ),
+  QuizQuestion(
+    prompt: 'Whatever the shape of the data, at least what share lies within 2 sd of the mean?',
+    options: ['50%', '68%', '75%', '95%'],
+    answer: 2,
+    explanation: 'Chebyshev: at least 1 − 1/k² = 1 − 1/4 = 75%. The 95% only holds for bell curves.',
+  ),
+  QuizQuestion(
+    prompt: 'To halve the standard error of a sample mean, you need…',
+    options: ['Twice the sample', 'Four times the sample', 'Half the sample', '√2 times the sample'],
+    answer: 1,
+    explanation: 'SE = σ/√n. Halving it needs √n to double, which means n × 4.',
+  ),
+  QuizQuestion(
+    prompt: 'A poll asks only people at a gym about exercise habits. Asking more people at the gym will…',
+    options: [
+      'Remove the bias',
+      'Shrink the random error but keep the bias',
+      'Make the poll representative',
+      'Increase the bias',
+    ],
+    answer: 1,
+    explanation: 'Bigger samples reduce random wobble, not bias: every extra person comes from the same skewed group.',
+  ),
+  QuizQuestion(
+    prompt: 'A poll of 1,000 people has a margin of error of about…',
+    options: ['±1 point', '±3 points', '±10 points', '±30 points'],
+    answer: 1,
+    explanation: 'Roughly 1/√n = 1/√1000 ≈ 0.03, so about ±3 percentage points.',
+  ),
+  QuizQuestion(
+    prompt: 'A study reports p = 0.03. What does that mean?',
+    options: [
+      'There is a 3% chance H₀ is true',
+      'If H₀ were true, results this extreme would happen 3% of the time',
+      'The effect is 3% big',
+      'There is a 97% chance the effect is real',
+    ],
+    answer: 1,
+    explanation: 'A p-value is computed assuming H₀ is true. It is not the chance that H₀ is true.',
+  ),
+  QuizQuestion(
+    prompt: 'A test convicts an innocent defendant. Which error is that?',
+    options: ['Type I', 'Type II', 'Both', 'Neither'],
+    answer: 0,
+    explanation: 'Rejecting a true H₀ ("innocent") is a Type I error: a false alarm.',
+  ),
+  QuizQuestion(
+    prompt: 'A regression has R² = 0.64. What is |r|, the size of the correlation?',
+    options: ['0.36', '0.64', '0.8', '0.41'],
+    answer: 2,
+    explanation: 'With one predictor, R² = r², so |r| = √0.64 = 0.8.',
+  ),
+  QuizQuestion(
+    prompt: 'Your prior for a coin is Beta(1, 1). You see 3 heads and 1 tail. Your posterior is…',
+    options: ['Beta(3, 1)', 'Beta(4, 2)', 'Beta(2, 4)', 'Beta(1, 1)'],
+    answer: 1,
+    explanation: 'Add the heads to the first number and the tails to the second: Beta(1 + 3, 1 + 1).',
+  ),
+  QuizQuestion(
+    prompt: 'You throw 1,000 random darts at a square; 785 land inside the quarter circle. Your estimate of π?',
+    options: ['3.00', '3.14', '0.785', '7.85'],
+    answer: 1,
+    explanation: 'Share inside ≈ π/4, so π ≈ 4 × 0.785 = 3.14.',
+  ),
+  QuizQuestion(
+    prompt: 'A random walker takes 400 steps of ±1. Roughly how far from the start is it, typically?',
+    options: ['0', '20', '200', '400'],
+    answer: 1,
+    explanation: 'The typical distance grows like √n: √400 = 20.',
+  ),
+  QuizQuestion(
+    prompt: 'Red has come up 8 times in a row on a fair roulette wheel. The next spin is…',
+    options: ['More likely black', 'More likely red', 'Equally likely as before', 'Certainly black'],
+    answer: 2,
+    explanation: 'Spins are independent. The wheel has no memory, so the streak changes nothing.',
   ),
 ];
 
@@ -17749,9 +17893,19 @@ class _StageCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             child: ColoredBox(
               color: AppColors.board,
-              child: AspectRatio(
-                aspectRatio: spec.visualAspectRatio,
-                child: spec.buildVisual(sim),
+              // Screen readers can't see the canvas, so describe it and point
+              // to the live numbers in the pills above.
+              child: Semantics(
+                container: true,
+                image: true,
+                label: 'Animation: ${spec.title.map((t) => t.text).join()}. '
+                    'The live numbers are shown above it. ${spec.bigIdea}',
+                child: ExcludeSemantics(
+                  child: AspectRatio(
+                    aspectRatio: spec.visualAspectRatio,
+                    child: spec.buildVisual(sim),
+                  ),
+                ),
               ),
             ),
           ),
@@ -17804,6 +17958,7 @@ class _Controls extends StatelessWidget {
 
   static const _speeds = <double>[0.5, 1, 3];
   static const _speedLabels = <String>['½×', '1×', '3×'];
+  static const _speedNames = <String>['half', 'normal', 'triple'];
 
   @override
   Widget build(BuildContext context) {
@@ -17847,20 +18002,26 @@ class _Controls extends StatelessWidget {
                 children: [
                   for (var i = 0; i < _speeds.length; i++)
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () => sim.setSpeed(_speeds[i]),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: sim.speed == _speeds[i] ? AppColors.cyan : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _speedLabels[i],
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: sim.speed == _speeds[i] ? AppColors.ink : AppColors.muted,
+                      child: Semantics(
+                        button: true,
+                        selected: sim.speed == _speeds[i],
+                        label: 'Speed ${_speedNames[i]}',
+                        excludeSemantics: true,
+                        child: GestureDetector(
+                          onTap: () => sim.setSpeed(_speeds[i]),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: sim.speed == _speeds[i] ? AppColors.cyan : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _speedLabels[i],
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: sim.speed == _speeds[i] ? AppColors.ink : AppColors.muted,
+                              ),
                             ),
                           ),
                         ),
@@ -17897,16 +18058,21 @@ class _SquareButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: color,
-        borderRadius: BorderRadius.circular(size * 0.33),
-        child: InkWell(
+      excludeFromSemantics: true,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: Material(
+          color: color,
           borderRadius: BorderRadius.circular(size * 0.33),
-          onTap: onTap,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(icon, color: iconColor, size: size * 0.48),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(size * 0.33),
+            onTap: onTap,
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Icon(icon, color: iconColor, size: size * 0.48),
+            ),
           ),
         ),
       ),
@@ -18941,9 +19107,11 @@ class _QuizScreenState extends State<QuizScreen> {
   void _pick(int option) {
     if (_picked != null) return;
     final correct = option == _quiz[_index].answer;
-    if (AppScope.read(context).haptics) {
+    final state = AppScope.read(context);
+    if (state.haptics) {
       correct ? HapticFeedback.lightImpact() : HapticFeedback.heavyImpact();
     }
+    state.playSound(correct ? Sfx.correct : Sfx.wrong);
     setState(() {
       _picked = option;
       if (correct) _score++;
@@ -18958,6 +19126,7 @@ class _QuizScreenState extends State<QuizScreen> {
       });
     } else {
       final reward = widget.onFinish(_score);
+      AppScope.read(context).playSound(Sfx.finish);
       setState(() {
         _reward = reward;
         _finished = true;
@@ -19407,7 +19576,11 @@ class SettingsScreen extends StatelessWidget {
 }
 
 // ===== lib/screens/shell_screen.dart =====
-/// Main app frame with bottom navigation between the four tabs.
+/// Screens at least this wide (tablets, landscape) get a side rail instead
+/// of the bottom bar.
+const double kRailBreakpoint = 720;
+
+/// Main app frame with navigation between the four tabs.
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
 
@@ -19420,24 +19593,52 @@ class _ShellScreenState extends State<ShellScreen> {
 
   static const _tabs = [LearnScreen(), PracticeScreen(), ProgressScreen(), SettingsScreen()];
 
+  static const _items = [
+    (Icons.school_outlined, Icons.school_rounded, 'Learn'),
+    (Icons.bolt_outlined, Icons.bolt_rounded, 'Practice'),
+    (Icons.insights_outlined, Icons.insights_rounded, 'Progress'),
+    (Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
+  ];
+
+  void _select(int i) => setState(() => _tab = i);
+
   @override
   Widget build(BuildContext context) {
+    final body = IndexedStack(index: _tab, children: _tabs);
+    if (MediaQuery.sizeOf(context).width >= kRailBreakpoint) {
+      return Scaffold(
+        body: Row(
+          children: [
+            SafeArea(
+              right: false,
+              child: NavigationRail(
+                selectedIndex: _tab,
+                onDestinationSelected: _select,
+                backgroundColor: AppColors.card,
+                indicatorColor: AppColors.yellow,
+                labelType: NavigationRailLabelType.all,
+                groupAlignment: -0.6,
+                destinations: [
+                  for (final (icon, selected, label) in _items)
+                    NavigationRailDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: Text(label)),
+                ],
+              ),
+            ),
+            Expanded(child: body),
+          ],
+        ),
+      );
+    }
     return Scaffold(
-      body: IndexedStack(index: _tab, children: _tabs),
+      body: body,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
+        onDestinationSelected: _select,
         backgroundColor: AppColors.card,
         indicatorColor: AppColors.yellow,
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.school_outlined), selectedIcon: Icon(Icons.school_rounded), label: 'Learn'),
-          NavigationDestination(
-              icon: Icon(Icons.bolt_outlined), selectedIcon: Icon(Icons.bolt_rounded), label: 'Practice'),
-          NavigationDestination(
-              icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights_rounded), label: 'Progress'),
-          NavigationDestination(
-              icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: 'Settings'),
+        destinations: [
+          for (final (icon, selected, label) in _items)
+            NavigationDestination(icon: Icon(icon), selectedIcon: Icon(selected), label: label),
         ],
       ),
     );
@@ -19448,18 +19649,26 @@ class _ShellScreenState extends State<ShellScreen> {
 /// DartPad stand-in for lib/services/backends.dart: no plugins there, so
 /// progress lives in memory and purchases always succeed.
 class Backends {
-  const Backends({required this.store, required this.purchases, required this.share, required this.reminders});
+  const Backends({
+    required this.store,
+    required this.purchases,
+    required this.share,
+    required this.reminders,
+    required this.sounds,
+  });
 
   final KeyValueStore store;
   final PurchaseService purchases;
   final ShareService share;
   final ReminderService reminders;
+  final SoundService sounds;
 
   static Future<Backends> create() async => Backends(
         store: MemoryStore(),
         purchases: FakePurchaseService(),
         share: FakeShareService(),
         reminders: FakeReminderService(supported: false),
+        sounds: FakeSoundService(),
       );
 }
 
@@ -19614,6 +19823,23 @@ class FakeShareService implements ShareService {
   Future<void> shareText(String text) async => shared.add(text);
 }
 
+// ===== lib/services/sound_service.dart =====
+/// The app's short sound effects.
+enum Sfx { correct, wrong, finish }
+
+/// Plays sound effects.
+abstract class SoundService {
+  Future<void> play(Sfx sfx);
+}
+
+/// Records what would have played. Used by tests and DartPad.
+class FakeSoundService implements SoundService {
+  final List<Sfx> played = [];
+
+  @override
+  Future<void> play(Sfx sfx) async => played.add(sfx);
+}
+
 // ===== lib/state/app_state.dart =====
 /// Daily XP goals offered in onboarding and settings.
 const Map<int, String> kDailyGoals = {20: 'Casual', 50: 'Regular', 100: 'Serious'};
@@ -19647,8 +19873,10 @@ class AppState extends ChangeNotifier {
     required this.purchases,
     required this.share,
     ReminderService? reminders,
+    SoundService? sounds,
     DateTime Function()? clock,
   })  : reminders = reminders ?? FakeReminderService(supported: false),
+        sounds = sounds ?? FakeSoundService(),
         clock = clock ?? DateTime.now {
     _load();
     purchases.listen((premium) {
@@ -19662,6 +19890,7 @@ class AppState extends ChangeNotifier {
   final PurchaseService purchases;
   final ShareService share;
   final ReminderService reminders;
+  final SoundService sounds;
   final DateTime Function() clock;
 
   static const _p = 'chance.';
@@ -19791,6 +20020,11 @@ class AppState extends ChangeNotifier {
     sound = value;
     _save();
     notifyListeners();
+  }
+
+  /// Plays [sfx] unless sound effects are switched off.
+  void playSound(Sfx sfx) {
+    if (sound) sounds.play(sfx);
   }
 
   /// Turns the daily reminder on (asking for permission first) or off.

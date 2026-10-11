@@ -3,6 +3,7 @@ import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
+import 'package:chance/services/sound_service.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,7 @@ AppState makeState({
   PurchaseService? purchases,
   FakeShareService? share,
   ReminderService? reminders,
+  SoundService? sounds,
   bool onboarded = true,
 }) {
   final s = AppState(
@@ -28,6 +30,7 @@ AppState makeState({
     purchases: purchases ?? FakePurchaseService(),
     share: share ?? FakeShareService(),
     reminders: reminders,
+    sounds: sounds,
     clock: (clock ?? TestClock(DateTime(2026, 3, 10, 9))).call,
   );
   if (onboarded && !s.onboarded) s.finishOnboarding(goal: 50);

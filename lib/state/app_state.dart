@@ -8,6 +8,7 @@ import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
+import 'package:chance/services/sound_service.dart';
 
 /// Daily XP goals offered in onboarding and settings.
 const Map<int, String> kDailyGoals = {20: 'Casual', 50: 'Regular', 100: 'Serious'};
@@ -41,8 +42,10 @@ class AppState extends ChangeNotifier {
     required this.purchases,
     required this.share,
     ReminderService? reminders,
+    SoundService? sounds,
     DateTime Function()? clock,
   })  : reminders = reminders ?? FakeReminderService(supported: false),
+        sounds = sounds ?? FakeSoundService(),
         clock = clock ?? DateTime.now {
     _load();
     purchases.listen((premium) {
@@ -56,6 +59,7 @@ class AppState extends ChangeNotifier {
   final PurchaseService purchases;
   final ShareService share;
   final ReminderService reminders;
+  final SoundService sounds;
   final DateTime Function() clock;
 
   static const _p = 'chance.';
@@ -185,6 +189,11 @@ class AppState extends ChangeNotifier {
     sound = value;
     _save();
     notifyListeners();
+  }
+
+  /// Plays [sfx] unless sound effects are switched off.
+  void playSound(Sfx sfx) {
+    if (sound) sounds.play(sfx);
   }
 
   /// Turns the daily reminder on (asking for permission first) or off.

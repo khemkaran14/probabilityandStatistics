@@ -14,6 +14,7 @@ Future<void> main() async {
     purchases: backends.purchases,
     share: backends.share,
     reminders: backends.reminders,
+    sounds: backends.sounds,
   );
   runApp(ChanceApp(state: state));
 }

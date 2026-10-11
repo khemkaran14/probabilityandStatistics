@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:chance/engine/lesson_spec.dart';
+import 'package:chance/services/sound_service.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/common.dart';
@@ -56,9 +57,11 @@ class _QuizScreenState extends State<QuizScreen> {
   void _pick(int option) {
     if (_picked != null) return;
     final correct = option == _quiz[_index].answer;
-    if (AppScope.read(context).haptics) {
+    final state = AppScope.read(context);
+    if (state.haptics) {
       correct ? HapticFeedback.lightImpact() : HapticFeedback.heavyImpact();
     }
+    state.playSound(correct ? Sfx.correct : Sfx.wrong);
     setState(() {
       _picked = option;
       if (correct) _score++;
@@ -73,6 +76,7 @@ class _QuizScreenState extends State<QuizScreen> {
       });
     } else {
       final reward = widget.onFinish(_score);
+      AppScope.read(context).playSound(Sfx.finish);
       setState(() {
         _reward = reward;
         _finished = true;

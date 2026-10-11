@@ -1,6 +1,8 @@
+import 'package:chance/main.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
+import 'package:chance/services/sound_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -31,7 +33,8 @@ void main() {
 
   testWidgets('play a free lesson and finish its quiz for XP', (tester) async {
     final share = FakeShareService();
-    final state = makeState(share: share);
+    final sounds = FakeSoundService();
+    final state = makeState(share: share, sounds: sounds);
     await pumpApp(tester, state);
 
     // The "try the first lesson" card opens the first free lesson.
@@ -49,6 +52,10 @@ void main() {
 
     await answerQuiz(tester, 3);
 
+    // One sound per answer, then the finish fanfare.
+    expect(sounds.played, hasLength(4));
+    expect(sounds.played.take(3), everyElement(isIn([Sfx.correct, Sfx.wrong])));
+    expect(sounds.played.last, Sfx.finish);
     expect(state.completed, contains('types_of_data'));
     expect(state.xp, greaterThanOrEqualTo(10));
     expect(find.textContaining('XP today'), findsOneWidget);
@@ -171,6 +178,34 @@ void main() {
     await tester.pumpAndSettle();
     expect(state.reminderOn, isFalse);
     expect(find.textContaining('Allow them in your phone'), findsOneWidget);
+  });
+
+  testWidgets('tablets get a side rail instead of the bottom bar', (tester) async {
+    final state = makeState();
+    tester.view.physicalSize = const Size(2560, 1600); // 1280 × 800 dp landscape tablet
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ChanceApp(state: state));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Daily reminder'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('screen readers get a description of the animation and labelled controls', (tester) async {
+    final handle = tester.ensureSemantics();
+    final state = makeState();
+    await pumpApp(tester, state);
+    await tester.tap(find.text('TRY THE FIRST LESSON'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.bySemanticsLabel(RegExp(r'^Animation: Labels or numbers\?')), findsOneWidget);
+    expect(find.bySemanticsLabel('Speed triple'), findsOneWidget);
+    expect(find.bySemanticsLabel('Pause'), findsOneWidget);
+    handle.dispose();
   });
 }
 

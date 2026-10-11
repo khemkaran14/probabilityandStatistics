@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -13,16 +14,24 @@ import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
+import 'package:chance/services/sound_service.dart';
 
 /// Real device services. `tool/dartpad_stubs/backends.dart` replaces this
 /// file in the DartPad preview, where plugins aren't available.
 class Backends {
-  const Backends({required this.store, required this.purchases, required this.share, required this.reminders});
+  const Backends({
+    required this.store,
+    required this.purchases,
+    required this.share,
+    required this.reminders,
+    required this.sounds,
+  });
 
   final KeyValueStore store;
   final PurchaseService purchases;
   final ShareService share;
   final ReminderService reminders;
+  final SoundService sounds;
 
   /// `flutter run --dart-define=CHANCE_DEV=true` swaps the store for one
   /// where buying always succeeds, so locked lessons can be tried anywhere.
@@ -41,6 +50,7 @@ class Backends {
               : FakePurchaseService(available: false),
       share: _PlusShareService(),
       reminders: storeSupported ? _LocalReminderService() : FakeReminderService(supported: false),
+      sounds: _AudioSoundService(),
     );
   }
 }
@@ -62,6 +72,33 @@ class _PrefsStore implements KeyValueStore {
 class _PlusShareService implements ShareService {
   @override
   Future<void> shareText(String text) => SharePlus.instance.share(ShareParams(text: text));
+}
+
+/// Sound effects via `audioplayers`: low-latency, mixed with the user's
+/// music rather than pausing it, and silent when the phone is on mute.
+class _AudioSoundService implements SoundService {
+  final _players = <Sfx, AudioPlayer>{};
+  Future<void>? _ready;
+
+  Future<void> _init() => _ready ??= AudioPlayer.global.setAudioContext(
+        AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers, respectSilence: true).build(),
+      );
+
+  @override
+  Future<void> play(Sfx sfx) async {
+    try {
+      await _init();
+      var player = _players[sfx];
+      if (player == null) {
+        player = _players[sfx] = AudioPlayer();
+        await player.setPlayerMode(PlayerMode.lowLatency);
+      }
+      await player.stop();
+      await player.play(AssetSource('sounds/${sfx.name}.wav'), volume: 0.7);
+    } on Object catch (e) {
+      debugPrint('Sound not played: $e');
+    }
+  }
 }
 
 /// Daily reminder via `flutter_local_notifications`, scheduled on the device.

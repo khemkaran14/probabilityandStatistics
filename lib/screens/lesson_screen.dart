@@ -179,9 +179,19 @@ class _StageCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             child: ColoredBox(
               color: AppColors.board,
-              child: AspectRatio(
-                aspectRatio: spec.visualAspectRatio,
-                child: spec.buildVisual(sim),
+              // Screen readers can't see the canvas, so describe it and point
+              // to the live numbers in the pills above.
+              child: Semantics(
+                container: true,
+                image: true,
+                label: 'Animation: ${spec.title.map((t) => t.text).join()}. '
+                    'The live numbers are shown above it. ${spec.bigIdea}',
+                child: ExcludeSemantics(
+                  child: AspectRatio(
+                    aspectRatio: spec.visualAspectRatio,
+                    child: spec.buildVisual(sim),
+                  ),
+                ),
               ),
             ),
           ),
@@ -234,6 +244,7 @@ class _Controls extends StatelessWidget {
 
   static const _speeds = <double>[0.5, 1, 3];
   static const _speedLabels = <String>['½×', '1×', '3×'];
+  static const _speedNames = <String>['half', 'normal', 'triple'];
 
   @override
   Widget build(BuildContext context) {
@@ -277,20 +288,26 @@ class _Controls extends StatelessWidget {
                 children: [
                   for (var i = 0; i < _speeds.length; i++)
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () => sim.setSpeed(_speeds[i]),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: sim.speed == _speeds[i] ? AppColors.cyan : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _speedLabels[i],
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: sim.speed == _speeds[i] ? AppColors.ink : AppColors.muted,
+                      child: Semantics(
+                        button: true,
+                        selected: sim.speed == _speeds[i],
+                        label: 'Speed ${_speedNames[i]}',
+                        excludeSemantics: true,
+                        child: GestureDetector(
+                          onTap: () => sim.setSpeed(_speeds[i]),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: sim.speed == _speeds[i] ? AppColors.cyan : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _speedLabels[i],
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: sim.speed == _speeds[i] ? AppColors.ink : AppColors.muted,
+                              ),
                             ),
                           ),
                         ),
@@ -327,16 +344,21 @@ class _SquareButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: color,
-        borderRadius: BorderRadius.circular(size * 0.33),
-        child: InkWell(
+      excludeFromSemantics: true,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: Material(
+          color: color,
           borderRadius: BorderRadius.circular(size * 0.33),
-          onTap: onTap,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(icon, color: iconColor, size: size * 0.48),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(size * 0.33),
+            onTap: onTap,
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Icon(icon, color: iconColor, size: size * 0.48),
+            ),
           ),
         ),
       ),

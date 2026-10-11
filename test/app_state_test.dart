@@ -1,6 +1,9 @@
+import 'package:chance/data/achievements.dart';
+import 'package:chance/data/catalogue.dart';
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
+import 'package:chance/services/sound_service.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -205,5 +208,35 @@ void main() {
       expect(await s.setReminder(true), isFalse);
       expect(s.reminderOn, isFalse);
     });
+  });
+
+  group('badges', () {
+    test('ids are unique', () {
+      final ids = kAchievements.map((a) => a.id).toList();
+      expect(ids.toSet().length, ids.length);
+    });
+
+    test('a chapter badge needs every lesson in its chapters', () {
+      final s = makeState();
+      final badge = kAchievements.firstWhere((a) => a.id == 'chapters_13');
+      final ids = kChapters[12].lessons.map((l) => l.id).whereType<String>().toList();
+      for (final id in ids.skip(1)) {
+        s.completeLesson(id, correct: 3, total: 3);
+      }
+      expect(badge.earned(s), isFalse);
+      s.completeLesson(ids.first, correct: 3, total: 3);
+      expect(badge.earned(s), isTrue);
+    });
+  });
+
+  test('sound effects can be switched off, and the setting is saved', () {
+    final store = MemoryStore();
+    final sounds = FakeSoundService();
+    final s = makeState(store: store, sounds: sounds);
+    s.playSound(Sfx.correct);
+    s.setSound(false);
+    s.playSound(Sfx.wrong);
+    expect(sounds.played, [Sfx.correct]);
+    expect(makeState(store: store).sound, isFalse);
   });
 }
