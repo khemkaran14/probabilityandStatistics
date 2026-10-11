@@ -11,6 +11,8 @@ import 'package:chance/lessons/ch09_two_variables.dart';
 import 'package:chance/lessons/ch11_sampling.dart';
 import 'package:chance/lessons/ch12_estimation.dart';
 import 'package:chance/lessons/ch13_testing.dart';
+import 'package:chance/lessons/ch14_regression.dart';
+import 'package:chance/lessons/ch15_bayesian.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/combinations.dart';
@@ -122,6 +124,14 @@ final Map<String, LessonSpec> lessonRegistry = {
     tTestsLesson,
     chiSquareLesson,
     anovaLesson,
+    lineOfBestFitLesson,
+    residualsLesson,
+    rSquaredLesson,
+    multipleRegressionLesson,
+    logisticRegressionLesson,
+    priorPosteriorLesson,
+    updatingEvidenceLesson,
+    bayesVsFrequentistLesson,
   ])
     spec.id: spec,
 };
