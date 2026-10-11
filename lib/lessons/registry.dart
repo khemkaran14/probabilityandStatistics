@@ -10,6 +10,7 @@ import 'package:chance/lessons/ch08_continuous.dart';
 import 'package:chance/lessons/ch09_two_variables.dart';
 import 'package:chance/lessons/ch11_sampling.dart';
 import 'package:chance/lessons/ch12_estimation.dart';
+import 'package:chance/lessons/ch13_testing.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/combinations.dart';
@@ -113,6 +114,14 @@ final Map<String, LessonSpec> lessonRegistry = {
     confidenceIntervalsLesson,
     marginOfErrorLesson,
     sampleSizeLesson,
+    nullAlternativeLesson,
+    pValuesLesson,
+    typeErrorsLesson,
+    powerLesson,
+    zTestLesson,
+    tTestsLesson,
+    chiSquareLesson,
+    anovaLesson,
   ])
     spec.id: spec,
 };
