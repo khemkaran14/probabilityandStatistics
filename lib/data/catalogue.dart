@@ -59,12 +59,12 @@ const List<Chapter> kChapters = [
     Lesson('Mutually exclusive events', id: 'mutually_exclusive'),
   ]),
   Chapter(number: 4, title: 'Counting', tagline: 'How many ways?', free: false, lessons: [
-    Lesson('Multiplication principle'),
-    Lesson('Permutations'),
-    Lesson('Combinations'),
-    Lesson('Arrangements with repeats'),
-    Lesson('Pigeonhole principle'),
-    Lesson('The birthday paradox'),
+    Lesson('Multiplication principle', id: 'multiplication_principle'),
+    Lesson('Permutations', id: 'permutations'),
+    Lesson('Combinations', id: 'combinations'),
+    Lesson('Arrangements with repeats', id: 'repeats'),
+    Lesson('Pigeonhole principle', id: 'pigeonhole'),
+    Lesson('The birthday paradox', id: 'birthday'),
   ]),
   Chapter(
       number: 5,
@@ -161,7 +161,7 @@ const List<Chapter> kChapters = [
   ]),
   Chapter(number: 17, title: 'Paradoxes & puzzles', tagline: 'Where intuition fails', free: false, lessons: [
     Lesson('Monty Hall', id: 'monty_hall', preview: true),
-    Lesson('Birthday paradox'),
+    Lesson('Birthday paradox', id: 'birthday'),
     Lesson("Simpson's paradox"),
     Lesson("Gambler's fallacy"),
     Lesson('Base-rate fallacy'),
