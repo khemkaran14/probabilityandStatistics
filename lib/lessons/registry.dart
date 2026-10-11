@@ -5,6 +5,7 @@ import 'package:chance/lessons/bar_pie.dart';
 import 'package:chance/lessons/bayes_test.dart';
 import 'package:chance/lessons/birthday.dart';
 import 'package:chance/lessons/box_plots.dart';
+import 'package:chance/lessons/ch07_discrete.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
 import 'package:chance/lessons/combinations.dart';
@@ -80,6 +81,12 @@ final Map<String, LessonSpec> lessonRegistry = {
     expectedValueLesson,
     varianceRvLesson,
     linearityLesson,
+    bernoulliLesson,
+    geometricLesson,
+    negativeBinomialLesson,
+    hypergeometricLesson,
+    poissonLesson,
+    discreteUniformLesson,
   ])
     spec.id: spec,
 };
