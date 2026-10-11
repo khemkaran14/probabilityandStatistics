@@ -5,10 +5,13 @@ import 'package:chance/lessons/bayes_test.dart';
 import 'package:chance/lessons/box_plots.dart';
 import 'package:chance/lessons/clt_dice.dart';
 import 'package:chance/lessons/coin_flips.dart';
+import 'package:chance/lessons/complement.dart';
+import 'package:chance/lessons/events.dart';
 import 'package:chance/lessons/galton_board.dart';
 import 'package:chance/lessons/graphs_lie.dart';
 import 'package:chance/lessons/histograms.dart';
 import 'package:chance/lessons/monty_hall.dart';
+import 'package:chance/lessons/mutually_exclusive.dart';
 import 'package:chance/lessons/outliers.dart';
 import 'package:chance/lessons/percentiles.dart';
 import 'package:chance/lessons/scatter.dart';
@@ -42,6 +45,9 @@ final Map<String, LessonSpec> lessonRegistry = {
     scatterLesson,
     stemLeafLesson,
     graphsLieLesson,
+    eventsLesson,
+    complementLesson,
+    mutuallyExclusiveLesson,
   ])
     spec.id: spec,
 };

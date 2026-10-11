@@ -52,11 +52,11 @@ const List<Chapter> kChapters = [
     Lesson('How graphs lie', id: 'graphs_lie'),
   ]),
   Chapter(number: 3, title: 'Probability basics', tagline: 'Chance, counted', free: true, lessons: [
-    Lesson('Experiments, outcomes & events'),
+    Lesson('Experiments, outcomes & events', id: 'events'),
     Lesson('Theory vs experiment: coin flips', id: 'coin_flips'),
-    Lesson('The complement rule'),
+    Lesson('The complement rule', id: 'complement'),
     Lesson('Addition rule & Venn diagrams', id: 'venn'),
-    Lesson('Mutually exclusive events'),
+    Lesson('Mutually exclusive events', id: 'mutually_exclusive'),
   ]),
   Chapter(number: 4, title: 'Counting', tagline: 'How many ways?', free: false, lessons: [
     Lesson('Multiplication principle'),
