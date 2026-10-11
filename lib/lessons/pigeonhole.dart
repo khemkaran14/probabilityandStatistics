@@ -107,7 +107,7 @@ void _paintPigeonhole(Canvas canvas, Size size, PigeonholeSim sim) {
 
   final msg = !sim.roundDone
       ? (sim.guaranteed ? 'More pigeons than holes: a share is certain' : 'Will two end up together?')
-      : (sim.shared ? 'Two pigeons share a hole' : 'Every pigeon got its own hole');
+      : (sim.shared ? 'Some hole holds 2 or more pigeons' : 'Every pigeon got its own hole');
   label(canvas, msg, Offset(w / 2, h - 46), size: 14, color: sim.shared ? AppColors.pink : AppColors.ink);
   label(canvas, 'Rounds with a shared hole: ${sim.roundsShared} of ${sim.rounds}', Offset(w / 2, h - 20),
       size: 12, color: AppColors.muted);

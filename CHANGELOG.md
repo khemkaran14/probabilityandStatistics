@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0
+
+- Chapters 1–6 are complete: 30 new animated lessons, 38 in total
+  - Ch 1: types of data, percentiles & quartiles, skew & shape, outliers, z-scores
+  - Ch 2: bar & pie charts, histograms, box plots, scatter plots,
+    stem-and-leaf plots, how graphs lie
+  - Ch 3: experiments & events, the complement rule, mutually exclusive events
+  - Ch 4: multiplication principle, permutations, combinations, arrangements
+    with repeats, pigeonhole principle, birthday paradox
+  - Ch 5: conditional probability, independence, tree diagrams,
+    multiplication rule, law of total probability
+  - Ch 6: discrete vs continuous, PMF & CDF, expected value, variance,
+    linearity of expectation
+- Shared lesson toolkit (`lib/lessons/kit.dart`)
+- 31 new simulation tests check each lesson against its maths (111 tests)
+
 ## 1.1.0
 
 - 4 new lessons: Mean, median & mode (add an outlier and watch the mean run);

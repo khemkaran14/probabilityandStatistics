@@ -76,11 +76,12 @@ void _paintTotal(Canvas canvas, Size size, TotalProbSim sim) {
     // Faulty band drawn 3× taller so small rates stay visible.
     final fh = (colBottom - top) * (sim.faultRates[i] * 3).clamp(0.0, 1.0);
     roundRect(canvas, Rect.fromLTWH(x + 2, top, cw - 4, fh), AppColors.pink.withValues(alpha: 0.75), radius: 8);
-    label(canvas, 'Factory ${TotalProbSim.names[i]}', Offset(x + cw / 2, colBottom - 34),
+    label(canvas, 'Factory ${TotalProbSim.names[i]}', Offset(x + cw / 2, colBottom - 40),
         size: 12, color: TotalProbSim.colors[i]);
-    label(canvas, '${(TotalProbSim.shares[i] * 100).round()}% · ${(sim.faultRates[i] * 100).round()}% faulty',
-        Offset(x + cw / 2, colBottom - 16),
+    label(canvas, '${(TotalProbSim.shares[i] * 100).round()}% of bulbs', Offset(x + cw / 2, colBottom - 22),
         size: 10, color: AppColors.ink);
+    label(canvas, '${(sim.faultRates[i] * 100).round()}% faulty', Offset(x + cw / 2, colBottom - 9),
+        size: 10, color: AppColors.pink);
     if (sim.last?.$1 == i) {
       label(canvas, sim.last!.$2 ? '💡✗' : '💡', Offset(x + cw / 2, top + (colBottom - top) / 2), size: 20);
     }
@@ -102,8 +103,9 @@ void _paintTotal(Canvas canvas, Size size, TotalProbSim sim) {
     roundRect(canvas, Rect.fromLTWH(bx, barY, pw, 26), TotalProbSim.colors[i], radius: 6);
     bx += pw;
   }
-  label(canvas, 'total ${(sim.theory * 100).toStringAsFixed(1)}% (bar = 20%)', Offset(left + 6, barY + 13),
-      size: 11, color: Colors.white, align: TextAlign.left);
+  label(canvas, '= ${(sim.theory * 100).toStringAsFixed(1)}% of all bulbs are faulty', Offset(left, barY + 40),
+      size: 12, color: AppColors.pink, align: TextAlign.left);
+  label(canvas, 'full bar = 20%', Offset(right, barY + 40), size: 10, color: AppColors.muted, align: TextAlign.right);
   final seen = sim.total == 0 ? 0 : sim.totalFaulty / sim.total;
   label(canvas, 'seen: ${sim.totalFaulty} faulty of ${sim.total} = ${(seen * 100).toStringAsFixed(1)}%',
       Offset(w / 2, h - 12),

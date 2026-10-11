@@ -184,36 +184,36 @@ class Chapter {
 
 const List<Chapter> kChapters = [
   Chapter(number: 1, title: 'Data & averages', tagline: 'Find the centre and the spread', free: true, lessons: [
-    Lesson('Types of data'),
+    Lesson('Types of data', id: 'types_of_data'),
     Lesson('Mean, median, mode', id: 'averages'),
     Lesson('Range, variance & standard deviation', id: 'spread'),
-    Lesson('Percentiles & quartiles'),
-    Lesson('Skew & shape'),
-    Lesson('Outliers'),
-    Lesson('Z-scores'),
+    Lesson('Percentiles & quartiles', id: 'percentiles'),
+    Lesson('Skew & shape', id: 'skew'),
+    Lesson('Outliers', id: 'outliers'),
+    Lesson('Z-scores', id: 'zscores'),
   ]),
   Chapter(number: 2, title: 'Seeing data', tagline: 'Charts that tell the truth', free: true, lessons: [
-    Lesson('Bar & pie charts'),
-    Lesson('Histograms'),
-    Lesson('Box plots'),
-    Lesson('Scatter plots'),
-    Lesson('Stem-and-leaf plots'),
-    Lesson('How graphs lie'),
+    Lesson('Bar & pie charts', id: 'bar_pie'),
+    Lesson('Histograms', id: 'histograms'),
+    Lesson('Box plots', id: 'box_plots'),
+    Lesson('Scatter plots', id: 'scatter'),
+    Lesson('Stem-and-leaf plots', id: 'stem_leaf'),
+    Lesson('How graphs lie', id: 'graphs_lie'),
   ]),
   Chapter(number: 3, title: 'Probability basics', tagline: 'Chance, counted', free: true, lessons: [
-    Lesson('Experiments, outcomes & events'),
+    Lesson('Experiments, outcomes & events', id: 'events'),
     Lesson('Theory vs experiment: coin flips', id: 'coin_flips'),
-    Lesson('The complement rule'),
+    Lesson('The complement rule', id: 'complement'),
     Lesson('Addition rule & Venn diagrams', id: 'venn'),
-    Lesson('Mutually exclusive events'),
+    Lesson('Mutually exclusive events', id: 'mutually_exclusive'),
   ]),
   Chapter(number: 4, title: 'Counting', tagline: 'How many ways?', free: false, lessons: [
-    Lesson('Multiplication principle'),
-    Lesson('Permutations'),
-    Lesson('Combinations'),
-    Lesson('Arrangements with repeats'),
-    Lesson('Pigeonhole principle'),
-    Lesson('The birthday paradox'),
+    Lesson('Multiplication principle', id: 'multiplication_principle'),
+    Lesson('Permutations', id: 'permutations'),
+    Lesson('Combinations', id: 'combinations'),
+    Lesson('Arrangements with repeats', id: 'repeats'),
+    Lesson('Pigeonhole principle', id: 'pigeonhole'),
+    Lesson('The birthday paradox', id: 'birthday'),
   ]),
   Chapter(
       number: 5,
@@ -221,20 +221,20 @@ const List<Chapter> kChapters = [
       tagline: 'When new info changes the odds',
       free: false,
       lessons: [
-        Lesson('Conditional probability'),
-        Lesson('Independence'),
-        Lesson('Tree diagrams'),
-        Lesson('Multiplication rule'),
-        Lesson('Law of total probability'),
+        Lesson('Conditional probability', id: 'conditional'),
+        Lesson('Independence', id: 'independence'),
+        Lesson('Tree diagrams', id: 'tree_diagrams'),
+        Lesson('Multiplication rule', id: 'multiplication_rule'),
+        Lesson('Law of total probability', id: 'total_probability'),
         Lesson("Bayes' theorem: the medical test", id: 'bayes', preview: true),
         Lesson('Monty Hall', id: 'monty_hall', preview: true),
       ]),
   Chapter(number: 6, title: 'Random variables', tagline: 'Turning chance into numbers', free: false, lessons: [
-    Lesson('Discrete vs continuous'),
-    Lesson('PMF, PDF & CDF'),
-    Lesson('Expected value'),
-    Lesson('Variance of a random variable'),
-    Lesson('Linearity of expectation'),
+    Lesson('Discrete vs continuous', id: 'discrete_continuous'),
+    Lesson('PMF, PDF & CDF', id: 'pmf_cdf'),
+    Lesson('Expected value', id: 'expected_value'),
+    Lesson('Variance of a random variable', id: 'variance_rv'),
+    Lesson('Linearity of expectation', id: 'linearity'),
   ]),
   Chapter(number: 7, title: 'Discrete distributions', tagline: 'Counting successes', free: false, lessons: [
     Lesson('Bernoulli trials'),
@@ -310,7 +310,7 @@ const List<Chapter> kChapters = [
   ]),
   Chapter(number: 17, title: 'Paradoxes & puzzles', tagline: 'Where intuition fails', free: false, lessons: [
     Lesson('Monty Hall', id: 'monty_hall', preview: true),
-    Lesson('Birthday paradox'),
+    Lesson('Birthday paradox', id: 'birthday'),
     Lesson("Simpson's paradox"),
     Lesson("Gambler's fallacy"),
     Lesson('Base-rate fallacy'),
@@ -557,6 +557,175 @@ class LessonSpec {
   final Widget Function(LessonSim sim) buildTryIt;
   final List<QuizQuestion> quiz;
 }
+
+// ===== lib/lessons/arrangements_repeats.dart =====
+const List<String> kRepeatWords = ['BOOK', 'LEVEL', 'APPLE', 'BANANA', 'LETTER'];
+
+/// Shuffles the letters of a word and collects the distinct words made.
+class RepeatsSim extends TickSim {
+  RepeatsSim({super.rng}) {
+    restart();
+  }
+
+  String word = 'BANANA';
+  late List<String> letters;
+  final Set<String> seen = {};
+  int shuffles = 0;
+
+  Map<String, int> get letterCounts {
+    final m = <String, int>{};
+    for (final c in word.split('')) {
+      m[c] = (m[c] ?? 0) + 1;
+    }
+    return m;
+  }
+
+  int get total {
+    var t = factorial(word.length);
+    for (final k in letterCounts.values) {
+      t ~/= factorial(k);
+    }
+    return t;
+  }
+
+  @override
+  double get interval => shuffles < 6 ? 0.8 : 0.12;
+
+  @override
+  void tick() {
+    letters.shuffle(rng);
+    shuffles++;
+    seen.add(letters.join());
+  }
+
+  @override
+  void restart() {
+    letters = word.split('');
+    seen.clear();
+    shuffles = 0;
+  }
+}
+
+void _paintRepeats(Canvas canvas, Size size, RepeatsSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final repeated = sim.letterCounts.entries.where((e) => e.value > 1).map((e) => e.key).toList();
+  Color colorFor(String c) {
+    final i = repeated.indexOf(c);
+    return i < 0 ? AppColors.peg : [AppColors.pink, AppColors.blue, AppColors.green][i % 3];
+  }
+
+  // Tiles.
+  final n = sim.letters.length;
+  final tile = ((w - 40) / n).clamp(0.0, 52.0) - 6;
+  final rowW = n * (tile + 6) - 6;
+  for (var i = 0; i < n; i++) {
+    final rect = Rect.fromLTWH((w - rowW) / 2 + i * (tile + 6), 20, tile, tile * 1.15);
+    roundRect(canvas, rect, colorFor(sim.letters[i]), radius: 10);
+    label(canvas, sim.letters[i], rect.center, size: tile * 0.55, color: Colors.white, weight: FontWeight.w900);
+  }
+  final legend = repeated.map((c) => '$c ×${sim.letterCounts[c]}').join('  ');
+  label(canvas, legend.isEmpty ? 'no repeated letters' : 'repeated: $legend', Offset(w / 2, 34 + tile * 1.15),
+      size: 12, color: AppColors.muted);
+
+  // Progress.
+  final y = 64 + tile * 1.15;
+  final barW = w - 40;
+  final frac = sim.seen.length / sim.total;
+  label(canvas, 'Different words made', Offset(20, y), size: 12, align: TextAlign.left);
+  roundRect(canvas, Rect.fromLTWH(20, y + 12, barW, 24), Colors.white, radius: 8);
+  roundRect(canvas, Rect.fromLTWH(20, y + 12, barW * frac, 24), AppColors.violet, radius: 8);
+  label(canvas, '${sim.seen.length} of ${sim.total}', Offset(w / 2, y + 24),
+      size: 12, color: frac > 0.5 ? Colors.white : AppColors.ink);
+
+  // Recent words.
+  final recent = sim.seen.toList().reversed.take(12).toList();
+  final colW = barW / 3;
+  for (var i = 0; i < recent.length; i++) {
+    label(canvas, recent[i], Offset(20 + colW * (i % 3) + colW / 2, y + 58 + (i ~/ 3) * 20.0),
+        size: 13, color: i == 0 ? AppColors.ink : AppColors.muted);
+  }
+  label(canvas, '${sim.shuffles} shuffles', Offset(w - 20, h - 12),
+      size: 11, color: AppColors.muted, align: TextAlign.right);
+}
+
+final LessonSpec repeatsLesson = LessonSpec(
+  id: 'repeats',
+  chapterLabel: 'Ch 4 · Counting',
+  title: const [
+    TitlePart('Why '),
+    TitlePart('BANANA', AppColors.yellow),
+    TitlePart(' has fewer arrangements than you think'),
+  ],
+  subtitle: 'Arrangements with repeats · 2-minute animated lesson',
+  createSim: () => RepeatsSim(),
+  visualAspectRatio: 1.05,
+  buildVisual: (sim) => simCanvas<RepeatsSim>(sim, _paintRepeats),
+  stats: (sim) {
+    final r = sim as RepeatsSim;
+    return [
+      StatChip('letters', '${r.word.length}', AppColors.yellow),
+      StatChip('if all different', '${factorial(r.word.length)}', AppColors.pink),
+      StatChip('really', '${r.total}', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Six different letters can be arranged 6! = 720 ways. But BANANA\'s three '
+      'A\'s are identical: swapping them changes nothing, so each word is counted '
+      '3! = 6 times too often. The two N\'s add another 2! repeat. Divide out the '
+      'repeats for each repeated letter.',
+  formula: (sim) {
+    final r = sim as RepeatsSim;
+    final denominators = r.letterCounts.values.where((k) => k > 1).map((k) => '$k!').join(' × ');
+    return denominators.isEmpty
+        ? '${r.word.length}! = ${r.total}'
+        : '${r.word.length}! / ($denominators) = ${factorial(r.word.length)} / '
+            '${factorial(r.word.length) ~/ r.total} = ${r.total}';
+  },
+  tryItTitle: 'Try it: pick a word',
+  buildTryIt: (sim) {
+    final r = sim as RepeatsSim;
+    return watch(
+      r,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChoiceRow<String>(
+            options: {for (final word in kRepeatWords) word: word},
+            selected: r.word,
+            onSelected: (v) => r.change(() => r.word = v),
+          ),
+          const SizedBox(height: 8),
+          ControlRow(children: [ActionButton('Shuffle 500 times', () => r.runMany(500))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'How many different arrangements of the letters in "MOM"?',
+      options: ['2', '3', '6', '9'],
+      answer: 1,
+      explanation: '3! / 2! = 3: MOM, MMO, OMM.',
+    ),
+    QuizQuestion(
+      prompt: 'How many arrangements of "LEVEL" (two L\'s, two E\'s)?',
+      options: ['30', '60', '120', '24'],
+      answer: 0,
+      explanation: '5! / (2! × 2!) = 120 / 4 = 30.',
+    ),
+    QuizQuestion(
+      prompt: 'Why divide by 3! for a letter that appears three times?',
+      options: [
+        'Because there are three vowels',
+        'The 3! orders of identical letters all give the same word',
+        'To make the answer smaller',
+        'Because 3! = 3',
+      ],
+      answer: 1,
+      explanation: 'Identical letters can be swapped in 3! ways without changing the word.',
+    ),
+  ],
+);
 
 // ===== lib/lessons/averages.dart =====
 // ---------------------------------------------------------------------------
@@ -897,6 +1066,194 @@ class _AveragesControls extends StatelessWidget {
   }
 }
 
+// ===== lib/lessons/bar_pie.dart =====
+const List<String> kFruits = ['Mango', 'Apple', 'Banana', 'Grapes', 'Guava'];
+const List<double> _fruitWeights = [0.34, 0.22, 0.18, 0.15, 0.11];
+const List<Color> _fruitColors = [
+  AppColors.orange,
+  AppColors.pink,
+  AppColors.yellow,
+  AppColors.violet,
+  AppColors.green
+];
+
+class BarPieSim extends TickSim {
+  BarPieSim({super.rng});
+
+  List<int> votes = List.filled(kFruits.length, 0);
+
+  /// Index of the latest vote, for a highlight pulse.
+  int last = -1;
+
+  int get total => votes.fold(0, (a, b) => a + b);
+  int get leader => total == 0 ? 0 : votes.indexOf(votes.reduce(math.max));
+
+  @override
+  double get interval => total < 15 ? 0.4 : 0.15;
+
+  @override
+  void tick() {
+    if (total >= 300) return;
+    var r = rng.nextDouble();
+    var i = 0;
+    while (i < kFruits.length - 1 && r > _fruitWeights[i]) {
+      r -= _fruitWeights[i];
+      i++;
+    }
+    vote(i, notify: false);
+  }
+
+  void vote(int i, {bool notify = true}) {
+    votes[i]++;
+    last = i;
+    if (notify) notifyListeners();
+  }
+
+  @override
+  void restart() {
+    votes = List.filled(kFruits.length, 0);
+    last = -1;
+  }
+}
+
+void _paintBarPie(Canvas canvas, Size size, BarPieSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final total = math.max(1, sim.total);
+
+  // --- Bar chart (top) ---
+  const left = 16.0;
+  final right = w - 16;
+  final baseline = h * 0.46;
+  const top = 26.0;
+  final slot = (right - left) / kFruits.length;
+  final maxV = math.max(5, sim.votes.reduce(math.max));
+  label(canvas, 'Bar chart: compare sizes', Offset(left, 12), size: 11, color: AppColors.muted, align: TextAlign.left);
+  for (var i = 0; i < kFruits.length; i++) {
+    final x = left + slot * (i + 0.5);
+    bar(canvas, x, slot * 0.62, baseline, (baseline - top - 14) * sim.votes[i] / maxV, _fruitColors[i]);
+    label(canvas, '${sim.votes[i]}', Offset(x, baseline - (baseline - top - 14) * sim.votes[i] / maxV - 9), size: 11);
+    label(canvas, kFruits[i], Offset(x, baseline + 10), size: 10, color: AppColors.muted);
+  }
+  line(canvas, Offset(left, baseline), Offset(right, baseline), AppColors.peg);
+
+  // --- Pie chart (bottom) ---
+  final pieTop = baseline + 30;
+  label(canvas, 'Pie chart: parts of a whole', Offset(left, pieTop),
+      size: 11, color: AppColors.muted, align: TextAlign.left);
+  final r = math.min((h - pieTop - 22) / 2, w * 0.22);
+  final c = Offset(left + r + 8, pieTop + 14 + r);
+  var start = -math.pi / 2;
+  for (var i = 0; i < kFruits.length; i++) {
+    final sweep = sim.votes[i] / total * 2 * math.pi;
+    if (sweep <= 0) continue;
+    final rr = i == sim.last ? r + 4 : r;
+    canvas.drawArc(Rect.fromCircle(center: c, radius: rr), start, sweep, true, Paint()..color = _fruitColors[i]);
+    canvas.drawArc(
+      Rect.fromCircle(center: c, radius: rr),
+      start,
+      sweep,
+      true,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    start += sweep;
+  }
+  if (sim.total == 0) ring(canvas, c, r, AppColors.peg);
+
+  // Legend with percentages.
+  final lx = c.dx + r + 22;
+  for (var i = 0; i < kFruits.length; i++) {
+    final y = pieTop + 22 + i * ((2 * r) / kFruits.length);
+    canvas.drawCircle(Offset(lx, y), 6, Paint()..color = _fruitColors[i]);
+    label(canvas, '${kFruits[i]} ${(sim.votes[i] / total * 100).round()}%', Offset(lx + 12, y),
+        size: 12, align: TextAlign.left);
+  }
+}
+
+final LessonSpec barPieLesson = LessonSpec(
+  id: 'bar_pie',
+  chapterLabel: 'Ch 2 · Seeing data',
+  title: const [
+    TitlePart('Same votes, two '),
+    TitlePart('pictures', AppColors.orange),
+  ],
+  subtitle: 'Bar & pie charts · 2-minute animated lesson',
+  createSim: () => BarPieSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<BarPieSim>(sim, _paintBarPie),
+  stats: (sim) {
+    final b = sim as BarPieSim;
+    return [
+      StatChip('votes', '${b.total}', AppColors.yellow),
+      StatChip('leader', b.total == 0 ? '…' : kFruits[b.leader], AppColors.orange),
+      StatChip('its share', b.total == 0 ? '…' : '${(b.votes[b.leader] / b.total * 100).round()}%', AppColors.pink),
+    ];
+  },
+  bigIdea: 'Bars are best for comparing categories: our eyes judge lengths on a '
+      'shared baseline very accurately. Pies show parts of one whole, but angles '
+      'are hard to compare, so close slices look the same. Use a pie only for a '
+      'few categories that add up to 100%.',
+  formula: (sim) {
+    final b = sim as BarPieSim;
+    final t = math.max(1, b.total);
+    return 'slice angle = share × 360° → ${kFruits[b.leader]}: '
+        '${b.votes[b.leader]}/$t × 360° = ${(b.votes[b.leader] / t * 360).round()}°';
+  },
+  tryItTitle: 'Try it: cast your own votes',
+  buildTryIt: (sim) {
+    final b = sim as BarPieSim;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var i = 0; i < kFruits.length; i++)
+              ActionChip(
+                avatar: CircleAvatar(backgroundColor: _fruitColors[i], radius: 8),
+                label: Text(kFruits[i], style: const TextStyle(fontWeight: FontWeight.w800)),
+                onPressed: () => b.vote(i),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const TryNote('Pause the animation, then vote for Guava ten times. Which chart shows the change more clearly?'),
+      ],
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'You want to compare sales of 12 different phone models. Best chart?',
+      options: ['Pie chart', 'Bar chart', 'A single number', 'Either is equally good'],
+      answer: 1,
+      explanation: 'Twelve thin pie slices are impossible to compare. Bars on a common '
+          'baseline make small differences visible.',
+    ),
+    QuizQuestion(
+      prompt: 'A slice is 25% of a pie. What angle is it?',
+      options: ['25°', '45°', '90°', '180°'],
+      answer: 2,
+      explanation: '0.25 × 360° = 90°, a right angle.',
+    ),
+    QuizQuestion(
+      prompt: 'When is a pie chart a reasonable choice?',
+      options: [
+        'Showing change over 10 years',
+        'A few parts that add up to one whole',
+        'Comparing two unrelated totals',
+        'Showing averages',
+      ],
+      answer: 1,
+      explanation: 'Pies show how one whole splits up. They need the parts to sum to '
+          '100% and work best with 2–5 slices.',
+    ),
+  ],
+);
+
 // ===== lib/lessons/bayes_test.dart =====
 // ---------------------------------------------------------------------------
 // Simulation
@@ -1225,6 +1582,345 @@ class _BayesControls extends StatelessWidget {
     );
   }
 }
+
+// ===== lib/lessons/birthday.dart =====
+/// People walk into a room one by one; does anyone share a birthday?
+class BirthdaySim extends TickSim {
+  BirthdaySim({super.rng});
+
+  int people = 23;
+
+  /// Birthdays (day 0–364) of people in the current room.
+  List<int> room = [];
+
+  /// Day of the first shared birthday in this room, if any.
+  int? match;
+
+  int rooms = 0;
+  int roomsWithMatch = 0;
+  int _hold = 0;
+
+  bool get full => room.length >= people;
+
+  double get theory => birthdayChance(people);
+
+  @override
+  double get interval => rooms < 2 ? 0.12 : 0.03;
+
+  @override
+  void tick() {
+    if (!full) {
+      final day = rng.nextInt(365);
+      if (match == null && room.contains(day)) match = day;
+      room.add(day);
+      if (full) {
+        rooms++;
+        if (match != null) roomsWithMatch++;
+      }
+    } else if (++_hold > (rooms < 3 ? 25 : 8)) {
+      _hold = 0;
+      room = [];
+      match = null;
+    }
+  }
+
+  @override
+  void restart() {
+    room = [];
+    match = null;
+    rooms = 0;
+    roomsWithMatch = 0;
+    _hold = 0;
+  }
+}
+
+/// P(at least two of n people share a birthday), ignoring leap years.
+double birthdayChance(int n) {
+  var none = 1.0;
+  for (var k = 0; k < n; k++) {
+    none *= (365 - k) / 365;
+  }
+  return 1 - none;
+}
+
+void _paintBirthday(Canvas canvas, Size size, BirthdaySim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  // A year as a 21 × 18 grid of days (365 cells, last row partly empty).
+  const cols = 21;
+  final cell = (w - 20) / cols;
+  const top = 20.0;
+  label(canvas, 'every day of the year', Offset(w / 2, 8), size: 10, color: AppColors.muted);
+  final taken = <int, int>{};
+  for (final d in sim.room) {
+    taken[d] = (taken[d] ?? 0) + 1;
+  }
+  for (var d = 0; d < 365; d++) {
+    final c = Offset(10 + (d % cols + 0.5) * cell, top + (d ~/ cols + 0.5) * cell);
+    final n = taken[d] ?? 0;
+    if (n >= 2) {
+      canvas.drawCircle(c, cell * 0.62, Paint()..color = AppColors.pink);
+      ring(canvas, c, cell * 0.9, AppColors.pink, width: 2);
+    } else if (n == 1) {
+      canvas.drawCircle(c, cell * 0.38, Paint()..color = AppColors.blue);
+    } else {
+      canvas.drawCircle(c, cell * 0.14, Paint()..color = AppColors.peg.withValues(alpha: 0.5));
+    }
+  }
+
+  final y = top + 18 * cell + 18;
+  label(canvas, '${sim.room.length} of ${sim.people} people in the room', Offset(w / 2, y), size: 13);
+  label(canvas, sim.match != null ? 'Shared birthday found!' : (sim.full ? 'No shared birthday this time' : ''),
+      Offset(w / 2, y + 22),
+      size: 15, color: sim.match != null ? AppColors.pink : AppColors.muted);
+  label(canvas, 'Rooms with a match: ${sim.roomsWithMatch} of ${sim.rooms}', Offset(w / 2, h - 12),
+      size: 12, color: AppColors.muted);
+}
+
+final LessonSpec birthdayLesson = LessonSpec(
+  id: 'birthday',
+  chapterLabel: 'Ch 4 · Counting',
+  title: const [
+    TitlePart('Just '),
+    TitlePart('23 people', AppColors.blue),
+    TitlePart(' for a 50% chance of a '),
+    TitlePart('shared birthday', AppColors.pink),
+  ],
+  subtitle: 'The birthday paradox · 2-minute animated lesson',
+  createSim: () => BirthdaySim(),
+  visualAspectRatio: 0.9,
+  buildVisual: (sim) => simCanvas<BirthdaySim>(sim, _paintBirthday),
+  stats: (sim) {
+    final b = sim as BirthdaySim;
+    return [
+      StatChip('rooms', '${b.rooms}', AppColors.yellow),
+      StatChip('with a match', b.rooms == 0 ? '…' : '${(b.roomsWithMatch / b.rooms * 100).round()}%', AppColors.pink),
+      StatChip('theory', '${(b.theory * 100).round()}%', AppColors.violet),
+    ];
+  },
+  bigIdea: 'It feels like you\'d need about 180 people, but you aren\'t looking for '
+      'someone who shares your birthday: any pair will do. 23 people make 253 '
+      'different pairs, and each pair is another chance for a match. Count the '
+      'opposite instead: everyone different means each new person must miss all '
+      'the days already taken.',
+  formula: (sim) {
+    final b = sim as BirthdaySim;
+    return 'P(match) = 1 − (365/365 × 364/365 × … × ${365 - b.people + 1}/365) = ${b.theory.toStringAsFixed(3)}';
+  },
+  tryItTitle: 'Try it: change the room size',
+  buildTryIt: (sim) {
+    final b = sim as BirthdaySim;
+    return watch(
+      b,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '5',
+            right: '70',
+            value: b.people.toDouble(),
+            min: 5,
+            max: 70,
+            divisions: 65,
+            label: '${b.people} people',
+            onChanged: (v) => b.change(() => b.people = v.round()),
+          ),
+          ControlRow(children: [
+            ValueTag('${b.people} people → ${(b.theory * 100).toStringAsFixed(1)}%'),
+            ActionButton('Fill 100 rooms', () => b.runMany(100 * (b.people + 10))),
+          ]),
+          const SizedBox(height: 8),
+          const TryNote('At 50 people a shared birthday is 97% likely; at 70 it is 99.9%.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Roughly how many people do you need for a 50% chance that two share a birthday?',
+      options: ['23', '50', '183', '366'],
+      answer: 0,
+      explanation: 'With 23 people there are 253 pairs, and the chance passes 50%.',
+    ),
+    QuizQuestion(
+      prompt: 'Why is the answer so much smaller than people expect?',
+      options: [
+        'Birthdays cluster in summer',
+        'Any pair counts, and pairs grow fast as people are added',
+        'Leap years',
+        'It is a trick question',
+      ],
+      answer: 1,
+      explanation: 'n people make n(n − 1)/2 pairs. 23 people already make 253.',
+    ),
+    QuizQuestion(
+      prompt: 'How many people guarantee a shared birthday (ignoring 29 Feb)?',
+      options: ['183', '365', '366', '730'],
+      answer: 2,
+      explanation: 'The pigeonhole principle: 366 people, 365 days.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/box_plots.dart =====
+/// Marks of two classes: dots first, then each box plot is built in stages.
+class BoxPlotSim extends TickSim {
+  BoxPlotSim({super.rng});
+
+  static const int perGroup = 20;
+
+  final List<double> a = [];
+  final List<double> b = [];
+
+  /// Spread of class B (class A is fixed).
+  double spreadB = 18;
+
+  /// 0 = dots only, 1 median, 2 box, 3 whiskers.
+  int stage = 0;
+
+  bool get full => a.length >= perGroup && b.length >= perGroup;
+
+  @override
+  double get interval => full ? 0.8 : 0.1;
+
+  double _draw(double mean, double sd) => (mean + normalDraw(rng) * sd).clamp(0, 100).toDouble();
+
+  @override
+  void tick() {
+    if (!full) {
+      if (a.length <= b.length) {
+        a.add(_draw(62, 8));
+      } else {
+        b.add(_draw(58, spreadB));
+      }
+    } else if (stage < 3) {
+      stage++;
+    }
+  }
+
+  @override
+  void restart() {
+    a.clear();
+    b.clear();
+    stage = 0;
+  }
+}
+
+void _paintBoxes(Canvas canvas, Size size, BoxPlotSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 16.0;
+  final right = w - 16;
+  double xFor(double v) => left + v / 100 * (right - left);
+
+  void group(List<double> data, double y, Color color, String name) {
+    label(canvas, name, Offset(left, y - 50), size: 13, color: color, align: TextAlign.left);
+    for (var i = 0; i < data.length; i++) {
+      canvas.drawCircle(
+          Offset(xFor(data[i]), y - 26 + (i % 4) * 5.0), 4.5, Paint()..color = color.withValues(alpha: 0.6));
+    }
+    if (data.length < 4 || sim.stage == 0) return;
+    final q1 = quantileOf(data, .25), med = quantileOf(data, .5), q3 = quantileOf(data, .75);
+    final lo = data.reduce(math.min), hi = data.reduce(math.max);
+    final boxTop = y + 6, boxBottom = y + 40, mid = (boxTop + boxBottom) / 2;
+    if (sim.stage >= 3) {
+      line(canvas, Offset(xFor(lo), mid), Offset(xFor(q1), mid), AppColors.ink);
+      line(canvas, Offset(xFor(q3), mid), Offset(xFor(hi), mid), AppColors.ink);
+      line(canvas, Offset(xFor(lo), mid - 8), Offset(xFor(lo), mid + 8), AppColors.ink);
+      line(canvas, Offset(xFor(hi), mid - 8), Offset(xFor(hi), mid + 8), AppColors.ink);
+      label(canvas, 'min', Offset(xFor(lo), boxBottom + 10), size: 10, color: AppColors.muted);
+      label(canvas, 'max', Offset(xFor(hi), boxBottom + 10), size: 10, color: AppColors.muted);
+    }
+    if (sim.stage >= 2) {
+      roundRect(canvas, Rect.fromLTRB(xFor(q1), boxTop, xFor(q3), boxBottom), color.withValues(alpha: 0.35), radius: 6);
+      label(canvas, 'Q1', Offset(xFor(q1), boxTop - 8), size: 10, color: AppColors.muted);
+      label(canvas, 'Q3', Offset(xFor(q3), boxTop - 8), size: 10, color: AppColors.muted);
+    }
+    line(canvas, Offset(xFor(med), boxTop - 2), Offset(xFor(med), boxBottom + 2), AppColors.ink, width: 3.5);
+  }
+
+  group(sim.a, h * 0.28, AppColors.blue, 'Class A');
+  group(sim.b, h * 0.68, AppColors.pink, 'Class B');
+
+  final axisY = h - 14;
+  for (var v = 0; v <= 100; v += 20) {
+    label(canvas, '$v', Offset(xFor(v.toDouble()), axisY), size: 10, color: AppColors.muted);
+  }
+}
+
+final LessonSpec boxPlotsLesson = LessonSpec(
+  id: 'box_plots',
+  chapterLabel: 'Ch 2 · Seeing data',
+  title: const [
+    TitlePart('Five numbers that '),
+    TitlePart('summarise', AppColors.blue),
+    TitlePart(' a whole class'),
+  ],
+  subtitle: 'Box plots · 2-minute animated lesson',
+  createSim: () => BoxPlotSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<BoxPlotSim>(sim, _paintBoxes),
+  stats: (sim) {
+    final s = sim as BoxPlotSim;
+    String med(List<double> d) => d.isEmpty ? '…' : quantileOf(d, .5).toStringAsFixed(0);
+    String iqr(List<double> d) => d.length < 4 ? '…' : (quantileOf(d, .75) - quantileOf(d, .25)).toStringAsFixed(0);
+    return [
+      StatChip('median A', med(s.a), AppColors.blue),
+      StatChip('median B', med(s.b), AppColors.pink),
+      StatChip('IQR A / B', '${iqr(s.a)} / ${iqr(s.b)}', AppColors.yellow),
+    ];
+  },
+  bigIdea: 'A box plot squeezes data into five numbers: min, Q1, median, Q3, max. The '
+      'box holds the middle half of the values and the thick line is the median. '
+      'Stacking two box plots shows at a glance which group is higher and which '
+      'is more spread out, even when their averages are close.',
+  formula: (_) => 'min · Q1 · median · Q3 · max     IQR = Q3 − Q1',
+  tryItTitle: 'Try it: change how spread out class B is',
+  buildTryIt: (sim) {
+    final s = sim as BoxPlotSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: 'tight',
+            right: 'wide',
+            value: s.spreadB,
+            min: 4,
+            max: 24,
+            divisions: 5,
+            onChanged: (v) => s.change(() => s.spreadB = v),
+          ),
+          const TryNote('A long box and long whiskers mean the class has very mixed marks.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'What does the box in a box plot contain?',
+      options: ['All the data', 'The middle 50% of the data', 'Only outliers', 'The top 25%'],
+      answer: 1,
+      explanation: 'From Q1 to Q3: the middle half of the values.',
+    ),
+    QuizQuestion(
+      prompt: 'Two box plots have the same median, but one box is much longer. That group…',
+      options: ['Scored higher', 'Is more spread out', 'Is smaller', 'Has no outliers'],
+      answer: 1,
+      explanation: 'A longer box means a bigger IQR: the middle half of the values '
+          'are spread over a wider range.',
+    ),
+    QuizQuestion(
+      prompt: 'Which value does a box plot NOT show directly?',
+      options: ['Median', 'Mean', 'Q1', 'Maximum'],
+      answer: 1,
+      explanation: 'The five-number summary uses the median, quartiles and extremes. '
+          'The mean isn\'t one of them.',
+    ),
+  ],
+);
 
 // ===== lib/lessons/clt_dice.dart =====
 /// Standard deviation of one fair die: √(35/12).
@@ -1926,6 +2622,1140 @@ class _CoinControls extends StatelessWidget {
   }
 }
 
+// ===== lib/lessons/combinations.dart =====
+/// Every ordered pick of r people from n, sliding into columns by team.
+class CombinationSim extends LessonSim {
+  CombinationSim() {
+    _build();
+  }
+
+  static const double cycle = 8;
+
+  int n = 4;
+  int r = 2;
+  double t = 0;
+
+  /// Ordered picks in dictionary order.
+  late List<List<int>> ordered;
+
+  /// Distinct teams (sorted picks) in dictionary order.
+  late List<List<int>> teams;
+
+  int get perms => ordered.length;
+  int get combos => teams.length;
+
+  void _build() {
+    ordered = [];
+    void go(List<int> prefix) {
+      if (prefix.length == r) {
+        ordered.add(prefix);
+        return;
+      }
+      for (var i = 0; i < n; i++) {
+        if (!prefix.contains(i)) go([...prefix, i]);
+      }
+    }
+
+    go([]);
+    final keys = <String>{};
+    teams = [];
+    for (final p in ordered) {
+      final s = [...p]..sort();
+      if (keys.add(s.join())) teams.add(s);
+    }
+    teams.sort((a, b) => a.join().compareTo(b.join()));
+  }
+
+  int teamOf(List<int> p) {
+    final key = ([...p]..sort()).join();
+    return teams.indexWhere((t) => t.join() == key);
+  }
+
+  /// 0 = arrangements in order, 1 = grouped into teams.
+  double get grouping {
+    final s = t % cycle;
+    if (s < 2) return 0;
+    if (s < 4) return Curves.easeInOutCubic.transform((s - 2) / 2);
+    if (s < 6) return 1;
+    return 1 - Curves.easeInOutCubic.transform((s - 6) / 2);
+  }
+
+  @override
+  void advance(double dt) {
+    t = (t + dt) % cycle;
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    t = ((t ~/ 2) * 2 + 2.0) % cycle;
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    t = 0;
+    notifyListeners();
+  }
+
+  void setSizes({int? n, int? r}) {
+    this.n = n ?? this.n;
+    this.r = math.min(r ?? this.r, this.n);
+    _build();
+    t = 0;
+    notifyListeners();
+  }
+}
+
+const _people = ['A', 'B', 'C', 'D', 'E'];
+
+void _paintCombinations(Canvas canvas, Size size, CombinationSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final cols = sim.combos;
+  final rows = sim.perms ~/ cols; // = r!
+  const top = 30.0;
+  final cellW = (w - 20) / cols;
+  final cellH = math.min((h - top - 50) / rows, cellW * 1.6);
+  final g = sim.grouping;
+
+  final within = List.filled(cols, 0);
+  for (var i = 0; i < sim.perms; i++) {
+    final p = sim.ordered[i];
+    final team = sim.teamOf(p);
+    final from = Offset(10 + (i % cols + 0.5) * cellW, top + (i ~/ cols + 0.5) * cellH);
+    final to = Offset(10 + (team + 0.5) * cellW, top + (within[team]++ + 0.5) * cellH);
+    final c = Offset.lerp(from, to, g)!;
+    final color = HSVColor.fromAHSV(1, 360 * team / cols, 0.55, 0.95).toColor();
+    final rect = Rect.fromCenter(center: c, width: cellW - 4, height: cellH - 4);
+    roundRect(canvas, rect, color.withValues(alpha: 0.35), radius: 6);
+    // The people in pick order.
+    final dot = math.min(rect.width / (sim.r * 1.25), rect.height * 0.7);
+    final vertical = rect.height > rect.width * 1.3;
+    for (var k = 0; k < sim.r; k++) {
+      final off = (k - (sim.r - 1) / 2) * dot * 1.1;
+      final pc = vertical ? c.translate(0, off) : c.translate(off, 0);
+      canvas.drawCircle(pc, dot * 0.48, Paint()..color = AppColors.rainbow[p[k]]);
+      label(canvas, _people[p[k]], pc, size: dot * 0.55, color: Colors.white);
+    }
+  }
+
+  label(canvas, g < 0.5 ? 'All ${sim.perms} ordered picks' : '${sim.combos} teams, each listed $rows× (r! orders)',
+      Offset(w / 2, 14),
+      size: 13, color: g < 0.5 ? AppColors.ink : AppColors.violet);
+  label(canvas, '${sim.perms} ÷ $rows = ${sim.combos} different teams', Offset(w / 2, h - 16),
+      size: 14, color: AppColors.violet);
+}
+
+final LessonSpec combinationsLesson = LessonSpec(
+  id: 'combinations',
+  chapterLabel: 'Ch 4 · Counting',
+  title: const [
+    TitlePart('When order '),
+    TitlePart('doesn\'t', AppColors.violet),
+    TitlePart(' matter: picking a team'),
+  ],
+  subtitle: 'Combinations · 2-minute animated lesson',
+  createSim: () => CombinationSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<CombinationSim>(sim, _paintCombinations),
+  stats: (sim) {
+    final c = sim as CombinationSim;
+    return [
+      StatChip('ordered nPr', '${c.perms}', AppColors.yellow),
+      StatChip('orders each r!', '${factorial(c.r)}', AppColors.pink),
+      StatChip('teams nCr', '${c.combos}', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Picking A then B, or B then A, gives the same team. Count the ordered '
+      'picks first (a permutation), then notice every team appears once for each '
+      'way of ordering its r members, which is r! times. Divide those repeats out '
+      'and you get the number of combinations.',
+  formula: (sim) {
+    final c = sim as CombinationSim;
+    return 'nCr = nPr / r! = ${c.perms} / ${factorial(c.r)} = ${c.combos}';
+  },
+  tryItTitle: 'Try it: change the group and team size',
+  buildTryIt: (sim) {
+    final c = sim as CombinationSim;
+    return watch(
+      c,
+      () => Column(
+        children: [
+          LabeledSlider(
+            left: 'people ${c.n}',
+            right: '5',
+            value: c.n.toDouble(),
+            min: 3,
+            max: 5,
+            divisions: 2,
+            onChanged: (v) => c.setSizes(n: v.round()),
+          ),
+          LabeledSlider(
+            left: 'team ${c.r}',
+            right: '3',
+            value: c.r.toDouble(),
+            min: 1,
+            max: 3,
+            divisions: 2,
+            onChanged: (v) => c.setSizes(r: v.round()),
+          ),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'How many ways can you choose 2 toppings from 6?',
+      options: ['12', '15', '30', '36'],
+      answer: 1,
+      explanation: '6 × 5 = 30 ordered picks, but each pair is counted twice: 30 / 2 = 15.',
+    ),
+    QuizQuestion(
+      prompt: 'Which situation is a combination, not a permutation?',
+      options: [
+        'Gold, silver and bronze medals',
+        'A 4-digit PIN',
+        'Choosing 3 friends to invite',
+        'Seating people in a row',
+      ],
+      answer: 2,
+      explanation: 'Inviting Asha, Ben and Chen is the same invitation in any order.',
+    ),
+    QuizQuestion(
+      prompt: 'What is C(10, 3)?',
+      options: ['30', '120', '720', '1,000'],
+      answer: 1,
+      explanation: '10 × 9 × 8 = 720 ordered picks, divided by 3! = 6 orders: 120.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/complement.dart =====
+/// Each trial rolls n dice: did at least one six turn up?
+class ComplementSim extends TickSim {
+  ComplementSim({super.rng}) {
+    _roll();
+  }
+
+  int dice = 4;
+  int trials = 0;
+  int atLeastOne = 0;
+  List<int> faces = [];
+
+  /// Recent trial results, newest last (true = at least one six).
+  final List<bool> recent = [];
+
+  double get noSixTheory => math.pow(5 / 6, dice).toDouble();
+  double get theory => 1 - noSixTheory;
+  double get observed => trials == 0 ? 0 : atLeastOne / trials;
+
+  @override
+  double get interval => trials < 8 ? 0.8 : (trials < 40 ? 0.25 : 0.06);
+
+  void _roll() => faces = List.generate(dice, (_) => 1 + rng.nextInt(6));
+
+  @override
+  void tick() {
+    _roll();
+    trials++;
+    final hit = faces.contains(6);
+    if (hit) atLeastOne++;
+    recent.add(hit);
+    if (recent.length > 60) recent.removeAt(0);
+  }
+
+  @override
+  void restart() {
+    trials = 0;
+    atLeastOne = 0;
+    recent.clear();
+    _roll();
+  }
+}
+
+void _paintComplement(Canvas canvas, Size size, ComplementSim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  // Current dice.
+  final die = math.min(44.0, (w - 40) / sim.dice * 0.8);
+  final rowW = sim.dice * die * 1.2;
+  for (var i = 0; i < sim.dice; i++) {
+    final f = sim.faces[i];
+    paintDie(canvas, Offset((w - rowW) / 2 + die * 1.2 * (i + 0.5), 14 + die / 2), die, f,
+        f == 6 ? AppColors.pink : AppColors.chip);
+  }
+  final hit = sim.faces.contains(6);
+  label(canvas, sim.trials == 0 ? 'Roll ${sim.dice} dice…' : (hit ? 'At least one six ✓' : 'No six at all'),
+      Offset(w / 2, 30 + die),
+      size: 14, color: hit ? AppColors.pink : AppColors.muted);
+
+  // Recent trials as a strip of squares.
+  final stripY = 52 + die;
+  final sq = (w - 40) / 30;
+  for (var i = 0; i < sim.recent.length; i++) {
+    final r = Rect.fromLTWH(20 + (i % 30) * sq + 1, stripY + (i ~/ 30) * sq + 1, sq - 2, sq - 2);
+    roundRect(canvas, r, sim.recent[i] ? AppColors.pink : AppColors.peg.withValues(alpha: 0.6), radius: 3);
+  }
+
+  // Theory bar: split into "no six" (5/6)^n and the complement.
+  final barY = stripY + sq * 2 + 40;
+  final barW = w - 40;
+  label(canvas, 'Every possible result of ${sim.dice} dice', Offset(20, barY - 14), size: 12, align: TextAlign.left);
+  final noW = barW * sim.noSixTheory;
+  roundRect(canvas, Rect.fromLTWH(20, barY, noW, 34), AppColors.peg, radius: 8);
+  roundRect(canvas, Rect.fromLTWH(20 + noW, barY, barW - noW, 34), AppColors.pink, radius: 8);
+  label(canvas, 'no six', Offset(20 + noW / 2, barY + 17), size: 12, color: Colors.white);
+  if (barW - noW > 60) {
+    label(canvas, 'at least one', Offset(20 + noW + (barW - noW) / 2, barY + 17), size: 12, color: Colors.white);
+  }
+  label(canvas, '(5/6)^${sim.dice} = ${sim.noSixTheory.toStringAsFixed(3)}', Offset(20 + noW / 2, barY + 48),
+      size: 11, color: AppColors.muted);
+  label(canvas, '1 − that = ${sim.theory.toStringAsFixed(3)}', Offset(w - 20, barY + 66),
+      size: 12, color: AppColors.pink, align: TextAlign.right);
+  label(canvas, 'seen: ${sim.observed.toStringAsFixed(3)} of ${sim.trials} trials', Offset(20, h - 12),
+      size: 11, color: AppColors.muted, align: TextAlign.left);
+}
+
+final LessonSpec complementLesson = LessonSpec(
+  id: 'complement',
+  chapterLabel: 'Ch 3 · Probability basics',
+  title: const [
+    TitlePart('Hard to count? Count what '),
+    TitlePart('didn\'t', AppColors.pink),
+    TitlePart(' happen'),
+  ],
+  subtitle: 'The complement rule · 2-minute animated lesson',
+  createSim: () => ComplementSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<ComplementSim>(sim, _paintComplement),
+  stats: (sim) {
+    final c = sim as ComplementSim;
+    return [
+      StatChip('trials', '${c.trials}', AppColors.yellow),
+      StatChip('≥ one six', c.observed.toStringAsFixed(3), AppColors.pink),
+      StatChip('theory', c.theory.toStringAsFixed(3), AppColors.violet),
+    ];
+  },
+  bigIdea: '"At least one six" can happen in many ways: one six, two sixes, six '
+      'on the first die or the third… Counting them all is painful. Its opposite, '
+      '"no six at all", happens in just one way: every die misses, with chance '
+      '5/6 each. Something either happens or it doesn\'t, so the two chances add '
+      'up to 1.',
+  formula: (sim) {
+    final c = sim as ComplementSim;
+    return 'P(at least one six) = 1 − P(no six) = 1 − (5/6)^${c.dice} = ${c.theory.toStringAsFixed(3)}';
+  },
+  tryItTitle: 'Try it: roll more dice at once',
+  buildTryIt: (sim) {
+    final c = sim as ComplementSim;
+    return watch(
+      c,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '1 die',
+            right: '10',
+            value: c.dice.toDouble(),
+            min: 1,
+            max: 10,
+            divisions: 9,
+            label: '${c.dice}',
+            onChanged: (v) => c.change(() => c.dice = v.round()),
+          ),
+          const TryNote('With 4 dice you already have better than even odds of a six (0.518).'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'P(rain tomorrow) = 0.3. What is P(no rain)?',
+      options: ['0.3', '0.7', '1.3', 'Can\'t tell'],
+      answer: 1,
+      explanation: 'It either rains or it doesn\'t: 1 − 0.3 = 0.7.',
+    ),
+    QuizQuestion(
+      prompt: 'Flip 3 coins. What is P(at least one head)?',
+      options: ['1/8', '3/8', '1/2', '7/8'],
+      answer: 3,
+      explanation: 'P(no heads) = (1/2)³ = 1/8, so P(at least one) = 1 − 1/8 = 7/8.',
+    ),
+    QuizQuestion(
+      prompt: 'Why use the complement for "at least one" questions?',
+      options: [
+        'It is always smaller',
+        '"None" is one simple case; "at least one" is many cases',
+        'It avoids decimals',
+        'It only works for dice',
+      ],
+      answer: 1,
+      explanation: 'Calculating the single "none" case and subtracting from 1 is far '
+          'quicker than adding up every way to get one or more.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/conditional.dart =====
+enum CondView { everyone, givenGlasses, givenCricket }
+
+const Map<CondView, String> kCondViewNames = {
+  CondView.everyone: 'Everyone',
+  CondView.givenGlasses: 'Given glasses',
+  CondView.givenCricket: 'Given cricket',
+};
+
+/// 100 people: who wears glasses, who plays cricket. Conditioning zooms in.
+class ConditionalSim extends TickSim {
+  ConditionalSim({super.rng}) {
+    _build();
+  }
+
+  static const int people = 100;
+  static const int glassesCount = 40;
+  static const int cricketCount = 30;
+
+  /// People who do both (0–30).
+  int both = 12;
+
+  late List<bool> glasses;
+  late List<bool> cricket;
+
+  CondView view = CondView.everyone;
+
+  /// Picked by the learner: stops the automatic cycling.
+  bool manual = false;
+
+  /// 0 → 1 fade towards the current view.
+  double focus = 1;
+
+  @override
+  double get interval => 3;
+
+  void _build() {
+    final order = List<int>.generate(people, (i) => i)..shuffle(math.Random(3));
+    glasses = List.filled(people, false);
+    cricket = List.filled(people, false);
+    for (var k = 0; k < glassesCount; k++) {
+      glasses[order[k]] = true;
+    }
+    // The first `both` glasses-wearers play cricket, then non-wearers make up the rest.
+    for (var k = 0; k < both; k++) {
+      cricket[order[k]] = true;
+    }
+    for (var k = 0; k < cricketCount - both; k++) {
+      cricket[order[glassesCount + k]] = true;
+    }
+  }
+
+  bool inView(int i) => switch (view) {
+        CondView.everyone => true,
+        CondView.givenGlasses => glasses[i],
+        CondView.givenCricket => cricket[i],
+      };
+
+  double get pCricket => cricketCount / people;
+  double get pCricketGivenGlasses => both / glassesCount;
+  double get pGlassesGivenCricket => both / cricketCount;
+
+  @override
+  void advance(double dt) {
+    focus = math.min(1, focus + dt * 2.5);
+    super.advance(dt);
+  }
+
+  @override
+  void tick() {
+    if (manual) return;
+    view = CondView.values[(view.index + 1) % CondView.values.length];
+    focus = 0;
+  }
+
+  void choose(CondView v) {
+    manual = true;
+    view = v;
+    focus = 0;
+    notifyListeners();
+  }
+
+  void setBoth(int v) {
+    both = v;
+    _build();
+    notifyListeners();
+  }
+
+  @override
+  void restart() {
+    manual = false;
+    view = CondView.everyone;
+    focus = 1;
+  }
+}
+
+void _paintConditional(Canvas canvas, Size size, ConditionalSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const cols = 10;
+  final cell = (w - 40) / cols;
+  const top = 34.0;
+
+  final title = switch (sim.view) {
+    CondView.everyone => 'All 100 people',
+    CondView.givenGlasses => 'Only the 40 who wear glasses',
+    CondView.givenCricket => 'Only the 30 who play cricket',
+  };
+  label(canvas, title, Offset(w / 2, 14), size: 14, color: AppColors.violet);
+
+  for (var i = 0; i < ConditionalSim.people; i++) {
+    final c = Offset(20 + (i % cols + 0.5) * cell, top + (i ~/ cols + 0.5) * cell);
+    final visible = sim.inView(i);
+    final a = visible ? 1.0 : 1 - 0.88 * sim.focus;
+    canvas.drawCircle(
+        c, cell * 0.32, Paint()..color = (sim.cricket[i] ? AppColors.orange : AppColors.peg).withValues(alpha: a));
+    if (sim.glasses[i]) {
+      // Two little lenses.
+      for (final dx in [-0.13, 0.13]) {
+        ring(canvas, c.translate(cell * dx, -cell * 0.04), cell * 0.1, AppColors.ink.withValues(alpha: a), width: 1.8);
+      }
+    }
+  }
+
+  final y = top + 10 * cell + 18;
+  final (p, text) = switch (sim.view) {
+    CondView.everyone => (sim.pCricket, 'P(cricket) = 30 / 100'),
+    CondView.givenGlasses => (sim.pCricketGivenGlasses, 'P(cricket | glasses) = ${sim.both} / 40'),
+    CondView.givenCricket => (sim.pGlassesGivenCricket, 'P(glasses | cricket) = ${sim.both} / 30'),
+  };
+  label(canvas, '$text = ${p.toStringAsFixed(2)}', Offset(w / 2, y), size: 15);
+  label(canvas, '● plays cricket   ⚬⚬ wears glasses', Offset(w / 2, h - 12), size: 11, color: AppColors.muted);
+}
+
+final LessonSpec conditionalLesson = LessonSpec(
+  id: 'conditional',
+  chapterLabel: 'Ch 5 · Conditional probability',
+  title: const [
+    TitlePart('"Given that…" '),
+    TitlePart('shrinks', AppColors.violet),
+    TitlePart(' the world'),
+  ],
+  subtitle: 'Conditional probability · 2-minute animated lesson',
+  createSim: () => ConditionalSim(),
+  visualAspectRatio: 0.84,
+  buildVisual: (sim) => simCanvas<ConditionalSim>(sim, _paintConditional),
+  stats: (sim) {
+    final c = sim as ConditionalSim;
+    return [
+      StatChip('P(cricket)', c.pCricket.toStringAsFixed(2), AppColors.orange),
+      StatChip('P(cricket | glasses)', c.pCricketGivenGlasses.toStringAsFixed(2), AppColors.violet),
+    ];
+  },
+  bigIdea: 'P(A | B) reads "the chance of A given B". Knowing B happened throws '
+      'away everyone outside B: the faded dots. Among the people left, count '
+      'how many also have A. The order matters: the share of glasses-wearers who '
+      'play cricket is not the share of cricketers who wear glasses.',
+  formula: (sim) {
+    final c = sim as ConditionalSim;
+    return 'P(A | B) = P(A and B) / P(B)\n'
+        'P(cricket | glasses) = ${c.both}/100 ÷ 40/100 = ${c.pCricketGivenGlasses.toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: condition on a group',
+  buildTryIt: (sim) {
+    final c = sim as ConditionalSim;
+    return watch(
+      c,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChoiceRow<CondView>(options: kCondViewNames, selected: c.view, onSelected: c.choose),
+          const SizedBox(height: 8),
+          LabeledSlider(
+            left: 'overlap 0',
+            right: '30',
+            value: c.both.toDouble(),
+            min: 0,
+            max: 30,
+            divisions: 30,
+            label: '${c.both} do both',
+            onChanged: (v) => c.setBoth(v.round()),
+          ),
+          TryNote('${c.both} people wear glasses and play cricket.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'In a class of 30, 12 students take music and 4 of them also take art. '
+          'What is P(art | music)?',
+      options: ['4/30', '4/12', '12/30', '4/16'],
+      answer: 1,
+      explanation: 'Given music, only those 12 students count; 4 of them take art.',
+    ),
+    QuizQuestion(
+      prompt: 'Is P(A | B) always equal to P(B | A)?',
+      options: ['Yes, always', 'No, they can be very different', 'Only for coins', 'Only when both are 0'],
+      answer: 1,
+      explanation: 'P(rich | lottery winner) is high; P(lottery winner | rich) is tiny.',
+    ),
+    QuizQuestion(
+      prompt: 'P(A and B) = 0.1 and P(B) = 0.4. What is P(A | B)?',
+      options: ['0.04', '0.25', '0.4', '0.5'],
+      answer: 1,
+      explanation: '0.1 / 0.4 = 0.25.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/discrete_continuous.dart =====
+/// A die (discrete) next to a spinner (continuous), both recorded.
+class DiscreteContinuousSim extends TickSim {
+  DiscreteContinuousSim({super.rng});
+
+  List<int> dieCounts = List.filled(6, 0);
+  final List<double> spins = [];
+  int lastDie = 1;
+  double lastSpin = 0;
+
+  /// Bins used for the spinner's histogram.
+  int bins = 10;
+
+  int get rolls => dieCounts.fold(0, (a, b) => a + b);
+
+  @override
+  double get interval => rolls < 8 ? 0.8 : 0.06;
+
+  @override
+  void tick() {
+    lastDie = 1 + rng.nextInt(6);
+    dieCounts[lastDie - 1]++;
+    lastSpin = rng.nextDouble();
+    if (spins.length < 5000) spins.add(lastSpin);
+  }
+
+  void setBins(int b) {
+    bins = b;
+    notifyListeners();
+  }
+
+  @override
+  void restart() {
+    dieCounts = List.filled(6, 0);
+    spins.clear();
+  }
+}
+
+void _paintDC(Canvas canvas, Size size, DiscreteContinuousSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 16.0;
+  final right = w - 16;
+  final half = h / 2;
+
+  // --- Die: discrete ---
+  label(canvas, 'DISCRETE: a die can only land on 1–6', Offset(left, 12),
+      size: 11, color: AppColors.muted, align: TextAlign.left);
+  paintDie(canvas, Offset(right - 22, 38), 36, sim.lastDie, AppColors.yellow);
+  final dBase = half - 30;
+  const dTop = 34.0;
+  final slot = (right - 70 - left) / 6;
+  final maxD = math.max(4, sim.dieCounts.reduce(math.max));
+  for (var f = 0; f < 6; f++) {
+    final x = left + slot * (f + 0.5);
+    // Thin spikes: probability sits exactly on whole numbers.
+    bar(canvas, x, 8, dBase, (dBase - dTop) * sim.dieCounts[f] / maxD, AppColors.orange);
+    label(canvas, '${f + 1}', Offset(x, dBase + 10), size: 11, color: AppColors.muted);
+  }
+  line(canvas, Offset(left, dBase), Offset(right - 70, dBase), AppColors.peg);
+
+  // --- Spinner: continuous ---
+  label(canvas, 'CONTINUOUS: a spinner can stop anywhere in 0–1', Offset(left, half + 6),
+      size: 11, color: AppColors.muted, align: TextAlign.left);
+  final sc = Offset(right - 22, half + 36);
+  canvas.drawCircle(sc, 20, Paint()..color = AppColors.cyan.withValues(alpha: 0.3));
+  ring(canvas, sc, 20, AppColors.cyan);
+  final ang = -math.pi / 2 + 2 * math.pi * sim.lastSpin;
+  line(canvas, sc, sc + Offset(math.cos(ang), math.sin(ang)) * 18, AppColors.ink, width: 3);
+  label(canvas, sim.lastSpin.toStringAsFixed(4), sc.translate(0, 30), size: 10);
+
+  final cBase = h - 22;
+  final cTop = half + 30;
+  final counts = List.filled(sim.bins, 0);
+  for (final s in sim.spins) {
+    counts[(s * sim.bins).floor().clamp(0, sim.bins - 1)]++;
+  }
+  final maxC = math.max(4, counts.reduce(math.max));
+  final binW = (right - 70 - left) / sim.bins;
+  for (var b = 0; b < sim.bins; b++) {
+    final bh = (cBase - cTop) * counts[b] / maxC;
+    canvas.drawRect(
+        Rect.fromLTWH(left + b * binW, cBase - bh, binW, bh), Paint()..color = AppColors.cyan.withValues(alpha: 0.8));
+  }
+  line(canvas, Offset(left, cBase), Offset(right - 70, cBase), AppColors.peg);
+  label(canvas, '0', Offset(left, cBase + 10), size: 10, color: AppColors.muted);
+  label(canvas, '1', Offset(right - 70, cBase + 10), size: 10, color: AppColors.muted);
+  final exact = sim.spins.where((s) => s.toStringAsFixed(4) == '0.5000').length;
+  label(canvas, 'spins of exactly 0.5000: $exact', Offset(right - 70, cTop - 12),
+      size: 10, color: AppColors.pink, align: TextAlign.right);
+}
+
+final LessonSpec discreteContinuousLesson = LessonSpec(
+  id: 'discrete_continuous',
+  chapterLabel: 'Ch 6 · Random variables',
+  title: const [
+    TitlePart('Steps', AppColors.orange),
+    TitlePart(' or a '),
+    TitlePart('smooth line', AppColors.cyan),
+    TitlePart('?'),
+  ],
+  subtitle: 'Discrete vs continuous random variables · 2-minute animated lesson',
+  createSim: () => DiscreteContinuousSim(),
+  visualAspectRatio: 0.9,
+  buildVisual: (sim) => simCanvas<DiscreteContinuousSim>(sim, _paintDC),
+  stats: (sim) {
+    final s = sim as DiscreteContinuousSim;
+    return [
+      StatChip('rolls', '${s.rolls}', AppColors.orange),
+      StatChip('spins', '${s.spins.length}', AppColors.cyan),
+      StatChip('bins', '${s.bins}', AppColors.yellow),
+    ];
+  },
+  bigIdea: 'A random variable turns an outcome into a number. A discrete one takes '
+      'separate values you can list, like 1 to 6, and each has its own chance. A '
+      'continuous one can take any value in a range, so any single exact value, '
+      'like 0.5000000…, has chance zero. For continuous variables we ask about '
+      'ranges instead: P(0.4 ≤ X ≤ 0.6).',
+  formula: (sim) {
+    final s = sim as DiscreteContinuousSim;
+    return 'die: P(X = 3) = 1/6 · spinner: P(X = 0.5) = 0, P(0.4 ≤ X ≤ 0.6) = 0.2  '
+        '(bin width ${(1 / s.bins).toStringAsFixed(3)})';
+  },
+  tryItTitle: 'Try it: zoom in on the spinner',
+  buildTryIt: (sim) {
+    final s = sim as DiscreteContinuousSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: 'wide bins',
+            right: 'tiny',
+            value: s.bins.toDouble(),
+            min: 5,
+            max: 100,
+            divisions: 19,
+            label: '${s.bins} bins',
+            onChanged: (v) => s.setBins(v.round()),
+          ),
+          ControlRow(children: [ActionButton('Roll & spin 1,000', () => s.runMany(1000))]),
+          const SizedBox(height: 8),
+          const TryNote(
+              'Narrower bins catch fewer spins each: as the bin shrinks to a single point, its share heads to 0.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Which random variable is continuous?',
+      options: [
+        'Number of heads in 10 flips',
+        'Number of customers in an hour',
+        'Exact time until the next bus',
+        'Score on a die',
+      ],
+      answer: 2,
+      explanation: 'Time can be any value in a range. The others are counts.',
+    ),
+    QuizQuestion(
+      prompt: 'For a continuous variable X, P(X = 2.5 exactly) is…',
+      options: ['0.5', 'Depends on the data', '0', '1'],
+      answer: 2,
+      explanation: 'A single point has no width, so it holds no probability. Only '
+          'ranges do.',
+    ),
+    QuizQuestion(
+      prompt: 'A spinner lands uniformly on 0–1. What is P(0.2 ≤ X ≤ 0.5)?',
+      options: ['0.2', '0.3', '0.5', '0.7'],
+      answer: 1,
+      explanation: 'For a uniform spinner, the chance is the width of the range: 0.5 − 0.2.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/events.dart =====
+enum DieEvent { even, overFour, prime, six }
+
+const Map<DieEvent, String> kDieEventNames = {
+  DieEvent.even: 'Even',
+  DieEvent.overFour: 'More than 4',
+  DieEvent.prime: 'Prime',
+  DieEvent.six: 'A six',
+};
+
+const Map<DieEvent, Set<int>> kDieEventFaces = {
+  DieEvent.even: {2, 4, 6},
+  DieEvent.overFour: {5, 6},
+  DieEvent.prime: {2, 3, 5},
+  DieEvent.six: {6},
+};
+
+class EventsSim extends TickSim {
+  EventsSim({super.rng});
+
+  DieEvent event = DieEvent.even;
+  int rolls = 0;
+  int hits = 0;
+  int last = 1;
+  List<int> faceCounts = List.filled(7, 0);
+
+  Set<int> get faces => kDieEventFaces[event]!;
+  double get theory => faces.length / 6;
+  double get freq => rolls == 0 ? 0 : hits / rolls;
+
+  @override
+  double get interval => rolls < 12 ? 0.6 : (rolls < 60 ? 0.15 : 0.04);
+
+  @override
+  void tick() {
+    last = 1 + rng.nextInt(6);
+    rolls++;
+    faceCounts[last]++;
+    if (faces.contains(last)) hits++;
+  }
+
+  @override
+  void restart() {
+    rolls = 0;
+    hits = 0;
+    faceCounts = List.filled(7, 0);
+  }
+}
+
+void _paintEvents(Canvas canvas, Size size, EventsSim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  // Sample space: the six faces, event faces ringed.
+  label(canvas, 'Sample space S: every possible outcome', Offset(w / 2, 14), size: 12, color: AppColors.muted);
+  final die = (w - 40) / 6 * 0.72;
+  for (var f = 1; f <= 6; f++) {
+    final c = Offset(20 + (w - 40) / 6 * (f - 0.5), 34 + die / 2);
+    final inEvent = sim.faces.contains(f);
+    final isLast = sim.rolls > 0 && f == sim.last;
+    if (inEvent) {
+      roundRect(
+          canvas, Rect.fromCenter(center: c, width: die + 10, height: die + 10), AppColors.pink.withValues(alpha: 0.18),
+          radius: 12);
+    }
+    paintDie(canvas, c, die * (isLast ? 1.0 + (1 - sim.phase) * 0.15 : 1.0), f,
+        isLast ? AppColors.yellow : (inEvent ? AppColors.pink : AppColors.chip));
+    // Count of each face below.
+    label(canvas, '${sim.faceCounts[f]}', c.translate(0, die / 2 + 14), size: 11, color: AppColors.muted);
+  }
+  label(canvas, 'Event E = ${kDieEventNames[sim.event]}: {${(sim.faces.toList()..sort()).join(', ')}}',
+      Offset(w / 2, 34 + die + 44),
+      size: 14, color: AppColors.pink);
+
+  // Running frequency vs theory.
+  final barTop = 34 + die + 76;
+  final barW = w - 40;
+  label(canvas, 'Share of rolls that landed in E', Offset(20, barTop), size: 12, align: TextAlign.left);
+  final y = barTop + 18;
+  roundRect(canvas, Rect.fromLTWH(20, y, barW, 28), Colors.white, radius: 10);
+  roundRect(canvas, Rect.fromLTWH(20, y, barW * sim.freq, 28), AppColors.pink, radius: 10);
+  final tx = 20 + barW * sim.theory;
+  line(canvas, Offset(tx, y - 6), Offset(tx, y + 34), AppColors.ink, width: 3);
+  label(canvas, 'theory ${sim.faces.length}/6', Offset(tx, y + 46), size: 11);
+  label(canvas, '${(sim.freq * 100).toStringAsFixed(1)}%', Offset(26, y + 14),
+      size: 12, color: Colors.white, align: TextAlign.left);
+  label(canvas, '${sim.hits} of ${sim.rolls} rolls', Offset(w - 20, h - 12),
+      size: 11, color: AppColors.muted, align: TextAlign.right);
+}
+
+final LessonSpec eventsLesson = LessonSpec(
+  id: 'events',
+  chapterLabel: 'Ch 3 · Probability basics',
+  title: const [
+    TitlePart('Outcomes', AppColors.yellow),
+    TitlePart(', '),
+    TitlePart('events', AppColors.pink),
+    TitlePart(' and the chance of them'),
+  ],
+  subtitle: 'Experiments, outcomes & events · 2-minute animated lesson',
+  createSim: () => EventsSim(),
+  visualAspectRatio: 1.05,
+  buildVisual: (sim) => simCanvas<EventsSim>(sim, _paintEvents),
+  stats: (sim) {
+    final e = sim as EventsSim;
+    return [
+      StatChip('rolls', '${e.rolls}', AppColors.yellow),
+      StatChip('in E', '${e.hits}', AppColors.pink),
+      StatChip('share', e.freq.toStringAsFixed(3), AppColors.violet),
+    ];
+  },
+  bigIdea: 'An experiment (rolling a die) has outcomes (1 to 6); all of them '
+      'together are the sample space. An event is any group of outcomes you care '
+      'about, like "even". When every outcome is equally likely, the chance of '
+      'an event is simply how many outcomes it contains divided by how many there '
+      'are in total.',
+  formula: (sim) {
+    final e = sim as EventsSim;
+    return 'P(E) = |E| / |S| = ${e.faces.length} / 6 = ${e.theory.toStringAsFixed(3)}';
+  },
+  tryItTitle: 'Try it: choose a different event',
+  buildTryIt: (sim) {
+    final e = sim as EventsSim;
+    return watch(
+      e,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChoiceRow<DieEvent>(
+            options: kDieEventNames,
+            selected: e.event,
+            onSelected: (v) => e.change(() => e.event = v),
+          ),
+          const SizedBox(height: 8),
+          ControlRow(children: [ActionButton('Roll 600', () => e.runMany(600))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'You flip two coins. How many outcomes are in the sample space?',
+      options: ['2', '3', '4', '6'],
+      answer: 2,
+      explanation: 'HH, HT, TH, TT. HT and TH are different outcomes.',
+    ),
+    QuizQuestion(
+      prompt: 'Roll a die. What is P(a number less than 3)?',
+      options: ['1/6', '1/3', '1/2', '2/3'],
+      answer: 1,
+      explanation: 'The event is {1, 2}: 2 outcomes out of 6, so 2/6 = 1/3.',
+    ),
+    QuizQuestion(
+      prompt: 'Rolling a die, which event contains more than one outcome?',
+      options: ['Rolling a 4', 'Rolling an odd number', 'Rolling a 6', 'Rolling a 1'],
+      answer: 1,
+      explanation: '"Odd" groups three outcomes: {1, 3, 5}.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/expected_value.dart =====
+/// A ₹10 ticket spins a prize wheel. Does the game pay on average?
+class ExpectedValueSim extends TickSim {
+  ExpectedValueSim({super.rng});
+
+  static const double ticket = 10;
+  static const List<double> prizes = [0, 10, 20, 100];
+  static const List<Color> colors = [AppColors.peg, AppColors.cyan, AppColors.green, AppColors.yellow];
+
+  /// Chance of the ₹100 jackpot (taken from the ₹0 slice).
+  double jackpot = 0.05;
+
+  List<double> get chances => [0.6 - (jackpot - 0.05), 0.25, 0.10, jackpot];
+
+  /// Net win (prize − ticket) per outcome.
+  List<double> get nets => [for (final p in prizes) p - ticket];
+
+  double get expected {
+    var e = 0.0;
+    for (var i = 0; i < 4; i++) {
+      e += chances[i] * nets[i];
+    }
+    return e;
+  }
+
+  int plays = 0;
+  double totalNet = 0;
+  int last = 0;
+  final List<double> averages = [];
+
+  double get average => plays == 0 ? 0 : totalNet / plays;
+
+  @override
+  double get interval => plays < 8 ? 0.9 : (plays < 60 ? 0.15 : 0.03);
+
+  @override
+  void tick() {
+    var r = rng.nextDouble();
+    var i = 0;
+    while (i < 3 && r > chances[i]) {
+      r -= chances[i];
+      i++;
+    }
+    last = i;
+    plays++;
+    totalNet += nets[i];
+    if (averages.length < 1500) averages.add(average);
+  }
+
+  @override
+  void restart() {
+    plays = 0;
+    totalNet = 0;
+    averages.clear();
+  }
+}
+
+void _paintEV(Canvas canvas, Size size, ExpectedValueSim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  // Wheel.
+  final r = math.min(w * 0.2, 70.0);
+  final c = Offset(20 + r, 20 + r);
+  var start = -math.pi / 2;
+  final spin = sim.plays == 0 ? 0.0 : (1 - sim.phase) * 0.6;
+  for (var i = 0; i < 4; i++) {
+    final sweep = sim.chances[i] * 2 * math.pi;
+    canvas.drawArc(
+        Rect.fromCircle(center: c, radius: r), start + spin, sweep, true, Paint()..color = ExpectedValueSim.colors[i]);
+    start += sweep;
+  }
+  ring(canvas, c, r, Colors.white, width: 3);
+  final tri = Path()
+    ..moveTo(c.dx - 8, c.dy - r - 12)
+    ..lineTo(c.dx + 8, c.dy - r - 12)
+    ..lineTo(c.dx, c.dy - r + 2)
+    ..close();
+  canvas.drawPath(tri, Paint()..color = AppColors.ink);
+
+  // Legend with nets.
+  final lx = c.dx + r + 22;
+  for (var i = 0; i < 4; i++) {
+    final y = 30 + i * 26.0;
+    canvas.drawCircle(Offset(lx, y), 7, Paint()..color = ExpectedValueSim.colors[i]);
+    final net = sim.nets[i];
+    label(
+        canvas,
+        '₹${ExpectedValueSim.prizes[i].round()} (${net >= 0 ? '+' : ''}${net.round()}) · ${(sim.chances[i] * 100).round()}%',
+        Offset(lx + 14, y),
+        size: 12,
+        align: TextAlign.left,
+        color: i == sim.last && sim.plays > 0 ? AppColors.pink : AppColors.ink);
+  }
+
+  // Running average vs expected value.
+  const left = 40.0;
+  final right = w - 14;
+  final top = 2 * r + 50;
+  final bottom = h - 24;
+  const lo = -12.0, hi = 12.0;
+  double yFor(double v) => bottom - (v.clamp(lo, hi) - lo) / (hi - lo) * (bottom - top);
+  line(canvas, Offset(left, yFor(0)), Offset(right, yFor(0)), AppColors.peg);
+  label(canvas, '₹0', Offset(left - 6, yFor(0)), size: 10, color: AppColors.muted, align: TextAlign.right);
+  dashedLine(canvas, Offset(left, yFor(sim.expected)), Offset(right, yFor(sim.expected)), AppColors.pink, width: 2.5);
+  label(canvas, 'E[X] = ₹${sim.expected.toStringAsFixed(2)}', Offset(right, yFor(sim.expected) - 10),
+      size: 11, color: AppColors.pink, align: TextAlign.right);
+  final n = sim.averages.length;
+  if (n > 1) {
+    final span = math.max(60, n).toDouble();
+    final path = Path()..moveTo(left, yFor(sim.averages.first));
+    for (var i = 1; i < n; i++) {
+      path.lineTo(left + i / span * (right - left), yFor(sim.averages[i]));
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.violet
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+  label(canvas, 'your average win per play →', Offset(left, bottom + 14),
+      size: 10, color: AppColors.muted, align: TextAlign.left);
+}
+
+final LessonSpec expectedValueLesson = LessonSpec(
+  id: 'expected_value',
+  chapterLabel: 'Ch 6 · Random variables',
+  title: const [
+    TitlePart('Is this game '),
+    TitlePart('worth playing', AppColors.green),
+    TitlePart('?'),
+  ],
+  subtitle: 'Expected value · 2-minute animated lesson',
+  createSim: () => ExpectedValueSim(),
+  visualAspectRatio: 0.9,
+  buildVisual: (sim) => simCanvas<ExpectedValueSim>(sim, _paintEV),
+  stats: (sim) {
+    final e = sim as ExpectedValueSim;
+    return [
+      StatChip('plays', '${e.plays}', AppColors.yellow),
+      StatChip('avg win', '₹${e.average.toStringAsFixed(2)}', AppColors.violet),
+      StatChip('E[X]', '₹${e.expected.toStringAsFixed(2)}', AppColors.pink),
+    ];
+  },
+  bigIdea: 'The expected value is the long-run average result per play. Weight each '
+      'possible outcome by its chance and add them up. One spin can win ₹90, but '
+      'over hundreds of spins your average settles near the expected value. '
+      'Casinos and lotteries set it below zero for players, which is why the '
+      'house always wins in the end.',
+  formula: (sim) {
+    final e = sim as ExpectedValueSim;
+    final terms = [for (var i = 0; i < 4; i++) '${e.chances[i].toStringAsFixed(2)}×${e.nets[i].round()}'].join(' + ');
+    return 'E[X] = Σ x·p(x) = $terms = ${e.expected.toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: change the jackpot chance',
+  buildTryIt: (sim) {
+    final e = sim as ExpectedValueSim;
+    return watch(
+      e,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '1%',
+            right: '10%',
+            value: e.jackpot,
+            min: 0.01,
+            max: 0.10,
+            divisions: 9,
+            label: '${(e.jackpot * 100).round()}% jackpot',
+            onChanged: (v) => e.change(() => e.jackpot = v),
+          ),
+          ControlRow(children: [
+            ValueTag(e.expected >= 0 ? 'Fair or better for you' : 'You lose on average'),
+            ActionButton('Play 500 times', () => e.runMany(500)),
+          ]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A game: win ₹10 with chance 0.3, lose ₹5 otherwise. Expected value?',
+      options: ['+₹5', '−₹0.50', '+₹3', '−₹5'],
+      answer: 1,
+      explanation: '0.3 × 10 + 0.7 × (−5) = 3 − 3.5 = −0.5.',
+    ),
+    QuizQuestion(
+      prompt: 'What is the expected value of one fair die roll?',
+      options: ['3', '3.5', '4', '6'],
+      answer: 1,
+      explanation: '(1 + 2 + 3 + 4 + 5 + 6) / 6 = 3.5. It needn\'t be a possible roll.',
+    ),
+    QuizQuestion(
+      prompt: 'A game has E[X] = −₹2. What happens if you play 1,000 times?',
+      options: [
+        'You lose exactly ₹2',
+        'You lose about ₹2,000 in total',
+        'You break even',
+        'You must win eventually',
+      ],
+      answer: 1,
+      explanation: 'The average per play settles near −₹2, so the total heads towards '
+          '1,000 × −₹2.',
+    ),
+  ],
+);
+
 // ===== lib/lessons/galton_board.dart =====
 // ---------------------------------------------------------------------------
 // Simulation
@@ -2283,6 +4113,1051 @@ class _TiltControl extends StatelessWidget {
     );
   }
 }
+
+// ===== lib/lessons/graphs_lie.dart =====
+/// Two nearly equal numbers, drawn with an axis that starts higher and higher.
+class GraphsLieSim extends LessonSim {
+  static const double a = 52, b = 55;
+  static const double cycle = 8;
+
+  double t = 0;
+
+  /// Axis start chosen with the slider; null while animating on its own.
+  double? manualStart;
+
+  double get axisStart {
+    if (manualStart != null) return manualStart!;
+    // 0 → 50 → 0, holding at both ends.
+    final s = (t % cycle) / cycle;
+    final wave = (1 - math.cos(2 * math.pi * s)) / 2;
+    return (wave * 1.2).clamp(0.0, 1.0) * 50;
+  }
+
+  /// How many times taller bar B looks than bar A.
+  double get looksLike => (b - axisStart) / (a - axisStart);
+
+  @override
+  void advance(double dt) {
+    if (manualStart == null) t += dt;
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    manualStart = null;
+    t = ((t / (cycle / 4)).floor() + 1) * (cycle / 4);
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    manualStart = null;
+    t = 0;
+    notifyListeners();
+  }
+
+  void setStart(double v) {
+    manualStart = v;
+    notifyListeners();
+  }
+}
+
+void _paintLie(Canvas canvas, Size size, GraphsLieSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 46.0, top = 30.0;
+  final right = w - 20, bottom = h - 60;
+  final start = sim.axisStart;
+  const end = 56.0;
+  double yFor(double v) => bottom - (v - start) / (end - start) * (bottom - top);
+
+  label(canvas, 'Sales this year (lakh)', Offset(w / 2, 12), size: 13);
+  // Axis with ticks.
+  line(canvas, Offset(left, top), Offset(left, bottom), AppColors.ink);
+  line(canvas, Offset(left, bottom), Offset(right, bottom), AppColors.ink);
+  final step = (end - start) > 20 ? 10.0 : ((end - start) > 8 ? 2.0 : 1.0);
+  for (var v = (start / step).ceil() * step; v <= end; v += step) {
+    line(canvas, Offset(left - 5, yFor(v)), Offset(left, yFor(v)), AppColors.ink);
+    label(canvas, v.toStringAsFixed(0), Offset(left - 8, yFor(v)),
+        size: 10, color: AppColors.muted, align: TextAlign.right);
+  }
+  if (start > 0.5) {
+    // Axis-break mark: a warning sign of a cut axis.
+    label(canvas, '≈', Offset(left, bottom - 6), size: 18, color: AppColors.pink);
+  }
+
+  final slot = (right - left) / 2;
+  for (final (i, name, v, color) in [
+    (0, 'Us', GraphsLieSim.a, AppColors.blue),
+    (1, 'Rival', GraphsLieSim.b, AppColors.pink)
+  ]) {
+    final x = left + slot * (i + 0.5);
+    bar(canvas, x, slot * 0.5, bottom, bottom - yFor(v), color);
+    label(canvas, '${v.round()}', Offset(x, yFor(v) - 12), size: 14);
+    label(canvas, name, Offset(x, bottom + 14), size: 12, color: AppColors.muted);
+  }
+
+  final looks = sim.looksLike;
+  label(canvas, 'Rival\'s bar looks ${looks.toStringAsFixed(1)}× as tall', Offset(w / 2, h - 30),
+      size: 14, color: looks > 1.5 ? AppColors.pink : AppColors.ink);
+  label(
+      canvas,
+      'Really: ${(GraphsLieSim.b / GraphsLieSim.a).toStringAsFixed(2)}× · axis starts at ${start.toStringAsFixed(0)}',
+      Offset(w / 2, h - 12),
+      size: 11,
+      color: AppColors.muted);
+}
+
+final LessonSpec graphsLieLesson = LessonSpec(
+  id: 'graphs_lie',
+  chapterLabel: 'Ch 2 · Seeing data',
+  title: const [
+    TitlePart('Same numbers, '),
+    TitlePart('very different', AppColors.pink),
+    TitlePart(' story'),
+  ],
+  subtitle: 'How graphs lie · 2-minute animated lesson',
+  createSim: () => GraphsLieSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<GraphsLieSim>(sim, _paintLie),
+  stats: (sim) {
+    final g = sim as GraphsLieSim;
+    return [
+      StatChip('axis starts', g.axisStart.toStringAsFixed(0), AppColors.yellow),
+      StatChip('looks', '${g.looksLike.toStringAsFixed(1)}×', AppColors.pink),
+      StatChip('really', '${(GraphsLieSim.b / GraphsLieSim.a).toStringAsFixed(2)}×', AppColors.green),
+    ];
+  },
+  bigIdea: 'Bar charts work because bar length is proportional to the value. Start '
+      'the axis at 50 instead of 0 and a 6% difference looks like a landslide. '
+      'Always read the axis: check where it starts, whether it\'s evenly spaced, '
+      'and whether two charts you\'re comparing use the same scale.',
+  formula: (sim) {
+    final g = sim as GraphsLieSim;
+    final s = g.axisStart.toStringAsFixed(0);
+    return 'looks = (55 − $s) / (52 − $s) = ${g.looksLike.toStringAsFixed(2)}   really = 55 / 52 = 1.06';
+  },
+  tryItTitle: 'Try it: be the misleading designer',
+  buildTryIt: (sim) {
+    final g = sim as GraphsLieSim;
+    return watch(
+      g,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: 'from 0',
+            right: 'from 51',
+            value: g.axisStart,
+            min: 0,
+            max: 51,
+            divisions: 51,
+            label: 'axis starts at ${g.axisStart.round()}',
+            onChanged: g.setStart,
+          ),
+          const TryNote('Moving the slider stops the animation; press reset to let it run again.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A bar chart\'s y-axis starts at 95 instead of 0. What is the risk?',
+      options: [
+        'Small differences look huge',
+        'Big differences look small',
+        'Bars become invisible',
+        'There is no risk',
+      ],
+      answer: 0,
+      explanation: 'Cutting off the bottom of every bar exaggerates the gaps between '
+          'their tops.',
+    ),
+    QuizQuestion(
+      prompt: 'Two news charts compare crime in two cities but use different y-axis scales. '
+          'You should…',
+      options: [
+        'Compare bar heights directly',
+        'Compare the actual numbers on the axes',
+        'Trust the taller bar',
+        'Ignore both',
+      ],
+      answer: 1,
+      explanation: 'Heights only compare fairly when the scales match. Read the values.',
+    ),
+    QuizQuestion(
+      prompt: 'When is starting a line chart\'s axis above zero acceptable?',
+      options: [
+        'Never',
+        'When showing small changes over time, clearly labelled',
+        'Only for bar charts',
+        'When you want to win an argument',
+      ],
+      answer: 1,
+      explanation: 'Line charts show change, not size, so a zoomed axis is fine if it '
+          'is clearly marked. Bar charts should start at zero.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/histograms.dart =====
+/// Reaction times in milliseconds, binned with an adjustable bin count.
+class HistogramSim extends TickSim {
+  HistogramSim({super.rng});
+
+  static const double lo = 150, hi = 450;
+  static const int target = 150;
+
+  final List<double> values = [];
+  int bins = 10;
+
+  @override
+  double get interval => values.length < 12 ? 0.3 : 0.05;
+
+  double get width => (hi - lo) / bins;
+
+  List<int> get counts {
+    final c = List.filled(bins, 0);
+    for (final v in values) {
+      c[((v - lo) / width).floor().clamp(0, bins - 1)]++;
+    }
+    return c;
+  }
+
+  @override
+  void tick() {
+    if (values.length >= target) return;
+    // Right-skewed: most people react fast, a few are slow.
+    final v = 200 + -math.log(1 - rng.nextDouble()) * 45 + normalDraw(rng) * 12;
+    values.add(v.clamp(lo, hi - 0.01).toDouble());
+  }
+
+  void setBins(int n) {
+    bins = n;
+    notifyListeners();
+  }
+
+  @override
+  void restart() => values.clear();
+}
+
+void _paintHistogram(Canvas canvas, Size size, HistogramSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 16.0;
+  final right = w - 16;
+  double xFor(double v) => left + (v - HistogramSim.lo) / (HistogramSim.hi - HistogramSim.lo) * (right - left);
+
+  // Raw data strip.
+  label(canvas, 'raw data: ${sim.values.length} reaction times', Offset(left, 12),
+      size: 11, color: AppColors.muted, align: TextAlign.left);
+  final stripY = 36.0;
+  for (var i = 0; i < sim.values.length; i++) {
+    final v = sim.values[i];
+    final isNew = i == sim.values.length - 1;
+    canvas.drawCircle(Offset(xFor(v), stripY + ((i * 37) % 11) * 1.6), isNew ? 5 : 3,
+        Paint()..color = (isNew ? AppColors.pink : AppColors.blue).withValues(alpha: isNew ? 1 : 0.45));
+  }
+
+  // Histogram.
+  final baseline = h - 34;
+  final top = stripY + 34;
+  final counts = sim.counts;
+  final maxC = math.max(4, counts.reduce(math.max));
+  final binPx = (right - left) / sim.bins;
+  for (var b = 0; b < sim.bins; b++) {
+    final bh = (baseline - top) * counts[b] / maxC;
+    // Bars touch: a histogram's bins are a continuous number line.
+    final rect = Rect.fromLTWH(left + b * binPx, baseline - bh, binPx, bh);
+    canvas.drawRect(rect, Paint()..color = AppColors.rainbow[(b * 7 ~/ sim.bins)].withValues(alpha: 0.85));
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+  line(canvas, Offset(left, baseline), Offset(right, baseline), AppColors.peg);
+  for (var v = 150; v <= 450; v += 50) {
+    label(canvas, '$v', Offset(xFor(v.toDouble()), baseline + 12), size: 10, color: AppColors.muted);
+  }
+  label(canvas, 'ms', Offset(right, baseline + 26), size: 10, color: AppColors.muted, align: TextAlign.right);
+}
+
+final LessonSpec histogramsLesson = LessonSpec(
+  id: 'histograms',
+  chapterLabel: 'Ch 2 · Seeing data',
+  title: const [
+    TitlePart('How many '),
+    TitlePart('bins', AppColors.cyan),
+    TitlePart(' should a histogram have?'),
+  ],
+  subtitle: 'Histograms · 2-minute animated lesson',
+  createSim: () => HistogramSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<HistogramSim>(sim, _paintHistogram),
+  stats: (sim) {
+    final s = sim as HistogramSim;
+    return [
+      StatChip('values', '${s.values.length}', AppColors.yellow),
+      StatChip('bins', '${s.bins}', AppColors.cyan),
+      StatChip('bin width', '${s.width.round()} ms', AppColors.pink),
+    ];
+  },
+  bigIdea: 'A histogram chops a number line into equal bins and counts how many '
+      'values fall into each. Bars touch because the numbers are continuous. Too '
+      'few bins hide the shape in a few blocks; too many turn it into noise. Pick '
+      'enough bins to see the shape clearly, often around √n.',
+  formula: (sim) {
+    final s = sim as HistogramSim;
+    return 'bin width = range / bins = 300 / ${s.bins} = ${s.width.toStringAsFixed(0)} ms · '
+        '√n ≈ ${math.sqrt(math.max(1, s.values.length)).round()}';
+  },
+  tryItTitle: 'Try it: change the number of bins',
+  buildTryIt: (sim) {
+    final s = sim as HistogramSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '3',
+            right: '40',
+            value: s.bins.toDouble(),
+            min: 3,
+            max: 40,
+            divisions: 37,
+            label: '${s.bins} bins',
+            onChanged: (v) => s.setBins(v.round()),
+          ),
+          const TryNote('Try 3 bins (one blob), then 40 (a comb of spikes), then about 12.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'How is a histogram different from a bar chart?',
+      options: [
+        'Histograms use colours',
+        'Histogram bars show counts in ranges of a number, so they touch',
+        'Histograms are always vertical',
+        'There is no difference',
+      ],
+      answer: 1,
+      explanation: 'Bar charts compare separate categories. Histograms slice one '
+          'continuous number line into bins.',
+    ),
+    QuizQuestion(
+      prompt: 'With far too many bins, a histogram usually looks…',
+      options: ['Smooth', 'Spiky and noisy', 'Like a pie chart', 'Empty'],
+      answer: 1,
+      explanation: 'Each bin holds only a few values, so random variation dominates '
+          'the picture.',
+    ),
+    QuizQuestion(
+      prompt: 'Data from 0 to 100 split into 20 bins. How wide is each bin?',
+      options: ['2', '5', '20', '100'],
+      answer: 1,
+      explanation: 'Width = range / bins = 100 / 20 = 5.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/independence.dart =====
+/// Two coins. A "sticky" second coin copies the first with some chance.
+class IndependenceSim extends TickSim {
+  IndependenceSim({super.rng});
+
+  /// Chance the second coin just copies the first (0 = independent).
+  double sticky = 0;
+
+  bool first = true, second = true;
+
+  /// counts[first ? 0 : 1][second ? 0 : 1]
+  List<List<int>> counts = [
+    [0, 0],
+    [0, 0],
+  ];
+
+  int get flips => counts[0][0] + counts[0][1] + counts[1][0] + counts[1][1];
+
+  double _rate(int row) {
+    final n = counts[row][0] + counts[row][1];
+    return n == 0 ? 0 : counts[row][0] / n;
+  }
+
+  /// P(second heads | first heads) and P(second heads | first tails).
+  double get headsAfterHeads => _rate(0);
+  double get headsAfterTails => _rate(1);
+
+  @override
+  double get interval => flips < 10 ? 0.6 : 0.06;
+
+  @override
+  void tick() {
+    first = rng.nextBool();
+    second = rng.nextDouble() < sticky ? first : rng.nextBool();
+    counts[first ? 0 : 1][second ? 0 : 1]++;
+  }
+
+  @override
+  void restart() {
+    counts = [
+      [0, 0],
+      [0, 0],
+    ];
+  }
+}
+
+void _paintIndependence(Canvas canvas, Size size, IndependenceSim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  void coin(Offset c, bool heads, String name) {
+    canvas.drawCircle(c, 26, Paint()..color = heads ? AppColors.yellow : AppColors.cyan);
+    label(canvas, heads ? 'H' : 'T', c, size: 22);
+    label(canvas, name, c.translate(0, 38), size: 11, color: AppColors.muted);
+  }
+
+  if (sim.flips > 0) {
+    coin(Offset(w * 0.35, 40), sim.first, 'coin 1');
+    coin(Offset(w * 0.65, 40), sim.second, 'coin 2');
+  }
+
+  // 2×2 table.
+  const tableTop = 104.0;
+  final cellW = (w - 110) / 2;
+  const cellH = 44.0;
+  label(canvas, 'coin 2: H', Offset(90 + cellW * 0.5, tableTop - 10), size: 11, color: AppColors.muted);
+  label(canvas, 'coin 2: T', Offset(90 + cellW * 1.5, tableTop - 10), size: 11, color: AppColors.muted);
+  for (var r = 0; r < 2; r++) {
+    label(canvas, r == 0 ? 'coin 1: H' : 'coin 1: T', Offset(84, tableTop + cellH * (r + 0.5)),
+        size: 11, color: AppColors.muted, align: TextAlign.right);
+    for (var c = 0; c < 2; c++) {
+      final rect = Rect.fromLTWH(90 + cellW * c + 2, tableTop + cellH * r + 2, cellW - 4, cellH - 4);
+      final share = sim.flips == 0 ? 0.0 : sim.counts[r][c] / sim.flips;
+      roundRect(canvas, rect, AppColors.violet.withValues(alpha: 0.1 + share * 1.6), radius: 8);
+      label(canvas, '${sim.counts[r][c]}', rect.center, size: 15);
+    }
+  }
+
+  // The test: does coin 1 change coin 2's chances?
+  final y = tableTop + cellH * 2 + 30;
+  final barW = w - 150;
+  for (final (i, name, p, color) in [
+    (0, 'H after H', sim.headsAfterHeads, AppColors.yellow),
+    (1, 'H after T', sim.headsAfterTails, AppColors.cyan),
+  ]) {
+    final by = y + i * 36;
+    label(canvas, name, Offset(116, by + 12), size: 12, align: TextAlign.right);
+    roundRect(canvas, Rect.fromLTWH(126, by, barW, 24), Colors.white, radius: 8);
+    roundRect(canvas, Rect.fromLTWH(126, by, barW * p, 24), color, radius: 8);
+    label(canvas, p.toStringAsFixed(2), Offset(126 + barW + 4, by + 12), size: 12, align: TextAlign.left);
+  }
+  dashedLine(canvas, Offset(126 + barW / 2, y - 6), Offset(126 + barW / 2, y + 66), AppColors.ink);
+  final gap = (sim.headsAfterHeads - sim.headsAfterTails).abs();
+  label(
+    canvas,
+    sim.flips < 40
+        ? 'Flipping…'
+        : (gap < 0.06 ? 'Same chance either way: independent' : 'Coin 1 changes coin 2: dependent'),
+    Offset(w / 2, h - 14),
+    size: 13,
+    color: gap < 0.06 ? AppColors.green : AppColors.pink,
+  );
+}
+
+final LessonSpec independenceLesson = LessonSpec(
+  id: 'independence',
+  chapterLabel: 'Ch 5 · Conditional probability',
+  title: const [
+    TitlePart('Does one result '),
+    TitlePart('change', AppColors.pink),
+    TitlePart(' the other?'),
+  ],
+  subtitle: 'Independence · 2-minute animated lesson',
+  createSim: () => IndependenceSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<IndependenceSim>(sim, _paintIndependence),
+  stats: (sim) {
+    final s = sim as IndependenceSim;
+    return [
+      StatChip('pairs', '${s.flips}', AppColors.yellow),
+      StatChip('H after H', s.headsAfterHeads.toStringAsFixed(2), AppColors.orange),
+      StatChip('H after T', s.headsAfterTails.toStringAsFixed(2), AppColors.cyan),
+    ];
+  },
+  bigIdea: 'Two events are independent when knowing one tells you nothing about the '
+      'other. With fair coins, coin 2 lands heads half the time whether coin 1 was '
+      'heads or tails: the bars match. Make coin 2 "sticky" and it copies coin 1, '
+      'so the bars split apart. Only for independent events can you simply '
+      'multiply: P(A and B) = P(A) × P(B).',
+  formula: (sim) {
+    final s = sim as IndependenceSim;
+    final hh = s.flips == 0 ? 0 : s.counts[0][0] / s.flips;
+    return 'independent ⇔ P(B | A) = P(B)\n'
+        'P(H, H) seen ${hh.toStringAsFixed(3)} vs ½ × ½ = 0.250';
+  },
+  tryItTitle: 'Try it: make coin 2 sticky',
+  buildTryIt: (sim) {
+    final s = sim as IndependenceSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: 'fair',
+            right: 'copycat',
+            value: s.sticky,
+            min: 0,
+            max: 0.9,
+            divisions: 9,
+            label: '${(s.sticky * 100).round()}% copy',
+            onChanged: (v) => s.change(() => s.sticky = v),
+          ),
+          ControlRow(children: [ActionButton('Flip 500 pairs', () => s.runMany(500))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Which pair of events is independent?',
+      options: [
+        'Raining today and carrying an umbrella',
+        'Rolling a 6 and flipping heads',
+        'Studying and passing',
+        'Drawing two cards without putting the first back',
+      ],
+      answer: 1,
+      explanation: 'The die and the coin have no way to affect each other.',
+    ),
+    QuizQuestion(
+      prompt: 'P(A) = 0.5, P(B) = 0.4, and they are independent. What is P(A and B)?',
+      options: ['0.9', '0.2', '0.1', '0.45'],
+      answer: 1,
+      explanation: '0.5 × 0.4 = 0.2.',
+    ),
+    QuizQuestion(
+      prompt: 'P(B | A) = 0.7 but P(B) = 0.3. Are A and B independent?',
+      options: ['Yes', 'No', 'Only if P(A) = 0.5', 'Can\'t tell'],
+      answer: 1,
+      explanation: 'Knowing A happened raises B\'s chance from 0.3 to 0.7, so they are dependent.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/kit.dart =====
+/// Shared building blocks for lessons: a sim that ticks at a fixed rate,
+/// canvas helpers, and the small controls used in "Try it" cards.
+
+// ---------------------------------------------------------------------------
+// Simulation
+// ---------------------------------------------------------------------------
+
+/// A sim that does one discrete thing ([tick]) every [interval] seconds.
+abstract class TickSim extends LessonSim {
+  TickSim({math.Random? rng}) : rng = rng ?? math.Random();
+
+  final math.Random rng;
+  double _timer = 0;
+
+  /// Seconds per tick at 1×. May change as the lesson goes on.
+  double get interval;
+
+  /// 0 → 1 progress towards the next tick, for easing animations.
+  double get phase => (_timer / interval).clamp(0.0, 1.0);
+
+  /// Advance the lesson by one discrete step.
+  void tick();
+
+  /// Back to the starting state (timer already cleared).
+  void restart();
+
+  @override
+  void advance(double dt) {
+    _timer += dt;
+    var guard = 0;
+    while (_timer >= interval && guard++ < 500) {
+      _timer -= interval;
+      tick();
+    }
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    _timer = 0;
+    tick();
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    _timer = 0;
+    restart();
+    notifyListeners();
+  }
+
+  /// Runs [count] ticks at once (the "do 100" buttons).
+  void runMany(int count) {
+    for (var i = 0; i < count; i++) {
+      tick();
+    }
+    notifyListeners();
+  }
+
+  /// Applies a settings change and starts over.
+  void change(VoidCallback update) {
+    update();
+    reset();
+  }
+}
+
+/// Sample statistics shared by several lessons.
+double meanOf(Iterable<num> xs) => xs.isEmpty ? 0 : xs.fold<double>(0, (a, b) => a + b) / xs.length;
+
+/// Quantile with linear interpolation (the spreadsheet / numpy default).
+double quantileOf(List<num> xs, double q) {
+  if (xs.isEmpty) return 0;
+  final s = [...xs]..sort();
+  final pos = q * (s.length - 1);
+  final lo = pos.floor();
+  final hi = pos.ceil();
+  return s[lo] + (s[hi] - s[lo]) * (pos - lo);
+}
+
+double sdOf(List<num> xs) {
+  if (xs.length < 2) return 0;
+  final m = meanOf(xs);
+  return math.sqrt(xs.fold<double>(0, (a, x) => a + (x - m) * (x - m)) / (xs.length - 1));
+}
+
+/// Standard normal draw (Box–Muller).
+double normalDraw(math.Random rng) {
+  final u1 = 1 - rng.nextDouble();
+  final u2 = rng.nextDouble();
+  return math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2);
+}
+
+int factorial(int n) => n <= 1 ? 1 : n * factorial(n - 1);
+
+int permutations(int n, int r) {
+  var p = 1;
+  for (var i = 0; i < r; i++) {
+    p *= n - i;
+  }
+  return p;
+}
+
+int combinations(int n, int r) => permutations(n, r) ~/ factorial(r);
+
+// ---------------------------------------------------------------------------
+// Canvas helpers
+// ---------------------------------------------------------------------------
+
+/// Draws [text] anchored at [at]: centred by default, or starting / ending
+/// there for [TextAlign.left] / [TextAlign.right].
+void label(
+  Canvas canvas,
+  String text,
+  Offset at, {
+  double size = 12,
+  Color color = AppColors.ink,
+  FontWeight weight = FontWeight.w800,
+  TextAlign align = TextAlign.center,
+  double? maxWidth,
+}) {
+  final tp = TextPainter(
+    text: TextSpan(text: text, style: TextStyle(fontSize: size, fontWeight: weight, color: color)),
+    textDirection: TextDirection.ltr,
+    textAlign: align,
+    maxLines: maxWidth == null ? 1 : 3,
+  )..layout(maxWidth: maxWidth ?? double.infinity);
+  final dx = switch (align) {
+    TextAlign.left => 0.0,
+    TextAlign.right => tp.width,
+    _ => tp.width / 2,
+  };
+  tp.paint(canvas, at - Offset(dx, tp.height / 2));
+}
+
+void roundRect(Canvas canvas, Rect rect, Color color, {double radius = 8}) {
+  canvas.drawRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)), Paint()..color = color);
+}
+
+/// A vertical bar standing on [baseline] with rounded top corners.
+void bar(Canvas canvas, double centreX, double width, double baseline, double height, Color color) {
+  if (height <= 0) return;
+  canvas.drawRRect(
+    RRect.fromRectAndCorners(
+      Rect.fromLTWH(centreX - width / 2, baseline - height, width, height),
+      topLeft: Radius.circular(math.min(width * 0.3, 8)),
+      topRight: Radius.circular(math.min(width * 0.3, 8)),
+    ),
+    Paint()..color = color,
+  );
+}
+
+void line(Canvas canvas, Offset a, Offset b, Color color, {double width = 2}) {
+  canvas.drawLine(
+    a,
+    b,
+    Paint()
+      ..color = color
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.round,
+  );
+}
+
+void dashedLine(Canvas canvas, Offset a, Offset b, Color color, {double width = 2, double dash = 6}) {
+  final total = (b - a).distance;
+  if (total == 0) return;
+  final dir = (b - a) / total;
+  for (var d = 0.0; d < total; d += dash * 2) {
+    line(canvas, a + dir * d, a + dir * math.min(d + dash, total), color, width: width);
+  }
+}
+
+void ring(Canvas canvas, Offset c, double r, Color color, {double width = 2}) {
+  canvas.drawCircle(
+    c,
+    r,
+    Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width,
+  );
+}
+
+/// Draws a die face centred at [c].
+void paintDie(Canvas canvas, Offset c, double size, int face, Color color) {
+  final rect = Rect.fromCenter(center: c, width: size, height: size);
+  canvas.drawRRect(RRect.fromRectAndRadius(rect, Radius.circular(size * 0.2)), Paint()..color = color);
+  const pips = <int, List<Offset>>{
+    1: [Offset(0, 0)],
+    2: [Offset(-1, -1), Offset(1, 1)],
+    3: [Offset(-1, -1), Offset(0, 0), Offset(1, 1)],
+    4: [Offset(-1, -1), Offset(1, -1), Offset(-1, 1), Offset(1, 1)],
+    5: [Offset(-1, -1), Offset(1, -1), Offset(0, 0), Offset(-1, 1), Offset(1, 1)],
+    6: [Offset(-1, -1), Offset(1, -1), Offset(-1, 0), Offset(1, 0), Offset(-1, 1), Offset(1, 1)],
+  };
+  for (final p in pips[face]!) {
+    canvas.drawCircle(c + p * (size * 0.25), size * 0.085, Paint()..color = AppColors.ink);
+  }
+}
+
+/// A [CustomPainter] that repaints whenever [sim] changes and delegates
+/// drawing to a function, so lessons don't need a painter class each.
+class SimPainter<T extends LessonSim> extends CustomPainter {
+  SimPainter(this.sim, this.draw) : super(repaint: sim);
+
+  final T sim;
+  final void Function(Canvas canvas, Size size, T sim) draw;
+
+  @override
+  void paint(Canvas canvas, Size size) => draw(canvas, size, sim);
+
+  @override
+  bool shouldRepaint(covariant SimPainter<T> oldDelegate) => oldDelegate.sim != sim;
+}
+
+/// The lesson stage for a sim drawn by [draw].
+Widget simCanvas<T extends LessonSim>(LessonSim sim, void Function(Canvas, Size, T) draw) =>
+    CustomPaint(painter: SimPainter<T>(sim as T, draw), child: const SizedBox.expand());
+
+// ---------------------------------------------------------------------------
+// Try-it controls
+// ---------------------------------------------------------------------------
+
+/// A slider with words at each end.
+class LabeledSlider extends StatelessWidget {
+  const LabeledSlider({
+    super.key,
+    required this.left,
+    required this.right,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.divisions,
+    this.label,
+  });
+
+  final String left;
+  final String right;
+  final double value;
+  final double min;
+  final double max;
+  final int? divisions;
+  final String? label;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700);
+    return Row(
+      children: [
+        Text(left, style: style),
+        Expanded(
+          child: Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            divisions: divisions,
+            label: label,
+            onChanged: onChanged,
+          ),
+        ),
+        Text(right, style: style),
+      ],
+    );
+  }
+}
+
+/// Yellow monospace pill showing the current setting.
+class ValueTag extends StatelessWidget {
+  const ValueTag(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.yellow.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(text, style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w800)),
+    );
+  }
+}
+
+/// Grey hint under the controls.
+class TryNote extends StatelessWidget {
+  const TryNote(this.text, {super.key});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(text, style: const TextStyle(color: AppColors.muted, height: 1.35));
+}
+
+/// A tonal action button for "do it many times".
+class ActionButton extends StatelessWidget {
+  const ActionButton(this.text, this.onPressed, {super.key});
+  final String text;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => FilledButton.tonal(
+        onPressed: onPressed,
+        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w900)),
+      );
+}
+
+/// Single-choice chips that wrap on narrow screens.
+class ChoiceRow<T> extends StatelessWidget {
+  const ChoiceRow({super.key, required this.options, required this.selected, required this.onSelected});
+
+  final Map<T, String> options;
+  final T selected;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final e in options.entries)
+          ChoiceChip(
+            label: Text(e.value, style: const TextStyle(fontWeight: FontWeight.w800)),
+            selected: e.key == selected,
+            selectedColor: AppColors.yellow,
+            onSelected: (_) => onSelected(e.key),
+          ),
+      ],
+    );
+  }
+}
+
+/// Rebuilds [builder] whenever [sim] changes.
+Widget watch(LessonSim sim, Widget Function() builder) =>
+    ListenableBuilder(listenable: sim, builder: (_, __) => builder());
+
+/// A tag and buttons side by side, wrapping onto two lines on narrow phones.
+class ControlRow extends StatelessWidget {
+  const ControlRow({super.key, required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
+        children: children,
+      );
+}
+
+// ===== lib/lessons/linearity.dart =====
+/// The hat-check puzzle: n hats handed back at random. How many people get
+/// their own hat, on average?
+class LinearitySim extends TickSim {
+  LinearitySim({super.rng}) {
+    _deal();
+  }
+
+  int n = 8;
+  late List<int> hats; // hats[person] = whose hat they got
+  int rounds = 0;
+  int totalMatches = 0;
+  List<int> matchCounts = List.filled(21, 0);
+
+  int get matches => [
+        for (var i = 0; i < n; i++)
+          if (hats[i] == i) i
+      ].length;
+  double get average => rounds == 0 ? 0 : totalMatches / rounds;
+
+  @override
+  double get interval => rounds < 5 ? 1.2 : 0.08;
+
+  void _deal() => hats = List.generate(n, (i) => i)..shuffle(rng);
+
+  @override
+  void tick() {
+    _deal();
+    rounds++;
+    totalMatches += matches;
+    matchCounts[matches]++;
+  }
+
+  @override
+  void restart() {
+    rounds = 0;
+    totalMatches = 0;
+    matchCounts = List.filled(21, 0);
+    _deal();
+  }
+}
+
+void _paintLinearity(Canvas canvas, Size size, LinearitySim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  // People in a row with the hat they got.
+  final slot = (w - 20) / sim.n;
+  final r = math.min(16.0, slot * 0.36);
+  for (var i = 0; i < sim.n; i++) {
+    final x = 10 + slot * (i + 0.5);
+    final match = sim.hats[i] == i;
+    canvas.drawCircle(Offset(x, 64), r, Paint()..color = AppColors.rainbow[i % 7].withValues(alpha: 0.85));
+    label(canvas, '${i + 1}', Offset(x, 64), size: r * 0.8, color: Colors.white);
+    // Hat on top, coloured by its owner.
+    final hat = Rect.fromCenter(center: Offset(x, 64 - r - 8), width: r * 1.8, height: r * 0.8);
+    roundRect(canvas, hat, AppColors.rainbow[sim.hats[i] % 7], radius: 4);
+    label(canvas, '${sim.hats[i] + 1}', hat.center, size: r * 0.55, color: Colors.white);
+    if (match) ring(canvas, Offset(x, 58), r + 14, AppColors.green, width: 3);
+  }
+  label(canvas, sim.rounds == 0 ? 'Hats handed back at random' : '${sim.matches} got their own hat', Offset(w / 2, 100),
+      size: 14, color: sim.matches > 0 ? AppColors.green : AppColors.muted);
+
+  // Histogram of matches per round.
+  const left = 20.0;
+  final right = w - 20;
+  final baseline = h - 50;
+  const top = 132.0;
+  const maxShown = 6;
+  final slotH = (right - left) / (maxShown + 1);
+  final maxC = math.max(1, sim.matchCounts.take(maxShown + 1).reduce(math.max));
+  for (var m = 0; m <= maxShown; m++) {
+    bar(canvas, left + slotH * (m + 0.5), slotH * 0.7, baseline, (baseline - top) * sim.matchCounts[m] / maxC,
+        m == 1 ? AppColors.green : AppColors.violet.withValues(alpha: 0.7));
+    label(canvas, '$m', Offset(left + slotH * (m + 0.5), baseline + 10), size: 11, color: AppColors.muted);
+  }
+  label(canvas, 'own hats per round', Offset(w / 2, baseline + 24), size: 10, color: AppColors.muted);
+  label(canvas, 'average so far: ${sim.average.toStringAsFixed(3)} (rounds: ${sim.rounds})', Offset(w / 2, h - 10),
+      size: 13, color: AppColors.violet);
+}
+
+final LessonSpec linearityLesson = LessonSpec(
+  id: 'linearity',
+  chapterLabel: 'Ch 6 · Random variables',
+  title: const [
+    TitlePart('Any crowd, the answer is always '),
+    TitlePart('1', AppColors.green),
+  ],
+  subtitle: 'Linearity of expectation · 2-minute animated lesson',
+  createSim: () => LinearitySim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<LinearitySim>(sim, _paintLinearity),
+  stats: (sim) {
+    final l = sim as LinearitySim;
+    return [
+      StatChip('people', '${l.n}', AppColors.yellow),
+      StatChip('rounds', '${l.rounds}', AppColors.violet),
+      StatChip('avg own hats', l.average.toStringAsFixed(2), AppColors.green),
+    ];
+  },
+  bigIdea: 'n people check their hats and get them back at random. Counting all the '
+      'ways to match is hard, so don\'t. Give each person their own 0-or-1 score: '
+      '1 if they got their hat. Each person gets their hat with chance 1/n, so '
+      'each score averages 1/n. The expected total is the sum of the expected '
+      'scores: n × 1/n = 1. This works even though the scores depend on each other.',
+  formula: (sim) {
+    final l = sim as LinearitySim;
+    return 'E[X₁ + … + Xₙ] = E[X₁] + … + E[Xₙ] = ${l.n} × 1/${l.n} = 1';
+  },
+  tryItTitle: 'Try it: change the crowd size',
+  buildTryIt: (sim) {
+    final l = sim as LinearitySim;
+    return watch(
+      l,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '2',
+            right: '20',
+            value: l.n.toDouble(),
+            min: 2,
+            max: 20,
+            divisions: 18,
+            label: '${l.n} people',
+            onChanged: (v) => l.change(() => l.n = v.round()),
+          ),
+          ControlRow(children: [ActionButton('Hand back 1,000 times', () => l.runMany(1000))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'E[X] = 3 and E[Y] = 5. What is E[X + Y]?',
+      options: ['8', '15', 'Only 8 if independent', 'Can\'t tell'],
+      answer: 0,
+      explanation: 'Expectations always add, independent or not.',
+    ),
+    QuizQuestion(
+      prompt: 'You roll 10 dice. What is the expected total?',
+      options: ['10', '35', '60', '3.5'],
+      answer: 1,
+      explanation: 'Each die averages 3.5, so 10 × 3.5 = 35.',
+    ),
+    QuizQuestion(
+      prompt: '100 letters are put into 100 addressed envelopes at random. Expected '
+          'number in the right envelope?',
+      options: ['0', '1', '10', '50'],
+      answer: 1,
+      explanation: 'Each letter is right with chance 1/100: 100 × 1/100 = 1.',
+    ),
+  ],
+);
 
 // ===== lib/lessons/monty_hall.dart =====
 // ---------------------------------------------------------------------------
@@ -2783,6 +5658,1466 @@ class _DoorPainter extends CustomPainter {
       old.open != open || old.hasCar != hasCar || old.picked != picked || old.number != number;
 }
 
+// ===== lib/lessons/multiplication_principle.dart =====
+/// Outfits: shirts × trousers × shoes, revealed one leaf at a time.
+class OutfitSim extends TickSim {
+  OutfitSim({super.rng});
+
+  int shirts = 3, trousers = 2, shoes = 2;
+  int revealed = 0;
+
+  int get total => shirts * trousers * shoes;
+
+  @override
+  double get interval => total > 18 ? 0.18 : 0.4;
+
+  @override
+  void tick() {
+    revealed++;
+    if (revealed > total + 6) revealed = 0; // hold the full tree, then grow again
+  }
+
+  @override
+  void restart() => revealed = 0;
+}
+
+const _shirtColors = [AppColors.pink, AppColors.blue, AppColors.green, AppColors.orange];
+const _trouserNames = ['jeans', 'chinos', 'shorts'];
+const _shoeNames = ['sneakers', 'sandals', 'boots'];
+
+void _paintOutfits(Canvas canvas, Size size, OutfitSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final total = sim.total;
+  const top = 28.0;
+  final bottom = h - 10;
+  final leafGap = (bottom - top) / total;
+  double leafY(int i) => top + leafGap * (i + 0.5);
+
+  final x0 = 18.0, x1 = w * 0.3, x2 = w * 0.58, x3 = w * 0.84;
+  label(canvas, 'shirt', Offset(x1, 12), size: 11, color: AppColors.muted);
+  label(canvas, 'trousers', Offset(x2, 12), size: 11, color: AppColors.muted);
+  label(canvas, 'shoes', Offset(x3, 12), size: 11, color: AppColors.muted);
+
+  final perShirt = sim.trousers * sim.shoes;
+  final rootY = (top + bottom) / 2;
+  final shown = sim.revealed.clamp(0, total);
+  canvas.drawCircle(Offset(x0, rootY), 6, Paint()..color = AppColors.ink);
+
+  for (var s = 0; s < sim.shirts; s++) {
+    final firstLeaf = s * perShirt;
+    if (shown <= firstLeaf) continue;
+    final sy = (leafY(firstLeaf) + leafY(firstLeaf + perShirt - 1)) / 2;
+    final color = _shirtColors[s];
+    line(canvas, Offset(x0, rootY), Offset(x1, sy), color.withValues(alpha: 0.6), width: 2.5);
+    canvas.drawCircle(Offset(x1, sy), 9, Paint()..color = color);
+    for (var t = 0; t < sim.trousers; t++) {
+      final tFirst = firstLeaf + t * sim.shoes;
+      if (shown <= tFirst) continue;
+      final ty = (leafY(tFirst) + leafY(tFirst + sim.shoes - 1)) / 2;
+      line(canvas, Offset(x1, sy), Offset(x2, ty), color.withValues(alpha: 0.45), width: 2);
+      canvas.drawCircle(Offset(x2, ty), 6, Paint()..color = color.withValues(alpha: 0.7));
+      if (leafGap * sim.shoes > 14) {
+        label(canvas, _trouserNames[t], Offset(x2 - 8, ty - 10),
+            size: 9, color: AppColors.muted, align: TextAlign.right);
+      }
+      for (var k = 0; k < sim.shoes; k++) {
+        final leaf = tFirst + k;
+        if (shown <= leaf) continue;
+        final ly = leafY(leaf);
+        line(canvas, Offset(x2, ty), Offset(x3, ly), color.withValues(alpha: 0.3), width: 1.5);
+        final isNew = leaf == shown - 1 && sim.revealed <= total;
+        canvas.drawCircle(Offset(x3, ly), isNew ? 6 : 4, Paint()..color = isNew ? AppColors.ink : color);
+        if (leafGap > 11) {
+          label(canvas, _shoeNames[k], Offset(x3 + 9, ly), size: 9, color: AppColors.muted, align: TextAlign.left);
+        }
+      }
+    }
+  }
+  label(canvas, '$shown', Offset(w - 10, h - 12), size: 16, color: AppColors.ink, align: TextAlign.right);
+}
+
+final LessonSpec multiplicationPrincipleLesson = LessonSpec(
+  id: 'multiplication_principle',
+  chapterLabel: 'Ch 4 · Counting',
+  title: const [
+    TitlePart('3 shirts, 2 trousers, 2 shoes: how many '),
+    TitlePart('outfits', AppColors.pink),
+    TitlePart('?'),
+  ],
+  subtitle: 'The multiplication principle · 2-minute animated lesson',
+  createSim: () => OutfitSim(),
+  visualAspectRatio: 0.9,
+  buildVisual: (sim) => simCanvas<OutfitSim>(sim, _paintOutfits),
+  stats: (sim) {
+    final o = sim as OutfitSim;
+    return [
+      StatChip('outfits so far', '${o.revealed.clamp(0, o.total)}', AppColors.yellow),
+      StatChip('total', '${o.total}', AppColors.pink),
+    ];
+  },
+  bigIdea: 'Every shirt can go with every pair of trousers, so each shirt branch '
+      'splits into the same number of trouser branches, and each of those splits '
+      'again for shoes. When choices are made one after another and don\'t limit '
+      'each other, multiply the number of options at each step.',
+  formula: (sim) {
+    final o = sim as OutfitSim;
+    return '${o.shirts} × ${o.trousers} × ${o.shoes} = ${o.total} outfits';
+  },
+  tryItTitle: 'Try it: change your wardrobe',
+  buildTryIt: (sim) {
+    final o = sim as OutfitSim;
+    Widget row(String name, int value, int max, void Function(int) set) => LabeledSlider(
+          left: '$name ${value.toString().padLeft(1)}',
+          right: '$max',
+          value: value.toDouble(),
+          min: 1,
+          max: max.toDouble(),
+          divisions: max - 1,
+          onChanged: (v) => o.change(() => set(v.round())),
+        );
+    return watch(
+      o,
+      () => Column(
+        children: [
+          row('shirts', o.shirts, 4, (v) => o.shirts = v),
+          row('trousers', o.trousers, 3, (v) => o.trousers = v),
+          row('shoes', o.shoes, 3, (v) => o.shoes = v),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A café offers 4 drinks and 3 snacks. How many drink-and-snack combos?',
+      options: ['7', '12', '43', '64'],
+      answer: 1,
+      explanation: 'Each of the 4 drinks pairs with each of the 3 snacks: 4 × 3 = 12.',
+    ),
+    QuizQuestion(
+      prompt: 'A PIN has 4 digits, each 0–9. How many PINs are possible?',
+      options: ['40', '1,000', '10,000', '5,040'],
+      answer: 2,
+      explanation: '10 choices for each of 4 digits: 10 × 10 × 10 × 10 = 10,000.',
+    ),
+    QuizQuestion(
+      prompt: 'Number plates use 2 letters (A–Z) then 2 digits. How many plates?',
+      options: ['52', '676', '67,600', '1,000,000'],
+      answer: 2,
+      explanation: '26 × 26 × 10 × 10 = 67,600.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/multiplication_rule.dart =====
+/// Area model: a unit square. A is a strip of width P(A); inside it, B fills
+/// height P(B | A). Darts estimate the area of "A and B".
+class MultRuleSim extends TickSim {
+  MultRuleSim({super.rng});
+
+  /// P(rain).
+  double pA = 0.3;
+
+  /// P(late | rain).
+  double pBgivenA = 0.6;
+
+  /// P(late | no rain), drawn to the right of the strip.
+  static const double pBgivenNotA = 0.1;
+
+  final List<Offset> darts = [];
+  int total = 0, inA = 0, inAB = 0;
+
+  double get pAB => pA * pBgivenA;
+
+  bool isA(Offset p) => p.dx < pA;
+  bool isB(Offset p) => isA(p) ? p.dy > 1 - pBgivenA : p.dy > 1 - pBgivenNotA;
+
+  @override
+  double get interval => total < 20 ? 0.12 : 0.02;
+
+  @override
+  void tick() {
+    final p = Offset(rng.nextDouble(), rng.nextDouble());
+    total++;
+    if (isA(p)) {
+      inA++;
+      if (isB(p)) inAB++;
+    }
+    if (darts.length < 600) darts.add(p);
+  }
+
+  @override
+  void restart() {
+    darts.clear();
+    total = inA = inAB = 0;
+  }
+}
+
+void _paintMultRule(Canvas canvas, Size size, MultRuleSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const pad = 16.0;
+  final side = math.min(w - pad * 2, h - 80);
+  final o = Offset((w - side) / 2, 30);
+  Offset toCanvas(Offset p) => o + Offset(p.dx * side, p.dy * side);
+
+  roundRect(canvas, o & Size(side, side), Colors.white, radius: 6);
+  // A strip (rain) and the B part inside it (late).
+  final aRect = Rect.fromLTWH(o.dx, o.dy, side * sim.pA, side);
+  canvas.drawRect(aRect, Paint()..color = AppColors.blue.withValues(alpha: 0.16));
+  final abRect = Rect.fromLTWH(o.dx, o.dy + side * (1 - sim.pBgivenA), side * sim.pA, side * sim.pBgivenA);
+  canvas.drawRect(abRect, Paint()..color = AppColors.violet.withValues(alpha: 0.35));
+  final notAB = Rect.fromLTWH(o.dx + side * sim.pA, o.dy + side * (1 - MultRuleSim.pBgivenNotA), side * (1 - sim.pA),
+      side * MultRuleSim.pBgivenNotA);
+  canvas.drawRect(notAB, Paint()..color = AppColors.orange.withValues(alpha: 0.25));
+  line(canvas, Offset(aRect.right, o.dy), Offset(aRect.right, o.dy + side), AppColors.blue, width: 2.5);
+
+  for (final p in sim.darts) {
+    final a = sim.isA(p), b = sim.isB(p);
+    canvas.drawCircle(toCanvas(p), 2.2,
+        Paint()..color = a && b ? AppColors.violet : (a ? AppColors.blue : (b ? AppColors.orange : AppColors.peg)));
+  }
+
+  label(canvas, 'rain ${(sim.pA * 100).round()}%', Offset(aRect.center.dx, o.dy - 10), size: 11, color: AppColors.blue);
+  label(canvas, 'no rain', Offset((aRect.right + o.dx + side) / 2, o.dy - 10), size: 11, color: AppColors.muted);
+  if (abRect.width > 40) {
+    label(canvas, 'rain and late', abRect.center, size: 11, color: AppColors.ink);
+  }
+  label(canvas, '← P(late | rain) = ${(sim.pBgivenA * 100).round()}% of the strip →', Offset(w / 2, o.dy + side + 16),
+      size: 11, color: AppColors.violet);
+  label(canvas, 'Darts in purple: ${sim.total == 0 ? 0 : (sim.inAB / sim.total).toStringAsFixed(3)} of ${sim.total}',
+      Offset(w / 2, h - 12),
+      size: 12, color: AppColors.muted);
+}
+
+final LessonSpec multiplicationRuleLesson = LessonSpec(
+  id: 'multiplication_rule',
+  chapterLabel: 'Ch 5 · Conditional probability',
+  title: const [
+    TitlePart('A '),
+    TitlePart('slice', AppColors.blue),
+    TitlePart(' of a '),
+    TitlePart('slice', AppColors.violet),
+  ],
+  subtitle: 'The multiplication rule · 2-minute animated lesson',
+  createSim: () => MultRuleSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<MultRuleSim>(sim, _paintMultRule),
+  stats: (sim) {
+    final m = sim as MultRuleSim;
+    return [
+      StatChip('P(rain)', m.pA.toStringAsFixed(2), AppColors.blue),
+      StatChip('P(late | rain)', m.pBgivenA.toStringAsFixed(2), AppColors.violet),
+      StatChip('P(both)', m.pAB.toStringAsFixed(2), AppColors.pink),
+    ];
+  },
+  bigIdea: 'The square is every possible day. The blue strip is the share of rainy '
+      'days. Inside that strip, the purple part is the share of rainy days when '
+      'you\'re late. Its area is width × height: a fraction of a fraction. That is '
+      'the multiplication rule, and it works whether or not the events are '
+      'independent, because the height is conditional on A.',
+  formula: (sim) {
+    final m = sim as MultRuleSim;
+    return 'P(A and B) = P(A) × P(B | A) = ${m.pA.toStringAsFixed(2)} × ${m.pBgivenA.toStringAsFixed(2)} '
+        '= ${m.pAB.toStringAsFixed(3)}';
+  },
+  tryItTitle: 'Try it: resize the slices',
+  buildTryIt: (sim) {
+    final m = sim as MultRuleSim;
+    return watch(
+      m,
+      () => Column(
+        children: [
+          LabeledSlider(
+            left: 'P(rain)',
+            right: '',
+            value: m.pA,
+            min: 0.1,
+            max: 0.9,
+            divisions: 8,
+            label: m.pA.toStringAsFixed(1),
+            onChanged: (v) => m.change(() => m.pA = v),
+          ),
+          LabeledSlider(
+            left: 'P(late | rain)',
+            right: '',
+            value: m.pBgivenA,
+            min: 0.1,
+            max: 0.9,
+            divisions: 8,
+            label: m.pBgivenA.toStringAsFixed(1),
+            onChanged: (v) => m.change(() => m.pBgivenA = v),
+          ),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: '40% of students take the bus, and 25% of bus-takers are late. What share of '
+          'all students take the bus and are late?',
+      options: ['65%', '15%', '10%', '25%'],
+      answer: 2,
+      explanation: '0.4 × 0.25 = 0.10.',
+    ),
+    QuizQuestion(
+      prompt: 'Draw 2 cards without replacement. P(both aces)?',
+      options: ['4/52 × 4/52', '4/52 × 3/51', '4/52 + 3/51', '2/52'],
+      answer: 1,
+      explanation: 'P(first ace) × P(second ace | first ace) = 4/52 × 3/51.',
+    ),
+    QuizQuestion(
+      prompt: 'When does P(A and B) = P(A) × P(B)?',
+      options: ['Always', 'When A and B are independent', 'When they are mutually exclusive', 'Never'],
+      answer: 1,
+      explanation: 'Then P(B | A) = P(B), so the general rule simplifies.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/mutually_exclusive.dart =====
+const List<String> kSuits = ['♥', '♦', '♣', '♠'];
+const List<String> kRanks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+/// Event pairs on a 52-card deck: card index = suit * 13 + rank.
+enum CardPair { heartsSpades, heartsKings, redFace, acesKings }
+
+const Map<CardPair, String> kCardPairNames = {
+  CardPair.heartsSpades: '♥ or ♠',
+  CardPair.heartsKings: '♥ or King',
+  CardPair.redFace: 'Red or face card',
+  CardPair.acesKings: 'Ace or King',
+};
+
+bool _inA(CardPair p, int card) {
+  final suit = card ~/ 13, rank = card % 13;
+  return switch (p) {
+    CardPair.heartsSpades || CardPair.heartsKings => suit == 0,
+    CardPair.redFace => suit <= 1,
+    CardPair.acesKings => rank == 0,
+  };
+}
+
+bool _inB(CardPair p, int card) {
+  final suit = card ~/ 13, rank = card % 13;
+  return switch (p) {
+    CardPair.heartsSpades => suit == 3,
+    CardPair.heartsKings || CardPair.acesKings => rank == 12,
+    CardPair.redFace => rank >= 10,
+  };
+}
+
+class MutualSim extends TickSim {
+  MutualSim({super.rng});
+
+  CardPair pair = CardPair.heartsSpades;
+  int draws = 0;
+  int hits = 0;
+  int last = -1;
+
+  bool inA(int c) => _inA(pair, c);
+  bool inB(int c) => _inB(pair, c);
+  int get countA => List.generate(52, (c) => c).where(inA).length;
+  int get countB => List.generate(52, (c) => c).where(inB).length;
+  int get countBoth => List.generate(52, (c) => c).where((c) => inA(c) && inB(c)).length;
+  bool get exclusive => countBoth == 0;
+
+  @override
+  double get interval => draws < 10 ? 0.6 : 0.08;
+
+  @override
+  void tick() {
+    last = rng.nextInt(52);
+    draws++;
+    if (inA(last) || inB(last)) hits++;
+  }
+
+  @override
+  void restart() {
+    draws = 0;
+    hits = 0;
+    last = -1;
+  }
+}
+
+void _paintMutual(Canvas canvas, Size size, MutualSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final cellW = (w - 20) / 13;
+  final cellH = cellW * 1.3;
+  const top = 20.0;
+  for (var c = 0; c < 52; c++) {
+    final suit = c ~/ 13, rank = c % 13;
+    final r = Rect.fromLTWH(10 + rank * cellW + 1.5, top + suit * (cellH + 4), cellW - 3, cellH);
+    final a = sim.inA(c), b = sim.inB(c);
+    final fill = a && b
+        ? AppColors.violet
+        : a
+            ? AppColors.pink
+            : b
+                ? AppColors.cyan
+                : Colors.white;
+    roundRect(canvas, r, fill.withValues(alpha: (a || b) ? 0.85 : 1), radius: 4);
+    if (c == sim.last) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(r.inflate(2), const Radius.circular(5)),
+        Paint()
+          ..color = AppColors.ink
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3,
+      );
+    }
+    final red = suit <= 1;
+    label(canvas, kRanks[rank], r.center.translate(0, -cellH * 0.16),
+        size: cellW * 0.36, color: (a || b) ? Colors.white : (red ? AppColors.pink : AppColors.ink));
+    label(canvas, kSuits[suit], r.center.translate(0, cellH * 0.2),
+        size: cellW * 0.36, color: (a || b) ? Colors.white : (red ? AppColors.pink : AppColors.ink));
+  }
+
+  final y = top + 4 * (cellH + 4) + 18;
+  final items = [
+    ('A only', AppColors.pink, sim.countA - sim.countBoth),
+    ('B only', AppColors.cyan, sim.countB - sim.countBoth),
+    ('both', AppColors.violet, sim.countBoth),
+  ];
+  for (var i = 0; i < items.length; i++) {
+    final (name, color, n) = items[i];
+    final x = 14 + i * (w - 28) / 3;
+    roundRect(canvas, Rect.fromLTWH(x, y - 8, 16, 16), color, radius: 4);
+    label(canvas, '$name: $n', Offset(x + 22, y), size: 12, align: TextAlign.left);
+  }
+  label(
+      canvas,
+      sim.exclusive ? 'No card is in both: mutually exclusive' : '${sim.countBoth} cards are in both: they overlap',
+      Offset(w / 2, y + 28),
+      size: 14,
+      color: sim.exclusive ? AppColors.green : AppColors.violet);
+  label(
+      canvas,
+      'Drawn ${sim.draws} cards (with replacement) · ${sim.draws == 0 ? 0 : (sim.hits / sim.draws * 100).toStringAsFixed(1)}% were A or B',
+      Offset(w / 2, h - 14),
+      size: 11,
+      color: AppColors.muted);
+}
+
+final LessonSpec mutuallyExclusiveLesson = LessonSpec(
+  id: 'mutually_exclusive',
+  chapterLabel: 'Ch 3 · Probability basics',
+  title: const [
+    TitlePart('Can both happen '),
+    TitlePart('at once', AppColors.violet),
+    TitlePart('?'),
+  ],
+  subtitle: 'Mutually exclusive events · 2-minute animated lesson',
+  createSim: () => MutualSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<MutualSim>(sim, _paintMutual),
+  stats: (sim) {
+    final m = sim as MutualSim;
+    return [
+      StatChip('P(A)', '${m.countA}/52', AppColors.pink),
+      StatChip('P(B)', '${m.countB}/52', AppColors.cyan),
+      StatChip('P(both)', '${m.countBoth}/52', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Two events are mutually exclusive if they can\'t happen together: one '
+      'card can\'t be a heart and a spade. Then the chance of either is just the '
+      'sum. But a card can be a heart and a king, so adding 13 + 4 counts the king '
+      'of hearts twice. Purple cards show the overlap you must subtract.',
+  formula: (sim) {
+    final m = sim as MutualSim;
+    final either = m.countA + m.countB - m.countBoth;
+    return 'P(A or B) = ${m.countA}/52 + ${m.countB}/52 − ${m.countBoth}/52 = $either/52';
+  },
+  tryItTitle: 'Try it: pick two events',
+  buildTryIt: (sim) {
+    final m = sim as MutualSim;
+    return watch(
+      m,
+      () => ChoiceRow<CardPair>(
+        options: kCardPairNames,
+        selected: m.pair,
+        onSelected: (v) => m.change(() => m.pair = v),
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Which pair of events is mutually exclusive for one die roll?',
+      options: ['Even and 6', 'Odd and less than 3', 'Even and odd', 'Prime and odd'],
+      answer: 2,
+      explanation: 'No number is both even and odd. All the other pairs share at least one outcome.',
+    ),
+    QuizQuestion(
+      prompt: 'Draw one card. What is P(heart or spade)?',
+      options: ['1/4', '1/2', '13/52 × 13/52', '3/4'],
+      answer: 1,
+      explanation: 'They can\'t both happen, so add: 13/52 + 13/52 = 26/52 = 1/2.',
+    ),
+    QuizQuestion(
+      prompt: 'Draw one card. What is P(heart or king)?',
+      options: ['17/52', '16/52', '4/52', '13/52'],
+      answer: 1,
+      explanation: '13 hearts + 4 kings − 1 king of hearts counted twice = 16/52.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/outliers.dart =====
+class OutlierSim extends TickSim {
+  OutlierSim({super.rng});
+
+  static const int target = 30;
+
+  /// (value, vertical jitter 0–1)
+  final List<(double, double)> points = [];
+
+  /// Fence multiplier: outliers are beyond k × IQR from the box.
+  double k = 1.5;
+
+  @override
+  double get interval => 0.35;
+
+  List<double> get values => [for (final p in points) p.$1];
+  double get q1 => quantileOf(values, 0.25);
+  double get q3 => quantileOf(values, 0.75);
+  double get iqr => q3 - q1;
+  double get lowFence => q1 - k * iqr;
+  double get highFence => q3 + k * iqr;
+  bool isOutlier(double v) => points.length >= 4 && (v < lowFence || v > highFence);
+  int get outlierCount => values.where(isOutlier).length;
+
+  void _add(double v) => points.add((v.clamp(0, 100).toDouble(), rng.nextDouble()));
+
+  @override
+  void tick() {
+    if (points.length >= target) return;
+    // Mostly typical values, with the odd stray one.
+    _add(rng.nextDouble() < 0.07
+        ? (rng.nextBool() ? 92 + rng.nextDouble() * 8 : rng.nextDouble() * 8)
+        : 50 + normalDraw(rng) * 9);
+  }
+
+  void addExtreme() {
+    _add(rng.nextBool() ? 95 + rng.nextDouble() * 5 : rng.nextDouble() * 5);
+    notifyListeners();
+  }
+
+  void setK(double value) {
+    k = value;
+    notifyListeners();
+  }
+
+  @override
+  void restart() => points.clear();
+}
+
+void _paintOutliers(Canvas canvas, Size size, OutlierSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 16.0;
+  final right = w - 16;
+  double xFor(double v) => left + v / 100 * (right - left);
+
+  final stripTop = 30.0;
+  final stripBottom = h * 0.5;
+  final boxY = h * 0.66;
+  final axisY = h - 40;
+
+  // Fence zone.
+  if (sim.points.length >= 4) {
+    final lo = xFor(sim.lowFence.clamp(0, 100));
+    final hi = xFor(sim.highFence.clamp(0, 100));
+    roundRect(canvas, Rect.fromLTRB(lo, stripTop - 12, hi, axisY), AppColors.green.withValues(alpha: 0.12), radius: 10);
+    dashedLine(canvas, Offset(lo, stripTop - 12), Offset(lo, axisY), AppColors.green);
+    dashedLine(canvas, Offset(hi, stripTop - 12), Offset(hi, axisY), AppColors.green);
+    label(canvas, 'fence', Offset(lo, axisY + 12), size: 10, color: AppColors.green);
+    label(canvas, 'fence', Offset(hi, axisY + 12), size: 10, color: AppColors.green);
+  }
+
+  // Data strip.
+  for (final (v, j) in sim.points) {
+    final c = Offset(xFor(v), stripTop + j * (stripBottom - stripTop));
+    final out = sim.isOutlier(v);
+    canvas.drawCircle(c, 6, Paint()..color = out ? AppColors.pink : AppColors.blue.withValues(alpha: 0.75));
+    if (out) ring(canvas, c, 10, AppColors.pink, width: 2.5);
+  }
+
+  // Box plot of the same data.
+  if (sim.points.length >= 4) {
+    final inliers = sim.values.where((v) => !sim.isOutlier(v)).toList();
+    final lo = inliers.reduce(math.min);
+    final hi = inliers.reduce(math.max);
+    line(canvas, Offset(xFor(lo), boxY), Offset(xFor(sim.q1), boxY), AppColors.ink);
+    line(canvas, Offset(xFor(sim.q3), boxY), Offset(xFor(hi), boxY), AppColors.ink);
+    line(canvas, Offset(xFor(lo), boxY - 8), Offset(xFor(lo), boxY + 8), AppColors.ink);
+    line(canvas, Offset(xFor(hi), boxY - 8), Offset(xFor(hi), boxY + 8), AppColors.ink);
+    final box = Rect.fromLTRB(xFor(sim.q1), boxY - 16, xFor(sim.q3), boxY + 16);
+    roundRect(canvas, box, AppColors.yellow, radius: 6);
+    final med = xFor(quantileOf(sim.values, 0.5));
+    line(canvas, Offset(med, boxY - 16), Offset(med, boxY + 16), AppColors.ink, width: 3);
+    label(canvas, 'IQR', Offset(box.center.dx, boxY - 26), size: 11, color: AppColors.muted);
+    for (final v in sim.values.where(sim.isOutlier)) {
+      label(canvas, '×', Offset(xFor(v), boxY), size: 16, color: AppColors.pink);
+    }
+  }
+
+  line(canvas, Offset(left, axisY), Offset(right, axisY), AppColors.peg);
+  for (var v = 0; v <= 100; v += 25) {
+    label(canvas, '$v', Offset(xFor(v.toDouble()), axisY + 26), size: 10, color: AppColors.muted);
+  }
+}
+
+final LessonSpec outliersLesson = LessonSpec(
+  id: 'outliers',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('When is a value '),
+    TitlePart('too weird', AppColors.pink),
+    TitlePart(' to trust?'),
+  ],
+  subtitle: 'Outliers · 2-minute animated lesson',
+  createSim: () => OutlierSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<OutlierSim>(sim, _paintOutliers),
+  stats: (sim) {
+    final o = sim as OutlierSim;
+    return [
+      StatChip('values', '${o.points.length}', AppColors.yellow),
+      StatChip('IQR', o.points.length >= 4 ? o.iqr.toStringAsFixed(1) : '…', AppColors.green),
+      StatChip('outliers', '${o.outlierCount}', AppColors.pink),
+    ];
+  },
+  bigIdea: 'The box holds the middle half of the data; its width is the IQR. A '
+      'common rule flags any value more than 1.5 IQRs beyond the box as an '
+      'outlier. An outlier isn\'t automatically a mistake: check it. It might be '
+      'a typo, or the most interesting value in the data.',
+  formula: (sim) {
+    final o = sim as OutlierSim;
+    if (o.points.length < 4) return 'fences = Q1 − k·IQR and Q3 + k·IQR';
+    return 'fences = ${o.q1.toStringAsFixed(0)} − ${o.k.toStringAsFixed(1)}×${o.iqr.toStringAsFixed(0)} '
+        'and ${o.q3.toStringAsFixed(0)} + ${o.k.toStringAsFixed(1)}×${o.iqr.toStringAsFixed(0)}';
+  },
+  tryItTitle: 'Try it: move the fences',
+  buildTryIt: (sim) {
+    final o = sim as OutlierSim;
+    return watch(
+      o,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: 'strict',
+            right: 'loose',
+            value: o.k,
+            min: 0.5,
+            max: 3,
+            divisions: 5,
+            label: 'k = ${o.k}',
+            onChanged: o.setK,
+          ),
+          ControlRow(
+            children: [
+              ValueTag('k = ${o.k.toStringAsFixed(1)}'),
+              ActionButton('Add extreme value', o.addExtreme),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const TryNote('Strict fences flag normal values; loose ones miss real oddities. 1.5 is the usual choice.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Q1 = 20, Q3 = 30. With the 1.5 × IQR rule, which value is an outlier?',
+      options: ['8', '42', '47', '25'],
+      answer: 2,
+      explanation: 'IQR = 30 − 20 = 10, so the fences are 20 − 15 = 5 and 30 + 15 = 45. '
+          'Only 47 is outside them.',
+    ),
+    QuizQuestion(
+      prompt: 'You find an outlier in your data. What should you do first?',
+      options: ['Delete it', 'Check where it came from', 'Double it', 'Ignore the rest of the data'],
+      answer: 1,
+      explanation: 'It could be a typo or a real, important case. Investigate before '
+          'removing anything.',
+    ),
+    QuizQuestion(
+      prompt: 'Which summary is barely affected by an outlier?',
+      options: ['Mean', 'Range', 'Median', 'Standard deviation'],
+      answer: 2,
+      explanation: 'The median only depends on the middle of the sorted data.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/percentiles.dart =====
+class PercentileSim extends TickSim {
+  PercentileSim({super.rng}) {
+    restart();
+  }
+
+  static const int n = 21;
+
+  List<int> values = [];
+
+  /// Bubble-sort position: comparing values[j] and values[j + 1] in pass [pass].
+  int pass = 0;
+  int j = 0;
+  bool sorted = false;
+
+  /// Percentile picked with the slider (0–100).
+  double percentile = 75;
+
+  @override
+  double get interval => sorted ? 1 : 0.035;
+
+  @override
+  void tick() {
+    if (sorted) return;
+    if (values[j] > values[j + 1]) {
+      final t = values[j];
+      values[j] = values[j + 1];
+      values[j + 1] = t;
+    }
+    j++;
+    if (j >= n - 1 - pass) {
+      j = 0;
+      pass++;
+      if (pass >= n - 1) sorted = true;
+    }
+  }
+
+  /// Finishes the sort instantly.
+  void sortNow() {
+    values.sort();
+    sorted = true;
+    notifyListeners();
+  }
+
+  @override
+  void restart() {
+    values = List.generate(n, (_) => 10 + rng.nextInt(90));
+    pass = 0;
+    j = 0;
+    sorted = false;
+  }
+
+  void setPercentile(double p) {
+    percentile = p;
+    notifyListeners();
+  }
+
+  double quantile(double q) => quantileOf(values, q);
+}
+
+void _paintPercentiles(Canvas canvas, Size size, PercentileSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 14.0;
+  final right = w - 14;
+  final baseline = h - 56;
+  const top = 34.0;
+  final slot = (right - left) / PercentileSim.n;
+  final pos = sim.percentile / 100 * (PercentileSim.n - 1);
+
+  label(canvas, sim.sorted ? 'sorted smallest → largest' : 'sorting…', Offset(w / 2, 14),
+      size: 12, color: AppColors.muted);
+
+  for (var i = 0; i < PercentileSim.n; i++) {
+    final v = sim.values[i];
+    final comparing = !sim.sorted && (i == sim.j || i == sim.j + 1);
+    final settled = sim.sorted || i >= PercentileSim.n - sim.pass;
+    Color color;
+    if (comparing) {
+      color = AppColors.orange;
+    } else if (sim.sorted && i <= pos + 1e-9) {
+      color = AppColors.violet;
+    } else if (settled) {
+      color = AppColors.cyan;
+    } else {
+      color = AppColors.peg;
+    }
+    bar(canvas, left + slot * (i + 0.5), slot * 0.78, baseline, (baseline - top) * v / 100, color);
+    if (sim.sorted || comparing) {
+      label(canvas, '$v', Offset(left + slot * (i + 0.5), baseline + 10), size: 9, color: AppColors.muted);
+    }
+  }
+
+  if (!sim.sorted) return;
+
+  // Quartile markers under the bars.
+  for (final (name, q, color) in [
+    ('Q1', 0.25, AppColors.green),
+    ('median', 0.5, AppColors.pink),
+    ('Q3', 0.75, AppColors.green),
+  ]) {
+    final x = left + slot * (q * (PercentileSim.n - 1) + 0.5);
+    line(canvas, Offset(x, baseline + 18), Offset(x, baseline + 30), color, width: 3);
+    label(canvas, '$name ${sim.quantile(q).toStringAsFixed(0)}', Offset(x, baseline + 42), size: 11, color: color);
+  }
+
+  // Percentile line across the chart.
+  final pv = sim.quantile(sim.percentile / 100);
+  final y = baseline - (baseline - top) * pv / 100;
+  dashedLine(canvas, Offset(left, y), Offset(right, y), AppColors.violet, width: 2);
+  label(canvas, 'P${sim.percentile.round()} = ${pv.toStringAsFixed(1)}', Offset(left + 4, y - 10),
+      size: 12, color: AppColors.violet, align: TextAlign.left);
+}
+
+final LessonSpec percentilesLesson = LessonSpec(
+  id: 'percentiles',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('Line everyone up, then '),
+    TitlePart('cut', AppColors.violet),
+    TitlePart(' the line'),
+  ],
+  subtitle: 'Percentiles & quartiles · 2-minute animated lesson',
+  createSim: () => PercentileSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<PercentileSim>(sim, _paintPercentiles),
+  stats: (sim) {
+    final p = sim as PercentileSim;
+    return [
+      StatChip('Q1', p.sorted ? p.quantile(.25).toStringAsFixed(0) : '…', AppColors.green),
+      StatChip('median', p.sorted ? p.quantile(.5).toStringAsFixed(0) : '…', AppColors.pink),
+      StatChip('Q3', p.sorted ? p.quantile(.75).toStringAsFixed(0) : '…', AppColors.green),
+    ];
+  },
+  bigIdea: 'Sort the data. The value 75% of the way along the line is the 75th '
+      'percentile: three quarters of the data sit at or below it. The quartiles '
+      'cut the line into four equal groups: Q1 at 25%, the median at 50%, Q3 at '
+      '75%. Scoring in the 90th percentile means beating 90% of people, not '
+      'scoring 90%.',
+  formula: (sim) {
+    final p = sim as PercentileSim;
+    final pos = p.percentile / 100 * (PercentileSim.n - 1);
+    return 'P${p.percentile.round()}: position = ${(p.percentile / 100).toStringAsFixed(2)} × (n − 1) '
+        '= ${pos.toStringAsFixed(1)} in the sorted list';
+  },
+  tryItTitle: 'Try it: pick a percentile',
+  buildTryIt: (sim) {
+    final p = sim as PercentileSim;
+    return watch(
+      p,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '0',
+            right: '100',
+            value: p.percentile,
+            min: 0,
+            max: 100,
+            divisions: 20,
+            label: 'P${p.percentile.round()}',
+            onChanged: p.setPercentile,
+          ),
+          ControlRow(
+            children: [
+              ValueTag(
+                  'P${p.percentile.round()} = ${p.sorted ? p.quantile(p.percentile / 100).toStringAsFixed(1) : '…'}'),
+              if (!p.sorted) ActionButton('Finish sorting', p.sortNow) else ActionButton('New data', p.reset),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const TryNote('Purple bars are the ones at or below your percentile.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'You score in the 90th percentile on a test. What does that mean?',
+      options: [
+        'You got 90% of the marks',
+        'You did as well as or better than about 90% of test takers',
+        'You were 90th in the class',
+        'You need 10% more to pass',
+      ],
+      answer: 1,
+      explanation: 'Percentiles describe position in the sorted list, not the score '
+          'itself.',
+    ),
+    QuizQuestion(
+      prompt: 'Which percentile is the median?',
+      options: ['25th', '50th', '75th', '100th'],
+      answer: 1,
+      explanation: 'Half the data lies at or below the median.',
+    ),
+    QuizQuestion(
+      prompt: 'Q1 = 40 and Q3 = 70. What share of the data lies between 40 and 70?',
+      options: ['25%', '50%', '70%', '75%'],
+      answer: 1,
+      explanation: 'From the 25th to the 75th percentile is the middle half of the '
+          'data. Its width (30) is the interquartile range.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/permutations.dart =====
+const List<String> _runnerNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+/// Runners filling podium slots one at a time, in random order.
+class PermutationSim extends TickSim {
+  PermutationSim({super.rng});
+
+  int n = 5;
+  int r = 3;
+
+  /// Runner index in each filled slot.
+  List<int> podium = [];
+
+  /// Distinct finished arrangements seen.
+  final Set<String> seen = {};
+
+  int get total => permutations(n, r);
+  bool get full => podium.length == r;
+
+  @override
+  double get interval => seen.length < 3 ? 0.7 : 0.18;
+
+  @override
+  void tick() {
+    if (full) {
+      podium = [];
+      return;
+    }
+    final left = [
+      for (var i = 0; i < n; i++)
+        if (!podium.contains(i)) i
+    ];
+    podium = [...podium, left[rng.nextInt(left.length)]];
+    if (full) seen.add(podium.join());
+  }
+
+  @override
+  void restart() {
+    podium = [];
+    seen.clear();
+  }
+}
+
+void _paintPermutations(Canvas canvas, Size size, PermutationSim sim) {
+  final w = size.width;
+
+  // Runners waiting.
+  final spacing = (w - 40) / sim.n;
+  final rr = math.min(18.0, spacing * 0.36);
+  label(canvas, 'Runners', Offset(20, 14), size: 11, color: AppColors.muted, align: TextAlign.left);
+  for (var i = 0; i < sim.n; i++) {
+    final c = Offset(20 + spacing * (i + 0.5), 44);
+    final used = sim.podium.contains(i);
+    canvas.drawCircle(c, rr, Paint()..color = AppColors.rainbow[i].withValues(alpha: used ? 0.2 : 1));
+    label(canvas, _runnerNames[i], c, size: rr * 0.9, color: used ? AppColors.muted : Colors.white);
+  }
+
+  // Podium slots.
+  final slotW = math.min(70.0, (w - 40) / sim.r - 8);
+  final rowW = sim.r * (slotW + 8) - 8;
+  final slotTop = 104.0;
+  for (var s = 0; s < sim.r; s++) {
+    final x = (w - rowW) / 2 + s * (slotW + 8);
+    final rect = Rect.fromLTWH(x, slotTop, slotW, slotW * 0.9);
+    roundRect(canvas, rect, AppColors.chip, radius: 10);
+    label(canvas, '${s + 1}${['st', 'nd', 'rd', 'th', 'th', 'th', 'th'][s]}', Offset(rect.center.dx, rect.bottom + 12),
+        size: 11, color: AppColors.muted);
+    if (s < sim.podium.length) {
+      final i = sim.podium[s];
+      canvas.drawCircle(rect.center, slotW * 0.32, Paint()..color = AppColors.rainbow[i]);
+      label(canvas, _runnerNames[i], rect.center, size: slotW * 0.3, color: Colors.white);
+    }
+    // How many choices this slot had.
+    label(canvas, '${sim.n - s} choices', Offset(rect.center.dx, rect.top - 10),
+        size: 10, color: s == sim.podium.length - 1 ? AppColors.pink : AppColors.muted);
+  }
+
+  // Progress towards seeing every arrangement.
+  final y = slotTop + slotW + 52;
+  final barW = w - 40;
+  final frac = sim.seen.length / sim.total;
+  label(canvas, 'Different podiums seen', Offset(20, y), size: 12, align: TextAlign.left);
+  roundRect(canvas, Rect.fromLTWH(20, y + 14, barW, 24), Colors.white, radius: 8);
+  roundRect(canvas, Rect.fromLTWH(20, y + 14, barW * frac, 24), AppColors.violet, radius: 8);
+  label(canvas, '${sim.seen.length} of ${sim.total}', Offset(w / 2, y + 26),
+      size: 12, color: frac > 0.5 ? Colors.white : AppColors.ink);
+
+  // A few recent arrangements.
+  final recent = sim.seen.toList().reversed.take(8).toList();
+  for (var i = 0; i < recent.length; i++) {
+    final text = recent[i].split('').map((d) => _runnerNames[int.parse(d)]).join();
+    label(canvas, text, Offset(20 + (i % 4) * (barW / 4) + barW / 8, y + 58 + (i ~/ 4) * 20),
+        size: 13, color: AppColors.muted);
+  }
+}
+
+final LessonSpec permutationsLesson = LessonSpec(
+  id: 'permutations',
+  chapterLabel: 'Ch 4 · Counting',
+  title: const [
+    TitlePart('When '),
+    TitlePart('order', AppColors.violet),
+    TitlePart(' matters: filling a podium'),
+  ],
+  subtitle: 'Permutations · 2-minute animated lesson',
+  createSim: () => PermutationSim(),
+  visualAspectRatio: 1.05,
+  buildVisual: (sim) => simCanvas<PermutationSim>(sim, _paintPermutations),
+  stats: (sim) {
+    final p = sim as PermutationSim;
+    return [
+      StatChip('runners n', '${p.n}', AppColors.yellow),
+      StatChip('places r', '${p.r}', AppColors.pink),
+      StatChip('podiums', '${p.total}', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Gold can go to any of the n runners. Once gold is taken, silver has one '
+      'fewer choice, then bronze one fewer again. Multiply the shrinking choices. '
+      'A-B-C and C-B-A are different podiums, so order matters: that is a '
+      'permutation.',
+  formula: (sim) {
+    final p = sim as PermutationSim;
+    final terms = [for (var i = 0; i < p.r; i++) '${p.n - i}'].join(' × ');
+    return 'nPr = n! / (n − r)! = $terms = ${p.total}';
+  },
+  tryItTitle: 'Try it: more runners, more places',
+  buildTryIt: (sim) {
+    final p = sim as PermutationSim;
+    return watch(
+      p,
+      () => Column(
+        children: [
+          LabeledSlider(
+            left: 'runners ${p.n}',
+            right: '7',
+            value: p.n.toDouble(),
+            min: 2,
+            max: 7,
+            divisions: 5,
+            onChanged: (v) => p.change(() {
+              p.n = v.round();
+              p.r = math.min(p.r, p.n);
+            }),
+          ),
+          LabeledSlider(
+            left: 'places ${p.r}',
+            right: '${p.n}',
+            value: p.r.toDouble(),
+            min: 1,
+            max: p.n.toDouble(),
+            divisions: math.max(1, p.n - 1),
+            onChanged: (v) => p.change(() => p.r = v.round().clamp(1, p.n)),
+          ),
+          ControlRow(children: [ActionButton('Run 300 races', () => p.runMany(300 * (p.r + 1)))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: '8 runners race. How many ways can gold, silver and bronze be awarded?',
+      options: ['24', '56', '336', '512'],
+      answer: 2,
+      explanation: '8 × 7 × 6 = 336.',
+    ),
+    QuizQuestion(
+      prompt: 'How many ways can 5 books be arranged on a shelf?',
+      options: ['5', '25', '120', '3,125'],
+      answer: 2,
+      explanation: 'All 5 positions are filled: 5! = 5 × 4 × 3 × 2 × 1 = 120.',
+    ),
+    QuizQuestion(
+      prompt: 'Why is it n × (n − 1) × … and not n × n × …?',
+      options: [
+        'Because order doesn\'t matter',
+        'Because a runner can\'t win two places at once',
+        'Because n is small',
+        'It is n × n',
+      ],
+      answer: 1,
+      explanation: 'Each place uses up one runner, so the next place has one fewer choice.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/pigeonhole.dart =====
+/// Rounds of dropping pigeons into holes at random.
+class PigeonholeSim extends TickSim {
+  PigeonholeSim({super.rng});
+
+  int holes = 5;
+  int pigeons = 6;
+
+  /// Hole of each pigeon dropped this round.
+  List<int> dropped = [];
+
+  /// Ticks spent showing a finished round.
+  int hold = 0;
+
+  int rounds = 0;
+  int roundsShared = 0;
+
+  bool get roundDone => dropped.length >= pigeons;
+  bool get guaranteed => pigeons > holes;
+
+  List<int> get counts {
+    final c = List.filled(holes, 0);
+    for (final hle in dropped) {
+      c[hle]++;
+    }
+    return c;
+  }
+
+  bool get shared => counts.any((c) => c >= 2);
+
+  /// Chance at least two share a hole when pigeons land at random.
+  double get theory {
+    if (guaranteed) return 1;
+    var none = 1.0;
+    for (var k = 0; k < pigeons; k++) {
+      none *= (holes - k) / holes;
+    }
+    return 1 - none;
+  }
+
+  @override
+  double get interval => rounds < 2 ? 0.35 : 0.12;
+
+  @override
+  void tick() {
+    if (!roundDone) {
+      dropped.add(rng.nextInt(holes));
+      if (roundDone) {
+        rounds++;
+        if (shared) roundsShared++;
+      }
+    } else if (++hold > 5) {
+      hold = 0;
+      dropped = [];
+    }
+  }
+
+  @override
+  void restart() {
+    dropped = [];
+    hold = 0;
+    rounds = 0;
+    roundsShared = 0;
+  }
+}
+
+void _paintPigeonhole(Canvas canvas, Size size, PigeonholeSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final holeW = (w - 20) / sim.holes;
+  final holeTop = h * 0.3;
+  final holeBottom = h - 70;
+  final counts = sim.counts;
+
+  // Pigeons still waiting.
+  final waiting = sim.pigeons - sim.dropped.length;
+  for (var i = 0; i < waiting; i++) {
+    label(canvas, '🐦', Offset(20 + i * math.min(24.0, (w - 40) / sim.pigeons), 22), size: 18);
+  }
+  label(canvas, '${sim.pigeons} pigeons → ${sim.holes} holes', Offset(w / 2, holeTop - 22), size: 13);
+
+  final stackStep = math.min(26.0, (holeBottom - holeTop - 12) / math.max(1, counts.reduce(math.max)));
+  for (var hle = 0; hle < sim.holes; hle++) {
+    final rect = Rect.fromLTWH(10 + hle * holeW + 3, holeTop, holeW - 6, holeBottom - holeTop);
+    final crowded = counts[hle] >= 2;
+    roundRect(canvas, rect, crowded ? AppColors.pink.withValues(alpha: 0.2) : AppColors.chip, radius: 10);
+    if (crowded) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(10)),
+        Paint()
+          ..color = AppColors.pink
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5,
+      );
+    }
+    for (var k = 0; k < counts[hle]; k++) {
+      label(canvas, '🐦', Offset(rect.center.dx, rect.bottom - 16 - k * stackStep), size: math.min(20, holeW * 0.5));
+    }
+  }
+
+  final msg = !sim.roundDone
+      ? (sim.guaranteed ? 'More pigeons than holes: a share is certain' : 'Will two end up together?')
+      : (sim.shared ? 'Some hole holds 2 or more pigeons' : 'Every pigeon got its own hole');
+  label(canvas, msg, Offset(w / 2, h - 46), size: 14, color: sim.shared ? AppColors.pink : AppColors.ink);
+  label(canvas, 'Rounds with a shared hole: ${sim.roundsShared} of ${sim.rounds}', Offset(w / 2, h - 20),
+      size: 12, color: AppColors.muted);
+}
+
+final LessonSpec pigeonholeLesson = LessonSpec(
+  id: 'pigeonhole',
+  chapterLabel: 'Ch 4 · Counting',
+  title: const [
+    TitlePart('More pigeons than holes means a '),
+    TitlePart('guaranteed', AppColors.pink),
+    TitlePart(' crowd'),
+  ],
+  subtitle: 'The pigeonhole principle · 2-minute animated lesson',
+  createSim: () => PigeonholeSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<PigeonholeSim>(sim, _paintPigeonhole),
+  stats: (sim) {
+    final p = sim as PigeonholeSim;
+    return [
+      StatChip('rounds', '${p.rounds}', AppColors.yellow),
+      StatChip('shared', p.rounds == 0 ? '…' : '${(p.roundsShared / p.rounds * 100).round()}%', AppColors.pink),
+      StatChip('theory', '${(p.theory * 100).round()}%', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Put 6 pigeons into 5 holes and at least one hole must hold two. There\'s '
+      'no luck involved: even the most careful spreading runs out of empty holes. '
+      'This simple idea proves surprising facts, like two people in any city of '
+      'a million having exactly the same number of hairs on their head.',
+  formula: (sim) {
+    final p = sim as PigeonholeSim;
+    return p.guaranteed
+        ? '${p.pigeons} > ${p.holes} → some hole has ≥ ⌈${p.pigeons}/${p.holes}⌉ = ${(p.pigeons / p.holes).ceil()}'
+        : '${p.pigeons} ≤ ${p.holes}: no guarantee, but random chance of a share = ${(p.theory * 100).toStringAsFixed(0)}%';
+  },
+  tryItTitle: 'Try it: pigeons vs holes',
+  buildTryIt: (sim) {
+    final p = sim as PigeonholeSim;
+    return watch(
+      p,
+      () => Column(
+        children: [
+          LabeledSlider(
+            left: 'holes ${p.holes}',
+            right: '10',
+            value: p.holes.toDouble(),
+            min: 2,
+            max: 10,
+            divisions: 8,
+            onChanged: (v) => p.change(() => p.holes = v.round()),
+          ),
+          LabeledSlider(
+            left: 'pigeons ${p.pigeons}',
+            right: '12',
+            value: p.pigeons.toDouble(),
+            min: 1,
+            max: 12,
+            divisions: 11,
+            onChanged: (v) => p.change(() => p.pigeons = v.round()),
+          ),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'How many people must be in a room to guarantee two share a birth month?',
+      options: ['12', '13', '24', '366'],
+      answer: 1,
+      explanation: '12 months are the holes. With 13 people, one month must hold two.',
+    ),
+    QuizQuestion(
+      prompt: 'A drawer has red and blue socks. How many must you pull out, in the dark, '
+          'to be sure of a matching pair?',
+      options: ['2', '3', '4', 'All of them'],
+      answer: 1,
+      explanation: 'Two colours are two holes. The third sock must match one of the first two.',
+    ),
+    QuizQuestion(
+      prompt: '10 pigeons, 3 holes. At least one hole must hold at least…',
+      options: ['2', '3', '4', '10'],
+      answer: 2,
+      explanation: '10 / 3 = 3.33, rounded up: 4. Three holes of 3 only hold 9.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/pmf_cdf.dart =====
+/// Ways to roll each total 2–12 with two dice (out of 36).
+const List<int> kTwoDiceWays = [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1];
+
+/// A cursor sweeps across the totals 2–12, building the CDF from the PMF.
+class PmfCdfSim extends LessonSim {
+  double t = 0;
+
+  /// Chosen with the slider; null while sweeping on its own.
+  int? manual;
+
+  static const double perStep = 0.7;
+
+  /// Sweeps 2 → 12, pauses on 12 for an extra step, then starts again.
+  int get cursor => manual ?? math.min(12, 2 + (t / perStep).floor() % 12);
+
+  double pmf(int x) => (x < 2 || x > 12) ? 0 : kTwoDiceWays[x - 2] / 36;
+
+  double cdf(int x) {
+    var s = 0.0;
+    for (var k = 2; k <= x; k++) {
+      s += pmf(k);
+    }
+    return s;
+  }
+
+  int waysUpTo(int x) => [for (var k = 2; k <= math.min(x, 12); k++) kTwoDiceWays[k - 2]].fold(0, (a, b) => a + b);
+
+  @override
+  void advance(double dt) {
+    if (manual == null) t += dt;
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    manual = null;
+    t = ((t / perStep).floor() + 1) * perStep;
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    manual = null;
+    t = 0;
+    notifyListeners();
+  }
+
+  void setCursor(int x) {
+    manual = x;
+    notifyListeners();
+  }
+}
+
+void _paintPmfCdf(Canvas canvas, Size size, PmfCdfSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 34.0;
+  final right = w - 12;
+  final slot = (right - left) / 11;
+  double xFor(int total) => left + slot * (total - 2 + 0.5);
+  final x = sim.cursor;
+
+  // PMF.
+  label(canvas, 'PMF: P(total = x)', Offset(left, 12), size: 12, color: AppColors.orange, align: TextAlign.left);
+  final pBase = h * 0.44;
+  const pTop = 30.0;
+  for (var k = 2; k <= 12; k++) {
+    final included = k <= x;
+    bar(canvas, xFor(k), slot * 0.7, pBase, (pBase - pTop) * sim.pmf(k) / (6 / 36),
+        included ? AppColors.orange : AppColors.peg.withValues(alpha: 0.6));
+    label(canvas, '${kTwoDiceWays[k - 2]}', Offset(xFor(k), pBase - (pBase - pTop) * sim.pmf(k) / (6 / 36) - 8),
+        size: 9, color: AppColors.muted);
+    label(canvas, '$k', Offset(xFor(k), pBase + 10), size: 10, color: AppColors.muted);
+  }
+
+  // CDF: a staircase.
+  final cTop = pBase + 40;
+  final cBase = h - 26;
+  label(canvas, 'CDF: P(total ≤ x)', Offset(left, cTop - 14), size: 12, color: AppColors.violet, align: TextAlign.left);
+  double yFor(double p) => cBase - p * (cBase - cTop);
+  line(canvas, Offset(left, cBase), Offset(right, cBase), AppColors.peg);
+  for (final p in [0.5, 1.0]) {
+    dashedLine(canvas, Offset(left, yFor(p)), Offset(right, yFor(p)), AppColors.peg.withValues(alpha: 0.6), width: 1);
+    label(canvas, p.toStringAsFixed(1), Offset(left - 6, yFor(p)),
+        size: 10, color: AppColors.muted, align: TextAlign.right);
+  }
+  for (var k = 2; k <= 12; k++) {
+    final y = yFor(sim.cdf(k));
+    final x0 = left + slot * (k - 2), x1 = left + slot * (k - 1);
+    line(canvas, Offset(x0, y), Offset(x1, y), k <= x ? AppColors.violet : AppColors.peg, width: 3.5);
+    canvas.drawCircle(Offset(x0, y), 3.5, Paint()..color = k <= x ? AppColors.violet : AppColors.peg);
+  }
+  // Cursor.
+  final cx = left + slot * (x - 1);
+  line(canvas, Offset(cx, pTop), Offset(cx, cBase), AppColors.pink, width: 2);
+  label(canvas, 'P(total ≤ $x) = ${sim.waysUpTo(x)}/36 = ${sim.cdf(x).toStringAsFixed(2)}', Offset(w / 2, h - 10),
+      size: 13, color: AppColors.pink);
+}
+
+final LessonSpec pmfCdfLesson = LessonSpec(
+  id: 'pmf_cdf',
+  chapterLabel: 'Ch 6 · Random variables',
+  title: const [
+    TitlePart('Bars', AppColors.orange),
+    TitlePart(' that stack into a '),
+    TitlePart('staircase', AppColors.violet),
+  ],
+  subtitle: 'PMF, PDF & CDF · 2-minute animated lesson',
+  createSim: () => PmfCdfSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<PmfCdfSim>(sim, _paintPmfCdf),
+  stats: (sim) {
+    final s = sim as PmfCdfSim;
+    return [
+      StatChip('x', '${s.cursor}', AppColors.pink),
+      StatChip('P(X = x)', '${kTwoDiceWays[s.cursor - 2]}/36', AppColors.orange),
+      StatChip('P(X ≤ x)', s.cdf(s.cursor).toStringAsFixed(2), AppColors.violet),
+    ];
+  },
+  bigIdea: 'Roll two dice and add them. The PMF (probability mass function) gives the '
+      'chance of each exact total: 7 is likeliest because 6 of the 36 rolls make '
+      'it. The CDF (cumulative distribution function) adds up every bar to the '
+      'left: the chance of getting x or less. It climbs in steps from 0 to 1. For '
+      'continuous variables, the bars melt into a smooth curve called a PDF, '
+      'and the CDF becomes a smooth S-shaped ramp.',
+  formula: (sim) {
+    final s = sim as PmfCdfSim;
+    return 'F(${s.cursor}) = Σ p(k) for k ≤ ${s.cursor} = ${s.waysUpTo(s.cursor)}/36';
+  },
+  tryItTitle: 'Try it: move x yourself',
+  buildTryIt: (sim) {
+    final s = sim as PmfCdfSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '2',
+            right: '12',
+            value: s.cursor.toDouble(),
+            min: 2,
+            max: 12,
+            divisions: 10,
+            label: 'x = ${s.cursor}',
+            onChanged: (v) => s.setCursor(v.round()),
+          ),
+          TryNote('P(total > ${s.cursor}) = 1 − F(${s.cursor}) = ${(1 - s.cdf(s.cursor)).toStringAsFixed(2)}'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'With two dice, what is P(total = 7)?',
+      options: ['1/36', '1/11', '6/36', '7/36'],
+      answer: 2,
+      explanation: '(1,6), (2,5), (3,4), (4,3), (5,2), (6,1): 6 of 36 rolls.',
+    ),
+    QuizQuestion(
+      prompt: 'A CDF value F(5) = 0.28 means…',
+      options: [
+        'P(X = 5) = 0.28',
+        'P(X ≤ 5) = 0.28',
+        'P(X > 5) = 0.28',
+        '28% of values equal 5',
+      ],
+      answer: 1,
+      explanation: 'The CDF is cumulative: everything up to and including 5.',
+    ),
+    QuizQuestion(
+      prompt: 'Which is always true of a CDF?',
+      options: [
+        'It goes up and down',
+        'It never decreases and ends at 1',
+        'It peaks at the mean',
+        'It is always a straight line',
+      ],
+      answer: 1,
+      explanation: 'Adding more probability can only keep it level or push it up, '
+          'until everything is included.',
+    ),
+  ],
+);
+
 // ===== lib/lessons/registry.dart =====
 /// Every lesson with a built animation, keyed by its catalogue id.
 /// Add new lessons here as they're built.
@@ -2796,9 +7131,390 @@ final Map<String, LessonSpec> lessonRegistry = {
     montyHallLesson,
     galtonLesson,
     cltLesson,
+    typesOfDataLesson,
+    percentilesLesson,
+    skewLesson,
+    outliersLesson,
+    zScoresLesson,
+    barPieLesson,
+    histogramsLesson,
+    boxPlotsLesson,
+    scatterLesson,
+    stemLeafLesson,
+    graphsLieLesson,
+    eventsLesson,
+    complementLesson,
+    mutuallyExclusiveLesson,
+    multiplicationPrincipleLesson,
+    permutationsLesson,
+    combinationsLesson,
+    repeatsLesson,
+    pigeonholeLesson,
+    birthdayLesson,
+    conditionalLesson,
+    independenceLesson,
+    treeDiagramsLesson,
+    multiplicationRuleLesson,
+    totalProbabilityLesson,
+    discreteContinuousLesson,
+    pmfCdfLesson,
+    expectedValueLesson,
+    varianceRvLesson,
+    linearityLesson,
   ])
     spec.id: spec,
 };
+
+// ===== lib/lessons/scatter.dart =====
+/// Pearson correlation of paired data.
+double correlation(List<Offset> pts) {
+  if (pts.length < 3) return 0;
+  final mx = meanOf(pts.map((p) => p.dx));
+  final my = meanOf(pts.map((p) => p.dy));
+  var sxy = 0.0, sxx = 0.0, syy = 0.0;
+  for (final p in pts) {
+    sxy += (p.dx - mx) * (p.dy - my);
+    sxx += (p.dx - mx) * (p.dx - mx);
+    syy += (p.dy - my) * (p.dy - my);
+  }
+  return sxx == 0 || syy == 0 ? 0 : sxy / math.sqrt(sxx * syy);
+}
+
+/// Hours studied (x, 0–1) against marks (y, 0–1) with a chosen strength.
+class ScatterSim extends TickSim {
+  ScatterSim({super.rng});
+
+  static const int target = 40;
+
+  final List<Offset> points = [];
+  double strength = 0.7;
+
+  @override
+  double get interval => points.length < 8 ? 0.35 : 0.12;
+
+  double get r => correlation(points);
+
+  @override
+  void tick() {
+    if (points.length >= target) return;
+    final zx = normalDraw(rng);
+    final zy = strength * zx + math.sqrt(1 - strength * strength) * normalDraw(rng);
+    points.add(Offset((0.5 + zx * 0.17).clamp(0.02, 0.98), (0.5 + zy * 0.17).clamp(0.02, 0.98)));
+  }
+
+  /// Least-squares line through the points: y = a + b·x.
+  (double, double) get fit {
+    final mx = meanOf(points.map((p) => p.dx));
+    final my = meanOf(points.map((p) => p.dy));
+    var sxy = 0.0, sxx = 0.0;
+    for (final p in points) {
+      sxy += (p.dx - mx) * (p.dy - my);
+      sxx += (p.dx - mx) * (p.dx - mx);
+    }
+    final b = sxx == 0 ? 0.0 : sxy / sxx;
+    return (my - b * mx, b);
+  }
+
+  @override
+  void restart() => points.clear();
+}
+
+void _paintScatter(Canvas canvas, Size size, ScatterSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 34.0, top = 16.0;
+  final right = w - 14, bottom = h - 34;
+  Offset toCanvas(Offset p) => Offset(left + p.dx * (right - left), bottom - p.dy * (bottom - top));
+
+  line(canvas, Offset(left, top), Offset(left, bottom), AppColors.peg);
+  line(canvas, Offset(left, bottom), Offset(right, bottom), AppColors.peg);
+  label(canvas, 'hours studied →', Offset((left + right) / 2, bottom + 18), size: 11, color: AppColors.muted);
+  canvas.save();
+  canvas.translate(14, (top + bottom) / 2);
+  canvas.rotate(-math.pi / 2);
+  label(canvas, 'marks →', Offset.zero, size: 11, color: AppColors.muted);
+  canvas.restore();
+
+  if (sim.points.length >= 8) {
+    final (a, b) = sim.fit;
+    final p1 = toCanvas(Offset(0, (a).clamp(-0.2, 1.2)));
+    final p2 = toCanvas(Offset(1, (a + b).clamp(-0.2, 1.2)));
+    canvas.save();
+    canvas.clipRect(Rect.fromLTRB(left, top, right, bottom));
+    line(canvas, p1, p2, AppColors.pink, width: 3);
+    canvas.restore();
+  }
+  for (var i = 0; i < sim.points.length; i++) {
+    final isNew = i == sim.points.length - 1;
+    final c = toCanvas(sim.points[i]);
+    canvas.drawCircle(
+        c, isNew ? 7 : 5.5, Paint()..color = isNew ? AppColors.orange : AppColors.blue.withValues(alpha: 0.75));
+  }
+}
+
+String describeR(double r) {
+  final a = r.abs();
+  final strength = a > 0.7 ? 'strong' : (a > 0.4 ? 'moderate' : (a > 0.15 ? 'weak' : 'no clear'));
+  final dir = a <= 0.15 ? '' : (r > 0 ? ' positive' : ' negative');
+  return '$strength$dir link';
+}
+
+final LessonSpec scatterLesson = LessonSpec(
+  id: 'scatter',
+  chapterLabel: 'Ch 2 · Seeing data',
+  title: const [
+    TitlePart('Do two things '),
+    TitlePart('move together', AppColors.pink),
+    TitlePart('?'),
+  ],
+  subtitle: 'Scatter plots · 2-minute animated lesson',
+  createSim: () => ScatterSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<ScatterSim>(sim, _paintScatter),
+  stats: (sim) {
+    final s = sim as ScatterSim;
+    return [
+      StatChip('points', '${s.points.length}', AppColors.yellow),
+      StatChip('r', s.points.length < 3 ? '…' : s.r.toStringAsFixed(2), AppColors.pink),
+      StatChip('', s.points.length < 3 ? '…' : describeR(s.r), AppColors.blue),
+    ];
+  },
+  bigIdea: 'Each dot is one student: across for hours studied, up for marks. If '
+      'the cloud slopes upward, more of one tends to come with more of the other. '
+      'The correlation r runs from −1 (perfect downhill line) through 0 (no '
+      'pattern) to +1 (perfect uphill line). It measures how tightly the dots hug '
+      'a straight line, not how steep it is.',
+  formula: (sim) {
+    final s = sim as ScatterSim;
+    return 'r = Σ(x−x̄)(y−ȳ) / √(Σ(x−x̄)² · Σ(y−ȳ)²) = ${s.r.toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: set the strength of the link',
+  buildTryIt: (sim) {
+    final s = sim as ScatterSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '−1',
+            right: '+1',
+            value: s.strength,
+            min: -0.95,
+            max: 0.95,
+            divisions: 19,
+            label: s.strength.toStringAsFixed(1),
+            onChanged: (v) => s.change(() => s.strength = v),
+          ),
+          ControlRow(children: [
+            ValueTag('target ${s.strength.toStringAsFixed(1)}'),
+            ActionButton('Add 30 points', () => s.runMany(30)),
+          ]),
+          const SizedBox(height: 8),
+          const TryNote('Try 0: the cloud is round and the line goes flat. Try −0.9: a tight downhill band.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A scatter plot slopes clearly downhill. The correlation is probably…',
+      options: ['About +0.8', 'About 0', 'About −0.8', 'Exactly 1'],
+      answer: 2,
+      explanation: 'Downhill means one goes up as the other goes down: a negative r.',
+    ),
+    QuizQuestion(
+      prompt: 'r = 0 means…',
+      options: [
+        'No straight-line relationship',
+        'The variables are identical',
+        'All points are on a line',
+        'The data is wrong',
+      ],
+      answer: 0,
+      explanation: 'There could still be a curved pattern, but no linear trend.',
+    ),
+    QuizQuestion(
+      prompt: 'Which r shows the strongest relationship?',
+      options: ['0.6', '−0.9', '0.1', '0.75'],
+      answer: 1,
+      explanation: 'Strength is the size of r, ignoring the sign. |−0.9| is the largest.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/skew.dart =====
+enum SkewShape { leftSkew, symmetric, rightSkew, bimodal }
+
+const Map<SkewShape, String> kSkewShapeNames = {
+  SkewShape.leftSkew: 'Left tail',
+  SkewShape.symmetric: 'Symmetric',
+  SkewShape.rightSkew: 'Right tail',
+  SkewShape.bimodal: 'Two humps',
+};
+
+class SkewSim extends TickSim {
+  SkewSim({super.rng});
+
+  static const int bins = 20;
+
+  SkewShape shape = SkewShape.rightSkew;
+  List<int> counts = List.filled(bins, 0);
+  final List<double> values = [];
+
+  @override
+  double get interval => values.length < 30 ? 0.08 : 0.02;
+
+  /// A draw on 0 … 1 for the chosen shape.
+  double draw() {
+    switch (shape) {
+      case SkewShape.symmetric:
+        return (0.5 + normalDraw(rng) * 0.14).clamp(0, 0.999);
+      case SkewShape.rightSkew:
+        // Exponential-like: piles up on the left, tail to the right.
+        return (-math.log(1 - rng.nextDouble()) * 0.16 + 0.03).clamp(0, 0.999);
+      case SkewShape.leftSkew:
+        return (1 - (-math.log(1 - rng.nextDouble()) * 0.16 + 0.03)).clamp(0, 0.999);
+      case SkewShape.bimodal:
+        final c = rng.nextBool() ? 0.28 : 0.72;
+        return (c + normalDraw(rng) * 0.08).clamp(0, 0.999);
+    }
+  }
+
+  double get mean => meanOf(values);
+  double get median => quantileOf(values, 0.5);
+
+  String get verdict {
+    if (values.length < 30) return 'Collecting data…';
+    final d = mean - median;
+    if (shape == SkewShape.bimodal) return 'Two peaks: one "average" hides two groups';
+    if (d > 0.015) return 'Mean > median: skewed right';
+    if (d < -0.015) return 'Mean < median: skewed left';
+    return 'Mean ≈ median: symmetric';
+  }
+
+  @override
+  void tick() {
+    if (values.length >= 1500) return;
+    final v = draw();
+    values.add(v);
+    counts[(v * bins).floor()]++;
+  }
+
+  @override
+  void restart() {
+    values.clear();
+    counts = List.filled(bins, 0);
+  }
+}
+
+void _paintSkew(Canvas canvas, Size size, SkewSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 14.0;
+  final right = w - 14;
+  final baseline = h - 74;
+  const top = 20.0;
+  final slot = (right - left) / SkewSim.bins;
+  final maxC = math.max(5, sim.counts.reduce(math.max));
+  for (var i = 0; i < SkewSim.bins; i++) {
+    bar(canvas, left + slot * (i + 0.5), slot * 0.86, baseline, (baseline - top) * sim.counts[i] / maxC,
+        AppColors.rainbow[(i * 7 ~/ SkewSim.bins)].withValues(alpha: 0.85));
+  }
+  line(canvas, Offset(left, baseline), Offset(right, baseline), AppColors.peg);
+  if (sim.values.length < 5) return;
+
+  double xFor(double v) => left + v * (right - left);
+  for (final (name, v, color, row) in [
+    ('mean', sim.mean, AppColors.pink, 0),
+    ('median', sim.median, AppColors.violet, 1),
+  ]) {
+    final x = xFor(v);
+    line(canvas, Offset(x, top), Offset(x, baseline + 8 + row * 22), color, width: 2.5);
+    final y = baseline + 20 + row * 22;
+    final onRight = x < w * 0.6;
+    label(canvas, name, Offset(x + (onRight ? 6 : -6), y),
+        size: 12, color: color, align: onRight ? TextAlign.left : TextAlign.right);
+  }
+  label(canvas, sim.verdict, Offset(w / 2, h - 12), size: 13);
+}
+
+final LessonSpec skewLesson = LessonSpec(
+  id: 'skew',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('Which way does the '),
+    TitlePart('tail', AppColors.orange),
+    TitlePart(' point?'),
+  ],
+  subtitle: 'Skew & shape · 2-minute animated lesson',
+  createSim: () => SkewSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<SkewSim>(sim, _paintSkew),
+  stats: (sim) {
+    final s = sim as SkewSim;
+    return [
+      StatChip('values', '${s.values.length}', AppColors.yellow),
+      StatChip('mean', (s.mean * 100).toStringAsFixed(0), AppColors.pink),
+      StatChip('median', (s.median * 100).toStringAsFixed(0), AppColors.violet),
+    ];
+  },
+  bigIdea: 'A skew is named after its tail, not its hump. Incomes pile up on the '
+      'left with a long tail of high earners to the right: skewed right. The tail '
+      'drags the mean towards it, so the mean sits on the tail side of the median. '
+      'Two humps usually mean two different groups mixed together.',
+  formula: (sim) {
+    final s = sim as SkewSim;
+    return 'mean − median = ${((s.mean - s.median) * 100).toStringAsFixed(1)}  '
+        '(> 0 right skew, < 0 left skew)';
+  },
+  tryItTitle: 'Try it: change the shape',
+  buildTryIt: (sim) {
+    final s = sim as SkewSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChoiceRow<SkewShape>(
+            options: kSkewShapeNames,
+            selected: s.shape,
+            onSelected: (v) => s.change(() => s.shape = v),
+          ),
+          const SizedBox(height: 8),
+          const TryNote('Real examples: incomes (right), exam scores on an easy test (left), '
+              'adult heights of men and women together (two humps).'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'House prices in a city: most are moderate, a few are huge. The data is…',
+      options: ['Skewed left', 'Symmetric', 'Skewed right', 'Uniform'],
+      answer: 2,
+      explanation: 'The long tail of expensive houses points right.',
+    ),
+    QuizQuestion(
+      prompt: 'In a left-skewed distribution, usually…',
+      options: ['mean < median', 'mean = median', 'mean > median', 'there is no median'],
+      answer: 0,
+      explanation: 'The tail on the left drags the mean down below the median.',
+    ),
+    QuizQuestion(
+      prompt: 'A histogram of heights shows two clear humps. A likely reason?',
+      options: [
+        'A measuring error',
+        'Two groups mixed together, like adults and children',
+        'The data is skewed right',
+        'Too many bins',
+      ],
+      answer: 1,
+      explanation: 'Bimodal data often hides two populations. Splitting them gives '
+          'two clean single-hump shapes.',
+    ),
+  ],
+);
 
 // ===== lib/lessons/spread.dart =====
 // ---------------------------------------------------------------------------
@@ -3089,6 +7805,965 @@ class _SpreadControls extends StatelessWidget {
     );
   }
 }
+
+// ===== lib/lessons/stem_leaf.dart =====
+/// Two-digit scores filed one by one into a stem-and-leaf plot.
+class StemLeafSim extends TickSim {
+  StemLeafSim({super.rng}) {
+    restart();
+  }
+
+  static const int n = 24;
+  static const int minStem = 4, maxStem = 9;
+
+  List<int> data = [];
+  int placed = 0;
+
+  @override
+  double get interval => placed < 5 ? 0.9 : 0.4;
+
+  bool get done => placed >= n;
+
+  /// Leaves per stem, sorted, from the values placed so far.
+  Map<int, List<int>> get rows {
+    final out = {for (var s = minStem; s <= maxStem; s++) s: <int>[]};
+    for (var i = 0; i < placed; i++) {
+      out[data[i] ~/ 10]!.add(data[i] % 10);
+    }
+    for (final l in out.values) {
+      l.sort();
+    }
+    return out;
+  }
+
+  @override
+  void tick() {
+    if (placed < n) placed++;
+  }
+
+  @override
+  void restart() {
+    data = List.generate(n, (_) => (68 + normalDraw(rng) * 12).round().clamp(40, 99));
+    placed = 0;
+  }
+}
+
+void _paintStemLeaf(Canvas canvas, Size size, StemLeafSim sim) {
+  final w = size.width;
+  final h = size.height;
+
+  // The unsorted list at the top.
+  const perRow = 12;
+  final cell = (w - 24) / perRow;
+  for (var i = 0; i < StemLeafSim.n; i++) {
+    final c = Offset(12 + cell * (i % perRow + 0.5), 20 + (i ~/ perRow) * 24.0);
+    final isCurrent = i == sim.placed - 1;
+    final isDone = i < sim.placed;
+    if (isCurrent) roundRect(canvas, Rect.fromCenter(center: c, width: cell - 2, height: 22), AppColors.yellow);
+    label(canvas, '${sim.data[i]}', c,
+        size: 13, color: isDone && !isCurrent ? AppColors.peg : AppColors.ink, weight: FontWeight.w900);
+  }
+
+  // The plot.
+  final top = 76.0;
+  final rowH = (h - top - 30) / (StemLeafSim.maxStem - StemLeafSim.minStem + 1);
+  final stemX = 44.0;
+  label(canvas, 'stem', Offset(stemX - 14, top - 8), size: 10, color: AppColors.muted);
+  label(canvas, 'leaves', Offset(stemX + 40, top - 8), size: 10, color: AppColors.muted);
+  line(canvas, Offset(stemX + 4, top), Offset(stemX + 4, h - 30), AppColors.ink, width: 2.5);
+  final current = sim.placed == 0 ? null : sim.data[sim.placed - 1];
+  final rows = sim.rows;
+  for (var s = StemLeafSim.minStem; s <= StemLeafSim.maxStem; s++) {
+    final y = top + rowH * (s - StemLeafSim.minStem + 0.5);
+    label(canvas, '$s', Offset(stemX - 14, y), size: 18, color: AppColors.violet, weight: FontWeight.w900);
+    final leaves = rows[s]!;
+    var highlighted = false;
+    for (var k = 0; k < leaves.length; k++) {
+      final x = stemX + 22 + k * math.min(22.0, (w - stemX - 40) / 12);
+      final isNew = !highlighted && current != null && s == current ~/ 10 && leaves[k] == current % 10;
+      if (isNew) {
+        highlighted = true;
+        canvas.drawCircle(Offset(x, y), 12, Paint()..color = AppColors.pink.withValues(alpha: 0.25));
+      }
+      label(canvas, '${leaves[k]}', Offset(x, y),
+          size: 17, color: isNew ? AppColors.pink : AppColors.ink, weight: FontWeight.w900);
+    }
+  }
+  if (current != null) {
+    label(canvas, '$current → stem ${current ~/ 10} | leaf ${current % 10}', Offset(w / 2, h - 12),
+        size: 13, color: AppColors.pink);
+  }
+}
+
+final LessonSpec stemLeafLesson = LessonSpec(
+  id: 'stem_leaf',
+  chapterLabel: 'Ch 2 · Seeing data',
+  title: const [
+    TitlePart('A chart made of the '),
+    TitlePart('numbers themselves', AppColors.violet),
+  ],
+  subtitle: 'Stem-and-leaf plots · 2-minute animated lesson',
+  createSim: () => StemLeafSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<StemLeafSim>(sim, _paintStemLeaf),
+  stats: (sim) {
+    final s = sim as StemLeafSim;
+    final busiest = s.rows.entries.reduce((a, b) => b.value.length > a.value.length ? b : a);
+    return [
+      StatChip('placed', '${s.placed}/${StemLeafSim.n}', AppColors.yellow),
+      StatChip('busiest', s.placed == 0 ? '…' : '${busiest.key}0s', AppColors.violet),
+      StatChip('median', s.done ? quantileOf(s.data, .5).toStringAsFixed(1) : '…', AppColors.pink),
+    ];
+  },
+  bigIdea: 'Split each number into a stem (the tens) and a leaf (the units). Each '
+      'row is a bin of ten, and its leaves make a little bar, so turning the page '
+      'sideways gives a histogram. Unlike a histogram, every original value can '
+      'still be read back, and with sorted leaves you can count to the median.',
+  formula: (sim) {
+    final s = sim as StemLeafSim;
+    if (s.placed == 0) return '73 → 7 | 3';
+    final v = s.data[s.placed - 1];
+    return '$v → ${v ~/ 10} | ${v % 10}   (key: 7 | 3 means 73)';
+  },
+  tryItTitle: 'Try it: new data',
+  buildTryIt: (sim) {
+    final s = sim as StemLeafSim;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ControlRow(children: [
+          ActionButton('New scores', s.reset),
+          ActionButton('Place all', () => s.runMany(StemLeafSim.n)),
+        ]),
+        const SizedBox(height: 8),
+        const TryNote('Tilt your head left: the rows of leaves are the bars of a histogram.'),
+      ],
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'In a stem-and-leaf plot with key "6 | 4 = 64", what does the row "8 | 0 2 7" show?',
+      options: ['8, 0, 2, 7', '80, 82, 87', '8.027', '802 and 7'],
+      answer: 1,
+      explanation: 'The stem 8 is the tens digit; each leaf adds a units digit.',
+    ),
+    QuizQuestion(
+      prompt: 'An advantage over a histogram is that a stem-and-leaf plot…',
+      options: [
+        'Works for millions of values',
+        'Keeps every original value',
+        'Shows categories',
+        'Needs no sorting',
+      ],
+      answer: 1,
+      explanation: 'You can rebuild the exact data from it. Histograms only keep counts.',
+    ),
+    QuizQuestion(
+      prompt: 'The row with the most leaves tells you…',
+      options: ['The mean', 'Where the data is most concentrated', 'The range', 'Nothing'],
+      answer: 1,
+      explanation: 'The longest row is the tallest "bar": the most common ten-band.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/total_probability.dart =====
+/// Bulbs from three factories; what share of all bulbs is faulty?
+class TotalProbSim extends TickSim {
+  TotalProbSim({super.rng});
+
+  static const List<String> names = ['A', 'B', 'C'];
+  static const List<double> shares = [0.5, 0.3, 0.2];
+  static const List<Color> colors = [AppColors.blue, AppColors.green, AppColors.orange];
+
+  /// Faulty rate of each factory (C adjustable).
+  List<double> faultRates = [0.04, 0.06, 0.15];
+
+  List<int> made = [0, 0, 0];
+  List<int> faulty = [0, 0, 0];
+
+  /// Last bulb: (factory, faulty).
+  (int, bool)? last;
+
+  int get total => made.fold(0, (a, b) => a + b);
+  int get totalFaulty => faulty.fold(0, (a, b) => a + b);
+
+  double get theory {
+    var t = 0.0;
+    for (var i = 0; i < 3; i++) {
+      t += shares[i] * faultRates[i];
+    }
+    return t;
+  }
+
+  @override
+  double get interval => total < 10 ? 0.5 : 0.03;
+
+  @override
+  void tick() {
+    var r = rng.nextDouble();
+    var f = 0;
+    while (f < 2 && r > shares[f]) {
+      r -= shares[f];
+      f++;
+    }
+    final bad = rng.nextDouble() < faultRates[f];
+    made[f]++;
+    if (bad) faulty[f]++;
+    last = (f, bad);
+  }
+
+  @override
+  void restart() {
+    made = [0, 0, 0];
+    faulty = [0, 0, 0];
+    last = null;
+  }
+}
+
+void _paintTotal(Canvas canvas, Size size, TotalProbSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 16.0;
+  final right = w - 16;
+  const top = 34.0;
+  final colBottom = h * 0.62;
+  final total = right - left;
+
+  // Each factory's column: width = share of production, faulty part on top.
+  var x = left;
+  label(canvas, 'Width = share of all bulbs · pink = faulty part', Offset(w / 2, 14), size: 11, color: AppColors.muted);
+  for (var i = 0; i < 3; i++) {
+    final cw = total * TotalProbSim.shares[i];
+    final rect = Rect.fromLTWH(x + 2, top, cw - 4, colBottom - top);
+    roundRect(canvas, rect, TotalProbSim.colors[i].withValues(alpha: 0.25), radius: 8);
+    // Faulty band drawn 3× taller so small rates stay visible.
+    final fh = (colBottom - top) * (sim.faultRates[i] * 3).clamp(0.0, 1.0);
+    roundRect(canvas, Rect.fromLTWH(x + 2, top, cw - 4, fh), AppColors.pink.withValues(alpha: 0.75), radius: 8);
+    label(canvas, 'Factory ${TotalProbSim.names[i]}', Offset(x + cw / 2, colBottom - 40),
+        size: 12, color: TotalProbSim.colors[i]);
+    label(canvas, '${(TotalProbSim.shares[i] * 100).round()}% of bulbs', Offset(x + cw / 2, colBottom - 22),
+        size: 10, color: AppColors.ink);
+    label(canvas, '${(sim.faultRates[i] * 100).round()}% faulty', Offset(x + cw / 2, colBottom - 9),
+        size: 10, color: AppColors.pink);
+    if (sim.last?.$1 == i) {
+      label(canvas, sim.last!.$2 ? '💡✗' : '💡', Offset(x + cw / 2, top + (colBottom - top) / 2), size: 20);
+    }
+    x += cw;
+  }
+  label(canvas, '(faulty bands drawn 3× taller to be visible)', Offset(w / 2, colBottom + 12),
+      size: 9, color: AppColors.muted);
+
+  // The overall faulty share, built from the three pieces.
+  final y = colBottom + 36;
+  label(canvas, 'All faulty bulbs, by factory', Offset(left, y), size: 12, align: TextAlign.left);
+  final barY = y + 14;
+  final barW = right - left;
+  roundRect(canvas, Rect.fromLTWH(left, barY, barW, 26), Colors.white, radius: 8);
+  var bx = left;
+  for (var i = 0; i < 3; i++) {
+    final piece = TotalProbSim.shares[i] * sim.faultRates[i];
+    final pw = barW * piece / 0.2; // scale: full bar = 20%
+    roundRect(canvas, Rect.fromLTWH(bx, barY, pw, 26), TotalProbSim.colors[i], radius: 6);
+    bx += pw;
+  }
+  label(canvas, '= ${(sim.theory * 100).toStringAsFixed(1)}% of all bulbs are faulty', Offset(left, barY + 40),
+      size: 12, color: AppColors.pink, align: TextAlign.left);
+  label(canvas, 'full bar = 20%', Offset(right, barY + 40), size: 10, color: AppColors.muted, align: TextAlign.right);
+  final seen = sim.total == 0 ? 0 : sim.totalFaulty / sim.total;
+  label(canvas, 'seen: ${sim.totalFaulty} faulty of ${sim.total} = ${(seen * 100).toStringAsFixed(1)}%',
+      Offset(w / 2, h - 12),
+      size: 12, color: AppColors.muted);
+}
+
+final LessonSpec totalProbabilityLesson = LessonSpec(
+  id: 'total_probability',
+  chapterLabel: 'Ch 5 · Conditional probability',
+  title: const [
+    TitlePart('Add up the '),
+    TitlePart('pieces', AppColors.orange),
+    TitlePart(' from every source'),
+  ],
+  subtitle: 'The law of total probability · 2-minute animated lesson',
+  createSim: () => TotalProbSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<TotalProbSim>(sim, _paintTotal),
+  stats: (sim) {
+    final s = sim as TotalProbSim;
+    return [
+      StatChip('bulbs', '${s.total}', AppColors.yellow),
+      StatChip('faulty', '${s.totalFaulty}', AppColors.pink),
+      StatChip('theory', '${(s.theory * 100).toStringAsFixed(1)}%', AppColors.violet),
+    ];
+  },
+  bigIdea: 'Every bulb comes from exactly one factory. So the faulty bulbs split into '
+      'three non-overlapping groups: faulty from A, from B, from C. Each group is '
+      'the factory\'s share times its faulty rate. Add the pieces to get the '
+      'overall rate. A small factory with a high fault rate can still matter a lot.',
+  formula: (sim) {
+    final s = sim as TotalProbSim;
+    final r = s.faultRates;
+    return 'P(faulty) = Σ P(factory) × P(faulty | factory)\n'
+        '= 0.5×${r[0]} + 0.3×${r[1]} + 0.2×${r[2].toStringAsFixed(2)} = ${s.theory.toStringAsFixed(3)}';
+  },
+  tryItTitle: 'Try it: factory C\'s fault rate',
+  buildTryIt: (sim) {
+    final s = sim as TotalProbSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: '1%',
+            right: '30%',
+            value: s.faultRates[2],
+            min: 0.01,
+            max: 0.3,
+            divisions: 29,
+            label: '${(s.faultRates[2] * 100).round()}%',
+            onChanged: (v) => s.change(() => s.faultRates = [0.04, 0.06, v]),
+          ),
+          ControlRow(children: [ActionButton('Make 2,000 bulbs', () => s.runMany(2000))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: '60% of days are sunny (you walk late 10% of them) and 40% rainy (late 50%). '
+          'Overall P(late)?',
+      options: ['0.30', '0.26', '0.60', '0.06'],
+      answer: 1,
+      explanation: '0.6 × 0.1 + 0.4 × 0.5 = 0.06 + 0.20 = 0.26.',
+    ),
+    QuizQuestion(
+      prompt: 'The law of total probability needs the groups (factories) to…',
+      options: [
+        'Be equal in size',
+        'Not overlap and together cover everything',
+        'Have the same fault rate',
+        'Be independent',
+      ],
+      answer: 1,
+      explanation: 'Each outcome must fall into exactly one group so nothing is missed '
+          'or counted twice.',
+    ),
+    QuizQuestion(
+      prompt: 'Factory A makes 90% of bulbs with 1% faulty; B makes 10% with 20% faulty. '
+          'Which contributes more faulty bulbs?',
+      options: ['A', 'B', 'Equal', 'Can\'t tell'],
+      answer: 1,
+      explanation: 'A: 0.9 × 0.01 = 0.009. B: 0.1 × 0.2 = 0.02. The small factory '
+          'adds more than twice as many.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/tree_diagrams.dart =====
+/// Two draws from a bag of 3 red and 2 blue balls.
+class TreeSim extends TickSim {
+  TreeSim({super.rng});
+
+  static const int red = 3, blue = 2;
+
+  bool replace = false;
+
+  /// Last path: (first is red, second is red).
+  (bool, bool)? last;
+
+  /// counts for RR, RB, BR, BB.
+  List<int> counts = List.filled(4, 0);
+
+  int get trials => counts.fold(0, (a, b) => a + b);
+
+  /// P(second red | first red / blue).
+  double secondRed(bool firstRed) {
+    if (replace) return red / (red + blue);
+    return firstRed ? (red - 1) / (red + blue - 1) : red / (red + blue - 1);
+  }
+
+  double get firstRed => red / (red + blue);
+
+  List<double> get theory => [
+        firstRed * secondRed(true),
+        firstRed * (1 - secondRed(true)),
+        (1 - firstRed) * secondRed(false),
+        (1 - firstRed) * (1 - secondRed(false)),
+      ];
+
+  @override
+  double get interval => trials < 6 ? 1.0 : 0.12;
+
+  @override
+  void tick() {
+    final a = rng.nextDouble() < firstRed;
+    final b = rng.nextDouble() < secondRed(a);
+    last = (a, b);
+    counts[(a ? 0 : 2) + (b ? 0 : 1)]++;
+  }
+
+  @override
+  void restart() {
+    counts = List.filled(4, 0);
+    last = null;
+  }
+}
+
+String _frac(double p, int denom) => '${(p * denom).round()}/$denom';
+
+void _paintTree(Canvas canvas, Size size, TreeSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const top = 26.0;
+  final bottom = h - 30;
+  final rootX = 20.0, midX = w * 0.36, leafX = w * 0.66;
+  final rootY = (top + bottom) / 2;
+  double leafY(int i) => top + (bottom - top) * (i + 0.5) / 4;
+  final mids = [(leafY(0) + leafY(1)) / 2, (leafY(2) + leafY(3)) / 2];
+  final denom2 = sim.replace ? 5 : 4;
+
+  label(canvas, '1st draw', Offset(midX, 10), size: 11, color: AppColors.muted);
+  label(canvas, '2nd draw', Offset(leafX, 10), size: 11, color: AppColors.muted);
+
+  final last = sim.last;
+  final t = sim.phase;
+  for (var a = 0; a < 2; a++) {
+    final firstRed = a == 0;
+    final onPath1 = last != null && last.$1 == firstRed;
+    final p1 = firstRed ? sim.firstRed : 1 - sim.firstRed;
+    final c1 = firstRed ? AppColors.pink : AppColors.blue;
+    line(canvas, Offset(rootX, rootY), Offset(midX, mids[a]), onPath1 ? c1 : c1.withValues(alpha: 0.35),
+        width: onPath1 ? 4 : 2);
+    label(canvas, _frac(p1, 5), Offset((rootX + midX) / 2 - 6, (rootY + mids[a]) / 2 + (a == 0 ? -12 : 12)),
+        size: 12, color: c1);
+    canvas.drawCircle(Offset(midX, mids[a]), 11, Paint()..color = c1);
+    for (var b = 0; b < 2; b++) {
+      final secondRed = b == 0;
+      final i = a * 2 + b;
+      final onPath = onPath1 && last.$2 == secondRed;
+      final p2 = secondRed ? sim.secondRed(firstRed) : 1 - sim.secondRed(firstRed);
+      final c2 = secondRed ? AppColors.pink : AppColors.blue;
+      line(canvas, Offset(midX, mids[a]), Offset(leafX, leafY(i)), onPath ? c2 : c2.withValues(alpha: 0.35),
+          width: onPath ? 4 : 2);
+      label(canvas, _frac(p2, denom2), Offset((midX + leafX) / 2, (mids[a] + leafY(i)) / 2 - 10), size: 11, color: c2);
+      canvas.drawCircle(Offset(leafX, leafY(i)), 9, Paint()..color = c2);
+      // Leaf: outcome, theory and what we've seen.
+      final name = '${firstRed ? 'R' : 'B'}${secondRed ? 'R' : 'B'}';
+      final seen = sim.trials == 0 ? 0 : sim.counts[i] / sim.trials;
+      label(canvas, '$name ${sim.theory[i].toStringAsFixed(2)}', Offset(leafX + 16, leafY(i) - 7),
+          size: 12, align: TextAlign.left);
+      label(canvas, 'seen ${seen.toStringAsFixed(2)}', Offset(leafX + 16, leafY(i) + 9),
+          size: 10, color: AppColors.muted, align: TextAlign.left);
+    }
+  }
+  canvas.drawCircle(Offset(rootX, rootY), 7, Paint()..color = AppColors.ink);
+
+  // A ball travelling along the latest path.
+  if (last != null && sim.trials <= 6) {
+    final a = last.$1 ? 0 : 1;
+    final i = a * 2 + (last.$2 ? 0 : 1);
+    final p = t < 0.5
+        ? Offset.lerp(Offset(rootX, rootY), Offset(midX, mids[a]), t * 2)!
+        : Offset.lerp(Offset(midX, mids[a]), Offset(leafX, leafY(i)), (t - 0.5) * 2)!;
+    canvas.drawCircle(p, 7, Paint()..color = AppColors.yellow);
+  }
+  label(canvas, sim.replace ? 'Ball goes back in the bag' : 'Ball stays out of the bag', Offset(w / 2, h - 10),
+      size: 12, color: AppColors.violet);
+}
+
+final LessonSpec treeDiagramsLesson = LessonSpec(
+  id: 'tree_diagrams',
+  chapterLabel: 'Ch 5 · Conditional probability',
+  title: const [
+    TitlePart('Follow the '),
+    TitlePart('branches', AppColors.green),
+    TitlePart(', multiply along the way'),
+  ],
+  subtitle: 'Tree diagrams · 2-minute animated lesson',
+  createSim: () => TreeSim(),
+  visualAspectRatio: 1.0,
+  buildVisual: (sim) => simCanvas<TreeSim>(sim, _paintTree),
+  stats: (sim) {
+    final s = sim as TreeSim;
+    return [
+      StatChip('draws', '${s.trials}', AppColors.yellow),
+      StatChip('P(RR)', s.theory[0].toStringAsFixed(2), AppColors.pink),
+      StatChip('P(BB)', s.theory[3].toStringAsFixed(2), AppColors.blue),
+    ];
+  },
+  bigIdea: 'A bag holds 3 red and 2 blue balls; you take two. Each branch carries the '
+      'chance of that step, given everything before it. If the first ball stays '
+      'out, the bag changes, so the second-draw chances depend on the first. '
+      'Multiply along a path for one outcome; add paths for "either" outcomes.',
+  formula: (sim) {
+    final s = sim as TreeSim;
+    final d = s.replace ? 5 : 4;
+    return 'P(RR) = 3/5 × ${_frac(s.secondRed(true), d)} = ${s.theory[0].toStringAsFixed(2)}   '
+        'P(one of each) = ${(s.theory[1] + s.theory[2]).toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: put the ball back or not',
+  buildTryIt: (sim) {
+    final s = sim as TreeSim;
+    return watch(
+      s,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChoiceRow<bool>(
+            options: const {false: 'Keep it out', true: 'Put it back'},
+            selected: s.replace,
+            onSelected: (v) => s.change(() => s.replace = v),
+          ),
+          const SizedBox(height: 8),
+          ControlRow(children: [ActionButton('Draw 500 pairs', () => s.runMany(500))]),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A bag has 3 red and 2 blue. You draw two without replacement. P(both red)?',
+      options: ['9/25', '3/10', '6/25', '1/2'],
+      answer: 1,
+      explanation: '3/5 × 2/4 = 6/20 = 3/10.',
+    ),
+    QuizQuestion(
+      prompt: 'Along one path of a tree diagram, you…',
+      options: ['Add the probabilities', 'Multiply the probabilities', 'Subtract them', 'Average them'],
+      answer: 1,
+      explanation: 'Each step happens and then the next: multiply.',
+    ),
+    QuizQuestion(
+      prompt: 'P(RB) = 0.3 and P(BR) = 0.3. What is P(one of each colour)?',
+      options: ['0.09', '0.3', '0.6', '0.9'],
+      answer: 2,
+      explanation: 'Two separate paths lead to "one of each": add them, 0.3 + 0.3.',
+    ),
+  ],
+);
+
+// ===== lib/lessons/types_of_data.dart =====
+enum DataKind { nominal, ordinal, discrete, continuous }
+
+const Map<DataKind, String> kDataKindNames = {
+  DataKind.nominal: 'Categories',
+  DataKind.ordinal: 'Ordered categories',
+  DataKind.discrete: 'Counts',
+  DataKind.continuous: 'Measurements',
+};
+
+const Map<DataKind, Color> kDataKindColors = {
+  DataKind.nominal: AppColors.pink,
+  DataKind.ordinal: AppColors.orange,
+  DataKind.discrete: AppColors.green,
+  DataKind.continuous: AppColors.blue,
+};
+
+/// Example values with their kind.
+const List<(String, DataKind)> kDataExamples = [
+  ('Eye colour: brown', DataKind.nominal),
+  ('T-shirt size: M', DataKind.ordinal),
+  ('Siblings: 2', DataKind.discrete),
+  ('Height: 172.4 cm', DataKind.continuous),
+  ('Blood group: O+', DataKind.nominal),
+  ('Rating: ★★★★', DataKind.ordinal),
+  ('Goals scored: 3', DataKind.discrete),
+  ('Time: 9.58 s', DataKind.continuous),
+  ('City: Pune', DataKind.nominal),
+  ('Grade: B+', DataKind.ordinal),
+  ('Cars owned: 1', DataKind.discrete),
+  ('Weight: 61.2 kg', DataKind.continuous),
+  ('Favourite fruit: mango', DataKind.nominal),
+  ('Spice level: hot', DataKind.ordinal),
+  ('Emails today: 14', DataKind.discrete),
+  ('Temperature: 31.6 °C', DataKind.continuous),
+];
+
+class TypesOfDataSim extends TickSim {
+  TypesOfDataSim({super.rng});
+
+  /// How many examples have been sorted.
+  int sorted = 0;
+
+  @override
+  double get interval => 1.3;
+
+  (String, DataKind) get current => kDataExamples[sorted % kDataExamples.length];
+
+  Map<DataKind, int> get counts {
+    final c = {for (final k in DataKind.values) k: 0};
+    for (var i = 0; i < sorted; i++) {
+      final k = kDataExamples[i % kDataExamples.length].$2;
+      c[k] = c[k]! + 1;
+    }
+    return c;
+  }
+
+  @override
+  void tick() => sorted++;
+
+  @override
+  void restart() => sorted = 0;
+}
+
+void _paintTypes(Canvas canvas, Size size, TypesOfDataSim sim) {
+  final w = size.width;
+  final h = size.height;
+  final binTop = h * 0.5;
+  final binW = (w - 30) / 2;
+  final binH = (h - binTop - 28) / 2;
+
+  // Four bins in a 2×2 grid: categorical on top, numerical below.
+  final bins = <DataKind, Rect>{};
+  for (var i = 0; i < 4; i++) {
+    final kind = DataKind.values[i];
+    final r = Rect.fromLTWH(10 + (i % 2) * (binW + 10), binTop + (i ~/ 2) * (binH + 20), binW, binH);
+    bins[kind] = r;
+    roundRect(canvas, r, kDataKindColors[kind]!.withValues(alpha: 0.18), radius: 14);
+    label(canvas, kDataKindNames[kind]!, Offset(r.center.dx, r.top + 14), size: 12, color: kDataKindColors[kind]!);
+    label(canvas, '${sim.counts[kind]}', r.center.translate(0, 8), size: 26, color: kDataKindColors[kind]!);
+  }
+  label(canvas, 'CATEGORICAL: words / labels', Offset(w / 2, binTop - 10), size: 11, color: AppColors.muted);
+  label(canvas, 'NUMERICAL: numbers you can add', Offset(w / 2, binTop + binH + 10), size: 10, color: AppColors.muted);
+
+  // The card in flight: from the top centre into its bin.
+  final (text, kind) = sim.current;
+  final t = Curves.easeInOutCubic.transform(math.min(1, sim.phase * 1.4));
+  final from = Offset(w / 2, h * 0.16);
+  final to = bins[kind]!.center;
+  final pos = Offset.lerp(from, to, t)!;
+  final scale = 1 - 0.5 * t;
+  final cardW = w * 0.7 * scale;
+  final cardH = 46.0 * scale;
+  final card = Rect.fromCenter(center: pos, width: cardW, height: cardH);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(card.shift(const Offset(0, 3)), const Radius.circular(12)),
+    Paint()..color = AppColors.ink.withValues(alpha: 0.08),
+  );
+  roundRect(canvas, card, Colors.white, radius: 12);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(card, const Radius.circular(12)),
+    Paint()
+      ..color = kDataKindColors[kind]!
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3,
+  );
+  label(canvas, text, pos, size: 15 * scale);
+  if (t < 0.15) {
+    label(canvas, '→ ${kDataKindNames[kind]}', Offset(w / 2, h * 0.32), size: 13, color: kDataKindColors[kind]!);
+  }
+}
+
+final LessonSpec typesOfDataLesson = LessonSpec(
+  id: 'types_of_data',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('Labels', AppColors.pink),
+    TitlePart(' or '),
+    TitlePart('numbers', AppColors.blue),
+    TitlePart('? It changes everything'),
+  ],
+  subtitle: 'Types of data · 2-minute animated lesson',
+  createSim: () => TypesOfDataSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<TypesOfDataSim>(sim, _paintTypes),
+  stats: (sim) {
+    final c = (sim as TypesOfDataSim).counts;
+    return [
+      StatChip('sorted', '${sim.sorted}', AppColors.yellow),
+      StatChip('categorical', '${c[DataKind.nominal]! + c[DataKind.ordinal]!}', AppColors.pink),
+      StatChip('numerical', '${c[DataKind.discrete]! + c[DataKind.continuous]!}', AppColors.blue),
+    ];
+  },
+  bigIdea: 'Categorical data are labels: you can count them but not average them. '
+      'Some labels have a natural order (small, medium, large). Numerical data '
+      'are real numbers: counts jump in whole steps, measurements can take any '
+      'value in between. The type decides which charts and averages make sense.',
+  formula: (_) => 'Can you add it? → numerical.  Can you order it? → ordinal.',
+  tryItTitle: 'Try it: sort these yourself',
+  buildTryIt: (_) => const _SortGame(),
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Which of these is continuous data?',
+      options: ['Number of pets', 'Shoe brand', 'Time to run 100 m', 'Exam grade A–F'],
+      answer: 2,
+      explanation: 'Time can be measured ever more finely (11.2 s, 11.23 s…). Pets '
+          'are counted in whole numbers.',
+    ),
+    QuizQuestion(
+      prompt: 'Survey answers "poor, fair, good, excellent" are…',
+      options: ['Nominal', 'Ordinal', 'Discrete', 'Continuous'],
+      answer: 1,
+      explanation: 'They are labels with a natural order, but the gaps between them '
+          'are not measurable numbers.',
+    ),
+    QuizQuestion(
+      prompt: 'Why can\'t you take the mean of PIN codes?',
+      options: [
+        'They are too long',
+        'They are labels that just look like numbers',
+        'They are always even',
+        'You can',
+      ],
+      answer: 1,
+      explanation: 'A PIN code names a place. Adding two PIN codes means nothing, '
+          'so they are categorical.',
+    ),
+  ],
+);
+
+class _SortGame extends StatefulWidget {
+  const _SortGame();
+
+  @override
+  State<_SortGame> createState() => _SortGameState();
+}
+
+class _SortGameState extends State<_SortGame> {
+  final _rng = math.Random();
+  late int _item = _rng.nextInt(kDataExamples.length);
+  DataKind? _picked;
+  int _right = 0;
+  int _total = 0;
+
+  void _pick(DataKind k) {
+    if (_picked != null) return;
+    setState(() {
+      _picked = k;
+      _total++;
+      if (k == kDataExamples[_item].$2) _right++;
+    });
+  }
+
+  void _next() => setState(() {
+        _picked = null;
+        _item = (_item + 1 + _rng.nextInt(kDataExamples.length - 1)) % kDataExamples.length;
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final (text, kind) = kDataExamples[_item];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final k in DataKind.values)
+              ChoiceChip(
+                label: Text(kDataKindNames[k]!, style: const TextStyle(fontWeight: FontWeight.w800)),
+                selected: _picked == k,
+                selectedColor: k == kind ? AppColors.green : AppColors.orange,
+                onSelected: (_) => _pick(k),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _picked == null
+                    ? 'Score: $_right / $_total'
+                    : _picked == kind
+                        ? 'Right! Score: $_right / $_total'
+                        : 'It\'s ${kDataKindNames[kind]}. Score: $_right / $_total',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (_picked != null) ActionButton('Next', _next),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ===== lib/lessons/variance_rv.dart =====
+/// Two zero-average games played by many players, round after round.
+/// Steady: win or lose ₹1 on a coin. Risky: win ₹k with chance 1/(k+1),
+/// otherwise lose ₹1. Same mean (0), very different spread.
+class VarianceSim extends TickSim {
+  VarianceSim({super.rng}) {
+    restart();
+  }
+
+  static const int players = 24;
+  static const int maxRounds = 60;
+
+  int k = 9;
+  int round = 0;
+  late List<List<double>> steady;
+  late List<List<double>> risky;
+
+  double get varSteady => 1;
+  double get varRisky => k.toDouble(); // k²/(k+1) + 1·k/(k+1) = k
+
+  double _sdOfFinal(List<List<double>> paths) => sdOf([for (final p in paths) p.last]);
+  double get spreadSteady => _sdOfFinal(steady);
+  double get spreadRisky => _sdOfFinal(risky);
+
+  @override
+  double get interval => 0.12;
+
+  @override
+  void tick() {
+    if (round >= maxRounds + 15) {
+      restart();
+      return;
+    }
+    if (round < maxRounds) {
+      for (final p in steady) {
+        p.add(p.last + (rng.nextBool() ? 1 : -1));
+      }
+      for (final p in risky) {
+        p.add(p.last + (rng.nextDouble() < 1 / (k + 1) ? k : -1));
+      }
+    }
+    round++;
+  }
+
+  @override
+  void restart() {
+    round = 0;
+    steady = List.generate(players, (_) => [0.0]);
+    risky = List.generate(players, (_) => [0.0]);
+  }
+}
+
+void _paintVariance(Canvas canvas, Size size, VarianceSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 40.0;
+  final right = w - 12;
+
+  void panel(List<List<double>> paths, double top, double bottom, Color color, String name, double variance) {
+    final range = math.max(12.0, 2.6 * math.sqrt(variance * VarianceSim.maxRounds));
+    double yFor(double v) => (top + bottom) / 2 - v.clamp(-range, range) / range * (bottom - top) / 2;
+    double xFor(int i) => left + i / VarianceSim.maxRounds * (right - left);
+    label(canvas, name, Offset(left, top - 8), size: 12, color: color, align: TextAlign.left);
+    line(canvas, Offset(left, yFor(0)), Offset(right, yFor(0)), AppColors.ink.withValues(alpha: 0.5));
+    label(canvas, '₹0', Offset(left - 6, yFor(0)), size: 10, color: AppColors.muted, align: TextAlign.right);
+    label(canvas, '+${range.round()}', Offset(left - 6, top + 4),
+        size: 9, color: AppColors.muted, align: TextAlign.right);
+    label(canvas, '−${range.round()}', Offset(left - 6, bottom - 4),
+        size: 9, color: AppColors.muted, align: TextAlign.right);
+    // ±1 sd envelope of the total after i rounds: sd·√i.
+    final env = Path();
+    for (var i = 0; i <= VarianceSim.maxRounds; i++) {
+      final y = yFor(math.sqrt(variance * i));
+      i == 0 ? env.moveTo(xFor(i), y) : env.lineTo(xFor(i), y);
+    }
+    for (var i = VarianceSim.maxRounds; i >= 0; i--) {
+      env.lineTo(xFor(i), yFor(-math.sqrt(variance * i)));
+    }
+    canvas.drawPath(env, Paint()..color = color.withValues(alpha: 0.12));
+    for (final p in paths) {
+      final path = Path()..moveTo(xFor(0), yFor(p.first));
+      for (var i = 1; i < p.length; i++) {
+        path.lineTo(xFor(i), yFor(p[i]));
+      }
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withValues(alpha: 0.5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+    }
+  }
+
+  final mid = h / 2;
+  panel(sim.steady, 20, mid - 16, AppColors.blue, 'Steady: ±₹1 on a coin', sim.varSteady);
+  panel(sim.risky, mid + 20, h - 26, AppColors.pink, 'Risky: +₹${sim.k} or −₹1', sim.varRisky);
+  label(
+      canvas,
+      'round ${math.min(sim.round, VarianceSim.maxRounds)} of ${VarianceSim.maxRounds} · '
+      '${VarianceSim.players} players each',
+      Offset(w / 2, h - 10),
+      size: 11,
+      color: AppColors.muted);
+}
+
+final LessonSpec varianceRvLesson = LessonSpec(
+  id: 'variance_rv',
+  chapterLabel: 'Ch 6 · Random variables',
+  title: const [
+    TitlePart('Same average, very different '),
+    TitlePart('ride', AppColors.pink),
+  ],
+  subtitle: 'Variance of a random variable · 2-minute animated lesson',
+  createSim: () => VarianceSim(),
+  visualAspectRatio: 0.85,
+  buildVisual: (sim) => simCanvas<VarianceSim>(sim, _paintVariance),
+  stats: (sim) {
+    final v = sim as VarianceSim;
+    return [
+      StatChip('mean', '₹0 both', AppColors.yellow),
+      StatChip('Var steady', v.varSteady.toStringAsFixed(0), AppColors.blue),
+      StatChip('Var risky', v.varRisky.toStringAsFixed(0), AppColors.pink),
+    ];
+  },
+  bigIdea: 'Both games average ₹0 a round, so their expected values match. But the '
+      'risky game\'s results sit far from that average, so players\' totals fan '
+      'out wildly: a few get rich, most slowly lose. Variance measures this: the '
+      'expected squared distance from the mean. Its square root, the standard '
+      'deviation, is in rupees. Spread after n rounds grows like sd × √n.',
+  formula: (sim) {
+    final v = sim as VarianceSim;
+    return 'Var(X) = E[(X − μ)²] · risky: ${v.k}²×1/${v.k + 1} + 1²×${v.k}/${v.k + 1} = ${v.k} · '
+        'sd = ${math.sqrt(v.k).toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: make the risky game riskier',
+  buildTryIt: (sim) {
+    final v = sim as VarianceSim;
+    return watch(
+      v,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledSlider(
+            left: 'win ₹1',
+            right: '₹20',
+            value: v.k.toDouble(),
+            min: 1,
+            max: 20,
+            divisions: 19,
+            label: 'win ₹${v.k}, 1 in ${v.k + 1}',
+            onChanged: (x) => v.change(() => v.k = x.round()),
+          ),
+          TryNote('Win ₹${v.k} with chance 1/${v.k + 1}, otherwise lose ₹1: still ₹0 on average. '
+              'At ₹1 the two games are identical.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'Two investments both average 8% a year. A has variance 1, B has variance 25. '
+          'Which is riskier?',
+      options: ['A', 'B', 'Same risk', 'Can\'t tell'],
+      answer: 1,
+      explanation: 'Same mean, but B\'s results swing much further from it.',
+    ),
+    QuizQuestion(
+      prompt: 'X is +1 or −1 with equal chance. What is Var(X)?',
+      options: ['0', '0.5', '1', '2'],
+      answer: 2,
+      explanation: 'The mean is 0, and both values are 1 away from it: (1² + 1²)/2 = 1.',
+    ),
+    QuizQuestion(
+      prompt: 'If a variance is 16, the standard deviation is…',
+      options: ['4', '8', '16', '256'],
+      answer: 0,
+      explanation: 'The sd is the square root of the variance: √16 = 4.',
+    ),
+  ],
+);
 
 // ===== lib/lessons/venn.dart =====
 // ---------------------------------------------------------------------------
@@ -3386,6 +9061,191 @@ class _VennControls extends StatelessWidget {
     );
   }
 }
+
+// ===== lib/lessons/zscores.dart =====
+/// Two tests on different scales, morphing onto one standard scale and back.
+class ZScoreSim extends LessonSim {
+  static const double cycle = 8;
+
+  // Maths: mean 60, sd 12. English: mean 72, sd 5.
+  static const double mathsMean = 60, mathsSd = 12;
+  static const double englishMean = 72, englishSd = 5;
+
+  double maths = 78;
+  double english = 80;
+
+  /// Seconds into the loop.
+  double t = 0;
+
+  double get zMaths => (maths - mathsMean) / mathsSd;
+  double get zEnglish => (english - englishMean) / englishSd;
+
+  /// 0 = raw marks, 1 = standardised.
+  double get morph {
+    final s = t % cycle;
+    if (s < 2) return 0;
+    if (s < 4) return Curves.easeInOut.transform((s - 2) / 2);
+    if (s < 6) return 1;
+    return 1 - Curves.easeInOut.transform((s - 6) / 2);
+  }
+
+  @override
+  void advance(double dt) {
+    t = (t + dt) % cycle;
+    notifyListeners();
+  }
+
+  @override
+  void step() {
+    t = ((t ~/ 2) * 2 + 2.0) % cycle;
+    notifyListeners();
+  }
+
+  @override
+  void reset() {
+    t = 0;
+    notifyListeners();
+  }
+
+  void setScores({double? maths, double? english}) {
+    this.maths = maths ?? this.maths;
+    this.english = english ?? this.english;
+    notifyListeners();
+  }
+}
+
+void _paintZ(Canvas canvas, Size size, ZScoreSim sim) {
+  final w = size.width;
+  final h = size.height;
+  const left = 14.0;
+  final right = w - 14;
+  final m = sim.morph;
+
+  // Raw axis covers marks 20–100; z axis covers −3.5 … 3.5.
+  double rawX(double mark) => left + (mark - 20) / 80 * (right - left);
+  double zX(double z) => left + (z + 3.5) / 7 * (right - left);
+
+  void curve(double mean, double sd, double top, double height, Color color, double score, String name) {
+    final baseline = top + height;
+    final path = Path();
+    for (var i = 0; i <= 120; i++) {
+      final z = -3.5 + 7 * i / 120;
+      final x = rawX(mean + z * sd) * (1 - m) + zX(z) * m;
+      // Peak height shrinks with sd on the raw scale (area stays 1); equal when standardised.
+      final peakRaw = height * 5 / sd * 0.95;
+      final peak = math.min(height * 0.95, peakRaw) * (1 - m) + height * 0.95 * m;
+      final y = baseline - peak * math.exp(-z * z / 2);
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    canvas.drawPath(path, Paint()..color = color.withValues(alpha: 0.18));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+    line(canvas, Offset(left, baseline), Offset(right, baseline), AppColors.peg);
+    final z = (score - mean) / sd;
+    final sx = rawX(score) * (1 - m) + zX(z) * m;
+    line(canvas, Offset(sx, top + 4), Offset(sx, baseline), AppColors.ink, width: 2.5);
+    canvas.drawCircle(Offset(sx, top + 4), 6, Paint()..color = AppColors.ink);
+    final mx = rawX(mean) * (1 - m) + zX(0) * m;
+    dashedLine(canvas, Offset(mx, top + 10), Offset(mx, baseline), color.withValues(alpha: 0.7));
+    final text = m < 0.5 ? '$name ${score.round()} (avg ${mean.round()})' : '$name z = ${z.toStringAsFixed(2)}';
+    label(canvas, text, Offset(left, top - 6), size: 13, color: color, align: TextAlign.left);
+  }
+
+  final panel = (h - 60) / 2;
+  curve(ZScoreSim.mathsMean, ZScoreSim.mathsSd, 26, panel - 26, AppColors.blue, sim.maths, 'Maths');
+  curve(ZScoreSim.englishMean, ZScoreSim.englishSd, 26 + panel, panel - 26, AppColors.pink, sim.english, 'English');
+
+  // Axis labels morph between marks and z.
+  final axisY = h - 18;
+  if (m < 0.5) {
+    for (var mark = 20; mark <= 100; mark += 20) {
+      label(canvas, '$mark', Offset(rawX(mark.toDouble()), axisY), size: 11, color: AppColors.muted);
+    }
+  } else {
+    for (var z = -3; z <= 3; z++) {
+      label(canvas, z == 0 ? '0' : '${z > 0 ? '+' : ''}$z', Offset(zX(z.toDouble()), axisY),
+          size: 11, color: AppColors.muted);
+    }
+  }
+  label(canvas, m < 0.5 ? 'marks' : 'standard deviations from average', Offset(w - 16, axisY - 16),
+      size: 10, color: AppColors.muted, align: TextAlign.right);
+}
+
+final LessonSpec zScoresLesson = LessonSpec(
+  id: 'zscores',
+  chapterLabel: 'Ch 1 · Data & averages',
+  title: const [
+    TitlePart('78 in Maths or 80 in English: which is '),
+    TitlePart('better', AppColors.violet),
+    TitlePart('?'),
+  ],
+  subtitle: 'Z-scores · 2-minute animated lesson',
+  createSim: () => ZScoreSim(),
+  visualAspectRatio: 0.95,
+  buildVisual: (sim) => simCanvas<ZScoreSim>(sim, _paintZ),
+  stats: (sim) {
+    final z = sim as ZScoreSim;
+    return [
+      StatChip('Maths z', z.zMaths.toStringAsFixed(2), AppColors.blue),
+      StatChip('English z', z.zEnglish.toStringAsFixed(2), AppColors.pink),
+      StatChip('better', z.zMaths >= z.zEnglish ? 'Maths' : 'English', AppColors.yellow),
+    ];
+  },
+  bigIdea: 'Raw marks from different tests can\'t be compared directly: the averages '
+      'and spreads differ. A z-score asks "how many standard deviations above '
+      'average is this?" Subtract the mean, divide by the sd, and both tests land '
+      'on the same standard scale, where the higher z-score is the more impressive '
+      'result.',
+  formula: (sim) {
+    final z = sim as ZScoreSim;
+    return 'z = (x − μ) / σ\nMaths (${z.maths.round()} − 60) / 12 = ${z.zMaths.toStringAsFixed(2)} · '
+        'English (${z.english.round()} − 72) / 5 = ${z.zEnglish.toStringAsFixed(2)}';
+  },
+  tryItTitle: 'Try it: change the two scores',
+  buildTryIt: (sim) {
+    final z = sim as ZScoreSim;
+    return watch(
+      z,
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Maths: ${z.maths.round()}  (avg 60, sd 12)', style: const TextStyle(fontWeight: FontWeight.w800)),
+          Slider(value: z.maths, min: 30, max: 99, divisions: 69, onChanged: (v) => z.setScores(maths: v)),
+          Text('English: ${z.english.round()}  (avg 72, sd 5)', style: const TextStyle(fontWeight: FontWeight.w800)),
+          Slider(value: z.english, min: 55, max: 90, divisions: 35, onChanged: (v) => z.setScores(english: v)),
+          const TryNote('English marks are bunched together, so each extra mark counts for more.'),
+        ],
+      ),
+    );
+  },
+  quiz: const [
+    QuizQuestion(
+      prompt: 'A test has mean 50 and sd 10. What is the z-score of 65?',
+      options: ['0.65', '1.5', '15', '6.5'],
+      answer: 1,
+      explanation: '(65 − 50) / 10 = 1.5 standard deviations above average.',
+    ),
+    QuizQuestion(
+      prompt: 'A z-score of 0 means…',
+      options: ['The value is zero', 'The value equals the mean', 'The data has no spread', 'It is an outlier'],
+      answer: 1,
+      explanation: 'Zero standard deviations from the mean: exactly average.',
+    ),
+    QuizQuestion(
+      prompt: 'Riya: 80 on a test with mean 70, sd 5. Sam: 85 on a test with mean 75, sd 10. '
+          'Who did relatively better?',
+      options: ['Sam', 'Riya', 'Equal', 'Can\'t tell'],
+      answer: 1,
+      explanation: 'Riya z = 10/5 = 2. Sam z = 10/10 = 1. Riya was further above her '
+          'class average.',
+    ),
+  ],
+);
 
 // ===== lib/screens/learn_screen.dart =====
 class LearnScreen extends StatelessWidget {
@@ -5432,7 +11292,7 @@ class _OptionTile extends StatelessWidget {
 }
 
 // ===== lib/screens/settings_screen.dart =====
-const String kAppVersion = '1.1.0';
+const String kAppVersion = '1.2.0';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';

@@ -1,11 +1,12 @@
 # 4. Quality Assurance & Testing
 
-## Automated tests (`flutter test`, 50 tests)
+## Automated tests (`flutter test`, 111 tests)
 
 | Level | File | Covers |
 |---|---|---|
 | Unit: state | `test/app_state_test.dart` | Level thresholds, first-time vs replay XP, streak grow/break, DST-safe day maths, daily goal, once-a-day challenge, 7-day history, persistence round trip, corrupt data, reset, access rules, purchase outcomes |
 | Unit: content & simulations | `test/lessons_test.dart` | Catalogue ↔ registry consistency, valid quiz answers, stable daily challenge, Galton ball conservation, coin share → p, Monty Hall host rules and switch ≈ 2/3, CLT mean 3.5 and sd σ/√n, mean/median/mode definitions and outlier effect, sd formula and target spread, Venn estimates vs exact areas, Bayes counts vs the formula |
+| Unit: chapters 1–6 | `test/lessons_ch1_6_test.dart` | Each of the 30 newer lessons against its maths: quantiles and fences, z-scores, histogram counts, correlation sign, stem-and-leaf rebuild, complement and birthday formulas, card counts, nPr / nCr / repeats, pigeonhole guarantee, conditional counts, independence, tree and total-probability convergence, CDF, expected value, variance k, hat-check average 1 |
 | Widget: every lesson | `test/lesson_screens_test.dart` | Each lesson screen runs its animation for 5 s and scrolls end to end on a 360 dp phone with no overflow or exception |
 | Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset |
 
@@ -39,3 +40,7 @@ Run on a real Android phone (and iPhone if shipping iOS):
 * After buying premium, the expanded chapter jumped to a different chapter
   because the unlock banner disappeared and list items shifted (fixed with keys).
 * Two private classes named `_Step` broke the single-file DartPad bundle.
+* 1.2: "value + button" rows overflowed on 360 dp phones (now `ControlRow`,
+  which wraps); the bulb factory painter read per-sim fault rates as
+  constants; a muddled outliers quiz question had no correct option; labels
+  overlapped in the conditional-probability and total-probability stages.

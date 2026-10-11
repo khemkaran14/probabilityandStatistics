@@ -156,7 +156,7 @@ final LessonSpec eventsLesson = LessonSpec(
       explanation: 'The event is {1, 2}: 2 outcomes out of 6, so 2/6 = 1/3.',
     ),
     QuizQuestion(
-      prompt: 'Which is an event, not a single outcome, when rolling a die?',
+      prompt: 'Rolling a die, which event contains more than one outcome?',
       options: ['Rolling a 4', 'Rolling an odd number', 'Rolling a 6', 'Rolling a 1'],
       answer: 1,
       explanation: '"Odd" groups three outcomes: {1, 3, 5}.',

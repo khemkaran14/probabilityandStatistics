@@ -149,7 +149,7 @@ final LessonSpec conditionalLesson = LessonSpec(
   ],
   subtitle: 'Conditional probability · 2-minute animated lesson',
   createSim: () => ConditionalSim(),
-  visualAspectRatio: 0.9,
+  visualAspectRatio: 0.84,
   buildVisual: (sim) => simCanvas<ConditionalSim>(sim, _paintConditional),
   stats: (sim) {
     final c = sim as ConditionalSim;

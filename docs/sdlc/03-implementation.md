@@ -21,6 +21,15 @@ Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
 
 ## The lessons
 
+Chapters 1–6 are complete (36 lessons), plus the Galton board (ch 7), the
+Central Limit Theorem (ch 10) and Monty Hall (ch 5 and 17). Most newer lessons
+build on `lib/lessons/kit.dart`: `TickSim` (one discrete step every
+`interval` seconds), canvas helpers (`label`, `bar`, `paintDie`, …),
+`simCanvas` (no painter class needed) and the try-it controls
+(`LabeledSlider`, `ChoiceRow`, `ControlRow`, `ActionButton`).
+
+Highlights:
+
 | Lesson | Simulation | What the learner controls |
 |---|---|---|
 | Mean, median & mode (ch 1) | Values drop onto a number line as a dot plot; mean, median and mode markers move live | Symmetric vs long-tail data; add an outlier of 200 |

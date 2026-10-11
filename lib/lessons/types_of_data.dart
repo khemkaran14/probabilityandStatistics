@@ -74,20 +74,20 @@ void _paintTypes(Canvas canvas, Size size, TypesOfDataSim sim) {
   final h = size.height;
   final binTop = h * 0.5;
   final binW = (w - 30) / 2;
-  final binH = (h - binTop - 16) / 2;
+  final binH = (h - binTop - 28) / 2;
 
   // Four bins in a 2×2 grid: categorical on top, numerical below.
   final bins = <DataKind, Rect>{};
   for (var i = 0; i < 4; i++) {
     final kind = DataKind.values[i];
-    final r = Rect.fromLTWH(10 + (i % 2) * (binW + 10), binTop + (i ~/ 2) * (binH + 8), binW, binH);
+    final r = Rect.fromLTWH(10 + (i % 2) * (binW + 10), binTop + (i ~/ 2) * (binH + 20), binW, binH);
     bins[kind] = r;
     roundRect(canvas, r, kDataKindColors[kind]!.withValues(alpha: 0.18), radius: 14);
     label(canvas, kDataKindNames[kind]!, Offset(r.center.dx, r.top + 14), size: 12, color: kDataKindColors[kind]!);
     label(canvas, '${sim.counts[kind]}', r.center.translate(0, 8), size: 26, color: kDataKindColors[kind]!);
   }
   label(canvas, 'CATEGORICAL: words / labels', Offset(w / 2, binTop - 10), size: 11, color: AppColors.muted);
-  label(canvas, 'NUMERICAL: numbers you can add', Offset(w / 2, binTop + binH + 4), size: 10, color: AppColors.muted);
+  label(canvas, 'NUMERICAL: numbers you can add', Offset(w / 2, binTop + binH + 10), size: 10, color: AppColors.muted);
 
   // The card in flight: from the top centre into its bin.
   final (text, kind) = sim.current;
