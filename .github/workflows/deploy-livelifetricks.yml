@@ -1,10 +1,10 @@
 name: Deploy LiveLifeTricks
 
-# Deploys livelifetricks.com whenever the website changes on main.
+# Deploys livelifetricks.com whenever the website changes on one of these branches.
 # Can also be started by hand from the Actions tab.
 on:
   push:
-    branches: [main]
+    branches: [main, claude/dazzling-thompson-esa8oc]
     paths:
       - 'livelifetricks/**'
       - '.github/workflows/deploy-livelifetricks.yml'
@@ -45,4 +45,4 @@ jobs:
           ssh -i ~/.ssh/deploy_key -p "${VPS_PORT:-22}" \
             -o StrictHostKeyChecking=accept-new \
             "${VPS_USER:-root}@$VPS_HOST" \
-            "SITE_DIR='${SITE_DIR:-/var/www/livelifetricks.com}' bash /opt/livelifetricks-repo/livelifetricks/deploy/update-from-github.sh"
+            "BRANCH='${{ github.ref_name }}' SITE_DIR='${SITE_DIR:-/var/www/livelifetricks.com}' bash /opt/livelifetricks-repo/livelifetricks/deploy/update-from-github.sh"
