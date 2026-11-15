@@ -4,11 +4,13 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import 'package:chance/data/catalogue.dart';
+import 'package:chance/services/account_service.dart';
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
 import 'package:chance/services/sound_service.dart';
+import 'package:chance/state/progress_merge.dart';
 
 /// Daily XP goals offered in onboarding and settings.
 const Map<int, String> kDailyGoals = {20: 'Casual', 50: 'Regular', 100: 'Serious'};
@@ -43,9 +45,11 @@ class AppState extends ChangeNotifier {
     required this.share,
     ReminderService? reminders,
     SoundService? sounds,
+    AccountService? accounts,
     DateTime Function()? clock,
   })  : reminders = reminders ?? FakeReminderService(supported: false),
         sounds = sounds ?? FakeSoundService(),
+        accounts = accounts ?? FakeAccountService(supported: false),
         clock = clock ?? DateTime.now {
     _load();
     purchases.listen((premium) {
@@ -53,6 +57,8 @@ class AppState extends ChangeNotifier {
     });
     // Today's reminder is skipped once the goal is met, so refresh it on launch.
     _syncReminder();
+    // Pick up progress made on another phone since the last launch.
+    if (user != null) syncWithCloud();
   }
 
   final KeyValueStore store;
@@ -60,6 +66,7 @@ class AppState extends ChangeNotifier {
   final ShareService share;
   final ReminderService reminders;
   final SoundService sounds;
+  final AccountService accounts;
   final DateTime Function() clock;
 
   static const _p = 'chance.';
@@ -285,6 +292,90 @@ class AppState extends ChangeNotifier {
     _syncReminder();
   }
 
+  // ---------------------------------------------------------------- account
+
+  /// The signed-in learner, or null.
+  AccountUser? get user => accounts.supported ? accounts.user : null;
+
+  /// True while progress is being merged with the cloud.
+  bool syncing = false;
+
+  /// Signs in with Google and merges this phone's progress with the cloud
+  /// copy. Returns false if the user cancelled. Throws [AccountException].
+  Future<bool> signIn() async {
+    final signedIn = await accounts.signInWithGoogle();
+    notifyListeners();
+    if (signedIn == null) return false;
+    await syncWithCloud();
+    return true;
+  }
+
+  /// Signs out. The progress stays on this phone.
+  Future<void> signOut() async {
+    await accounts.signOut();
+    notifyListeners();
+  }
+
+  /// Deletes the account and its cloud copy. The progress stays on this
+  /// phone until "Reset progress". Throws [AccountException].
+  Future<void> deleteAccount() async {
+    await accounts.deleteAccount();
+    notifyListeners();
+  }
+
+  /// Merges the cloud copy into this phone's progress, then uploads the
+  /// result so both match.
+  Future<void> syncWithCloud() async {
+    if (user == null || syncing) return;
+    syncing = true;
+    notifyListeners();
+    try {
+      final cloud = await accounts.loadProgress();
+      if (cloud != null) {
+        final merged = mergeProgress(_syncedValues(), cloud);
+        merged.forEach((k, v) => store.setString('$_p$k', v));
+        _load();
+        _save(upload: false);
+        _syncReminder();
+      }
+      await _upload();
+    } on Object catch (e) {
+      debugPrint('Cloud sync failed: $e');
+    } finally {
+      syncing = false;
+      notifyListeners();
+    }
+  }
+
+  bool _uploading = false;
+  bool _uploadAgain = false;
+
+  /// Sends the current progress to the cloud. Changes made while an upload
+  /// is in flight are sent straight after it, so the cloud never lags behind.
+  Future<void> _upload() async {
+    if (user == null) return;
+    if (_uploading) {
+      _uploadAgain = true;
+      return;
+    }
+    _uploading = true;
+    try {
+      do {
+        _uploadAgain = false;
+        await accounts.saveProgress(_syncedValues());
+      } while (_uploadAgain && user != null);
+    } on Object catch (e) {
+      debugPrint('Cloud upload failed: $e');
+    } finally {
+      _uploading = false;
+    }
+  }
+
+  Map<String, String> _syncedValues() => {
+        for (final k in kSyncedKeys)
+          if (store.getString('$_p$k') case final v?) k: v,
+      };
+
   // ------------------------------------------------------------ persistence
 
   void _load() {
@@ -319,7 +410,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _save() {
+  void _save({bool upload = true}) {
     // Keep two months of daily history.
     final cutoff = dayKey(clock().subtract(const Duration(days: 60)));
     history.removeWhere((k, _) => k.compareTo(cutoff) < 0);
@@ -344,6 +435,7 @@ class AppState extends ChangeNotifier {
       'reminderMinute': '$reminderMinute',
     };
     values.forEach((k, v) => v == null ? store.remove('$_p$k') : store.setString('$_p$k', v));
+    if (upload) _upload();
   }
 
   @override

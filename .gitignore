@@ -46,3 +46,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase settings for local builds (see docs/FIREBASE_SETUP.md)
+firebase_config.json
+google-services.json
+GoogleService-Info.plist

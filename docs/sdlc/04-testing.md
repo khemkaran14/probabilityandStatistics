@@ -1,6 +1,6 @@
 # 4. Quality Assurance & Testing
 
-## Automated tests (`flutter test`, 219 tests)
+## Automated tests (`flutter test`, 235 tests)
 
 | Level | File | Covers |
 |---|---|---|
@@ -9,8 +9,9 @@
 | Unit: chapters 1–6 | `test/lessons_ch1_6_test.dart` | Each of the 30 newer lessons against its maths: quantiles and fences, z-scores, histogram counts, correlation sign, stem-and-leaf rebuild, complement and birthday formulas, card counts, nPr / nCr / repeats, pigeonhole guarantee, conditional counts, independence, tree and total-probability convergence, CDF, expected value, variance k, hat-check average 1 |
 | Unit: chapters 7–17 | `test/lessons_ch7_17_test.dart` | Each of the 52 newest lessons against its maths: distribution means and variances, waiting times, Poisson counts, the 68-95-99.7 rule, covariance vs correlation under unit changes, confounding, Chebyshev bound, sampling methods and bias, standard error, n − 1 unbiasedness, MLE, interval coverage, test error rates and power, least squares and R² = r², multiple and logistic regression, Bayesian updating and credible intervals, Monte Carlo π, random-walk distance, Markov stationary shares, softmax, Simpson's paradox, gambler's fallacy, St Petersburg |
 | Unit: distributions | `test/kit_test.dart` | Every pdf integrates to 1, `lgamma`, `normalCdf`, and textbook critical values (t, χ², F) |
+| Unit: accounts | `test/account_test.dart` | Merging phone and cloud progress (union of lessons, larger counts, latest streak, per-day XP, corrupt data); premium and settings never sync; sign-in merges and keeps the cloud current; new phone restores progress; cancel, failure, sign-out, delete, reset; hidden without a cloud project |
 | Widget: every lesson | `test/lesson_screens_test.dart` | Each lesson screen runs its animation for 5 s, opens its "why" panel and scrolls end to end on a 360 dp phone with no overflow or exception |
-| Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → sounds → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset; reminder on/off, time picker, skipped after the goal, refused permission; tablet navigation rail; screen-reader labels |
+| Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → sounds → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset; reminder on/off, time picker, skipped after the goal, refused permission; tablet navigation rail; screen-reader labels; account sign-in, failure message, sign-out, delete with confirmation, hidden without Firebase, sign-in from onboarding |
 
 Tests run against in-memory fakes (`MemoryStore`, `FakePurchaseService`,
 `FakeShareService`) and an injected clock, on a 390×844 phone screen so
@@ -41,6 +42,10 @@ Run on a real Android phone (and iPhone if shipping iOS):
   don't stop music that is playing
 - [ ] TalkBack / VoiceOver: the animation is described, buttons are named
 - [ ] Tablet or landscape: navigation rail on the left
+- [ ] Sign in with Google (Settings) → name shown → finish a lesson → the
+  progress appears in Firestore → uninstall, reinstall, sign in from the
+  first onboarding page → XP and lessons come back
+- [ ] Delete account → the Firestore document and the Firebase user are gone
 
 ## Bugs found by testing in this release
 
@@ -53,6 +58,8 @@ Run on a real Android phone (and iPhone if shipping iOS):
   which wraps); the bulb factory painter read per-sim fault rates as
   constants; a muddled outliers quiz question had no correct option; labels
   overlapped in the conditional-probability and total-probability stages.
+* 1.5: when Google reports a setup mistake as a cancelled sign-in, the app
+  showed nothing; it now says "Sign-in cancelled".
 * 1.4: the settings test relied on "Reset progress" being built before it was
   scrolled to; the Monty Hall win-rate labels were crossed by the ⅓ and ⅔
   markers.

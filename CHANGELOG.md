@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.5.0
+
+- Optional **Sign in with Google** (Settings → Account, or "Sign in" on the
+  first onboarding page): progress is saved to the account with Firebase and
+  merged safely with the phone's progress, so it comes back on a new phone
+- Sign out (progress stays on the phone) and **Delete account** (deletes the
+  account and its cloud data)
+- Sign-in turns on only when the Firebase project is configured
+  (docs/FIREBASE_SETUP.md); builds without it are unchanged
+- Firestore security rules (`firestore.rules`): each learner can only read
+  and write their own progress
+- Privacy policy updated for optional accounts, with a delete-account
+  section
+- CI: `chance-apk-test-unlock`, a test build where Unlock succeeds without
+  payment
+- 235 tests
+
 ## 1.4.0
 
 - "Why does this work?" panel under the formula in all 90 lessons

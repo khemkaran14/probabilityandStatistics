@@ -37,6 +37,7 @@ and the probability/statistics niche has no strong animated app.
 | F15 | Daily reminder notification, skipped once the day's goal is met (1.4) | Should |
 | F16 | Sound effects with an off switch (1.4) | Could |
 | F17 | Screen-reader descriptions of animations and labelled controls (1.4) | Should |
+| F18 | Optional Google sign-in; progress synced to the cloud and merged without loss; sign out; delete account (1.5) | Should |
 
 ## Non-functional requirements
 
@@ -51,6 +52,6 @@ and the probability/statistics niche has no strong animated app.
 
 ## Out of scope for 1.0
 
-Accounts / cloud sync, server-side receipt validation, localisation
-(English only). Reminders, sound effects and accessibility labels were added
-in 1.4.
+Server-side receipt validation, localisation (English only). Reminders,
+sound effects and accessibility labels were added in 1.4; optional accounts
+with cloud sync in 1.5.

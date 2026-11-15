@@ -1,4 +1,5 @@
 import 'package:chance/main.dart';
+import 'package:chance/services/account_service.dart';
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
@@ -23,6 +24,7 @@ AppState makeState({
   FakeShareService? share,
   ReminderService? reminders,
   SoundService? sounds,
+  AccountService? accounts,
   bool onboarded = true,
 }) {
   final s = AppState(
@@ -31,6 +33,7 @@ AppState makeState({
     share: share ?? FakeShareService(),
     reminders: reminders,
     sounds: sounds,
+    accounts: accounts,
     clock: (clock ?? TestClock(DateTime(2026, 3, 10, 9))).call,
   );
   if (onboarded && !s.onboarded) s.finishOnboarding(goal: 50);

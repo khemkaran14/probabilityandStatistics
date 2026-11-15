@@ -5,9 +5,10 @@ import 'package:chance/screens/paywall_screen.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
+import 'package:chance/widgets/account_card.dart';
 import 'package:chance/widgets/common.dart';
 
-const String kAppVersion = '1.4.0';
+const String kAppVersion = '1.5.0';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';
@@ -84,6 +85,12 @@ class SettingsScreen extends StatelessWidget {
           children: [
             const Text('Settings', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
             const SizedBox(height: 20),
+            if (s.accounts.supported) ...[
+              const SectionLabel('Account'),
+              const SizedBox(height: 10),
+              const AccountCard(),
+              const SizedBox(height: 22),
+            ],
             const SectionLabel('Daily goal'),
             const SizedBox(height: 10),
             DailyGoalPicker(goal: s.dailyGoal, onChanged: s.setDailyGoal),
@@ -182,7 +189,7 @@ class SettingsScreen extends StatelessWidget {
                   const ListTile(
                     leading: Icon(Icons.info_outline_rounded, color: AppColors.muted),
                     title: Text('Version $kAppVersion', style: TextStyle(fontWeight: FontWeight.w800)),
-                    subtitle: Text('No ads. No account. Your progress stays on this device.'),
+                    subtitle: Text('No ads. Sign-in is optional.'),
                   ),
                 ],
               ),

@@ -1,4 +1,5 @@
 import 'package:chance/main.dart';
+import 'package:chance/services/account_service.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
 import 'package:chance/services/share_service.dart';
@@ -206,6 +207,66 @@ void main() {
     expect(find.bySemanticsLabel('Speed triple'), findsOneWidget);
     expect(find.bySemanticsLabel('Pause'), findsOneWidget);
     handle.dispose();
+  });
+
+  testWidgets('account: sign in from Settings, then sign out and delete', (tester) async {
+    final accounts =
+        FakeAccountService(nextUser: const AccountUser(uid: 'u1', name: 'Asha', email: 'asha@example.com'));
+    final state = makeState(accounts: accounts);
+    await pumpApp(tester, state);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
+    await tester.pumpAndSettle();
+    expect(find.text('Asha'), findsOneWidget);
+    expect(find.textContaining('Signed in.'), findsOneWidget);
+    expect(accounts.cloud, contains('u1'));
+
+    await tester.tap(find.byKey(const ValueKey('delete-account')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(accounts.cloud, isEmpty);
+    expect(find.byKey(const ValueKey('google-sign-in')), findsOneWidget);
+
+    accounts.nextUser = const AccountUser(uid: 'u2', name: 'Ravi');
+    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('sign-out')));
+    await tester.pumpAndSettle();
+    expect(state.user, isNull);
+    expect(find.byKey(const ValueKey('google-sign-in')), findsOneWidget);
+  });
+
+  testWidgets('account: a failed sign-in shows the reason', (tester) async {
+    final state = makeState(accounts: FakeAccountService(failWith: const AccountException('No internet connection')));
+    await pumpApp(tester, state);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
+    await tester.pumpAndSettle();
+    expect(find.text('No internet connection'), findsOneWidget);
+  });
+
+  testWidgets('account: hidden when the build has no cloud project', (tester) async {
+    final state = makeState();
+    await pumpApp(tester, state);
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('google-sign-in')), findsNothing);
+  });
+
+  testWidgets('account: a returning learner signs in during onboarding and skips it', (tester) async {
+    final accounts = FakeAccountService(nextUser: const AccountUser(uid: 'u1', name: 'Asha'));
+    accounts.cloud['u1'] = {'xp': '700', 'completed': 'galton'};
+    final state = makeState(accounts: accounts, onboarded: false);
+    await pumpApp(tester, state);
+    await tester.tap(find.byKey(const ValueKey('onboarding-sign-in')));
+    await tester.pumpAndSettle();
+    expect(state.onboarded, isTrue);
+    expect(state.xp, 700);
+    expect(find.text('Learn'), findsOneWidget);
   });
 }
 

@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Chance: each learner can read and write only their own progress document,
+// users/{uid} = { progress: { key: string, ... }, updatedAt: timestamp }.
+// Paste this into Firebase console → Firestore Database → Rules → Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['progress', 'updatedAt'])
+        && request.resource.data.progress is map
+        && request.resource.data.progress.size() <= 20;
+    }
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

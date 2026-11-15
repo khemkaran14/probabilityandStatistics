@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:chance/screens/learn_screen.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
+import 'package:chance/widgets/account_card.dart';
 import 'package:chance/widgets/common.dart';
 
 /// First-launch intro: what the app is, how lessons work, pick a goal.
@@ -24,6 +25,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _pages.dispose();
     super.dispose();
+  }
+
+  /// Returning learners skip onboarding once their progress is back.
+  Future<void> _signIn() async {
+    if (await signInWithFeedback(context) && mounted) {
+      final state = AppScope.read(context);
+      state.finishOnboarding(goal: state.dailyGoal);
+    }
   }
 
   void _next() {
@@ -75,6 +84,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   color: _page < _pageCount - 1 ? AppColors.pink : AppColors.green,
                   onPressed: _next,
                 ),
+                if (_page == 0 && AppScope.of(context).accounts.supported)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: TextButton(
+                      key: const ValueKey('onboarding-sign-in'),
+                      onPressed: _signIn,
+                      child: const Text(
+                        'Already learning on another phone? Sign in',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

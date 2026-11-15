@@ -56,6 +56,17 @@ jobs:
     name: Build Android
     needs: check
     runs-on: ubuntu-latest
+    # Google sign-in and cloud sync: the Firebase project's settings, stored as
+    # repository variables (Settings → Secrets and variables → Actions →
+    # Variables; see docs/FIREBASE_SETUP.md). Without them the app builds
+    # without sign-in.
+    env:
+      FIREBASE_DEFINES: >-
+        --dart-define=FIREBASE_API_KEY=${{ vars.FIREBASE_API_KEY }}
+        --dart-define=FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID }}
+        --dart-define=FIREBASE_SENDER_ID=${{ vars.FIREBASE_SENDER_ID }}
+        --dart-define=FIREBASE_ANDROID_APP_ID=${{ vars.FIREBASE_ANDROID_APP_ID }}
+        --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -88,8 +99,8 @@ jobs:
           keyAlias=$KEY_ALIAS
           storeFile=$RUNNER_TEMP/upload-keystore.jks
           PROPS
-      - run: flutter build apk --release
-      - run: flutter build appbundle --release
+      - run: flutter build apk --release $FIREBASE_DEFINES
+      - run: flutter build appbundle --release $FIREBASE_DEFINES
       - uses: actions/upload-artifact@v4
         with:
           name: chance-apk
@@ -100,7 +111,7 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
       # Test build for your own phone: "Unlock" succeeds instantly with no
       # payment, so the paid chapters can be tried. Never upload it to a store.
-      - run: flutter build apk --release --dart-define=CHANCE_DEV=true
+      - run: flutter build apk --release --dart-define=CHANCE_DEV=true $FIREBASE_DEFINES
       - uses: actions/upload-artifact@v4
         with:
           name: chance-apk-test-unlock

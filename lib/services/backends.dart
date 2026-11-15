@@ -1,15 +1,20 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:chance/services/account_service.dart';
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
@@ -25,6 +30,7 @@ class Backends {
     required this.share,
     required this.reminders,
     required this.sounds,
+    required this.accounts,
   });
 
   final KeyValueStore store;
@@ -32,6 +38,7 @@ class Backends {
   final ShareService share;
   final ReminderService reminders;
   final SoundService sounds;
+  final AccountService accounts;
 
   /// `flutter run --dart-define=CHANCE_DEV=true` swaps the store for one
   /// where buying always succeeds, so locked lessons can be tried anywhere.
@@ -51,7 +58,162 @@ class Backends {
       share: _PlusShareService(),
       reminders: storeSupported ? _LocalReminderService() : FakeReminderService(supported: false),
       sounds: _AudioSoundService(),
+      accounts: storeSupported ? await _FirebaseAccountService.create() : FakeAccountService(supported: false),
     );
+  }
+}
+
+/// The Firebase project, passed in at build time (see docs/FIREBASE_SETUP.md):
+/// `--dart-define=FIREBASE_API_KEY=… --dart-define=FIREBASE_PROJECT_ID=…` and
+/// so on. A build without them simply has no sign-in.
+class _FirebaseConfig {
+  static const apiKey = String.fromEnvironment('FIREBASE_API_KEY');
+  static const projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
+  static const senderId = String.fromEnvironment('FIREBASE_SENDER_ID');
+  static const androidAppId = String.fromEnvironment('FIREBASE_ANDROID_APP_ID');
+  static const iosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
+
+  /// The *Web client* OAuth id from Firebase: Android sign-in needs it.
+  static const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+
+  /// The iOS OAuth client id (iOS only).
+  static const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+
+  static bool get _ios => defaultTargetPlatform == TargetPlatform.iOS;
+
+  static String get appId => _ios ? iosAppId : androidAppId;
+
+  static bool get complete =>
+      apiKey.isNotEmpty &&
+      projectId.isNotEmpty &&
+      senderId.isNotEmpty &&
+      appId.isNotEmpty &&
+      webClientId.isNotEmpty &&
+      (!_ios || iosClientId.isNotEmpty);
+
+  static FirebaseOptions get options => FirebaseOptions(
+        apiKey: apiKey,
+        appId: appId,
+        messagingSenderId: senderId,
+        projectId: projectId,
+        storageBucket: '$projectId.appspot.com',
+        iosBundleId: _ios ? 'com.khemkaran.chance' : null,
+        iosClientId: _ios ? iosClientId : null,
+      );
+}
+
+/// Google sign-in through Firebase Auth; progress in Firestore at
+/// `users/{uid}` (see firestore.rules).
+class _FirebaseAccountService implements AccountService {
+  _FirebaseAccountService._();
+
+  /// Connects to Firebase, or returns an unsupported service when this build
+  /// has no Firebase config or the connection fails, so the app never breaks.
+  static Future<AccountService> create() async {
+    if (!_FirebaseConfig.complete) return FakeAccountService(supported: false);
+    try {
+      await Firebase.initializeApp(options: _FirebaseConfig.options);
+      await GoogleSignIn.instance.initialize(
+        serverClientId: _FirebaseConfig.webClientId,
+        clientId: _FirebaseConfig._ios ? _FirebaseConfig.iosClientId : null,
+      );
+      // Wait for the saved session to be restored.
+      await FirebaseAuth.instance.authStateChanges().first.timeout(const Duration(seconds: 3), onTimeout: () => null);
+      return _FirebaseAccountService._();
+    } on Object catch (e) {
+      debugPrint('Accounts unavailable: $e');
+      return FakeAccountService(supported: false);
+    }
+  }
+
+  final _auth = FirebaseAuth.instance;
+
+  DocumentReference<Map<String, dynamic>> _doc(String uid) => FirebaseFirestore.instance.collection('users').doc(uid);
+
+  @override
+  bool get supported => true;
+
+  @override
+  AccountUser? get user {
+    final u = _auth.currentUser;
+    return u == null ? null : AccountUser(uid: u.uid, name: u.displayName, email: u.email, photoUrl: u.photoURL);
+  }
+
+  /// Google's account picker, then a Firebase credential from its token.
+  Future<UserCredential?> _googleCredential({bool reauthenticate = false}) async {
+    try {
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null) throw const AccountException('Google didn\'t return a sign-in token. Please try again.');
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      return reauthenticate
+          ? await _auth.currentUser!.reauthenticateWithCredential(credential)
+          : await _auth.signInWithCredential(credential);
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) return null;
+      throw AccountException('Google sign-in failed (${e.code.name}). Check your connection and try again.');
+    } on FirebaseAuthException catch (e) {
+      throw AccountException('Sign-in failed (${e.code}). Please try again.');
+    }
+  }
+
+  @override
+  Future<AccountUser?> signInWithGoogle() async {
+    final result = await _googleCredential();
+    return result == null ? null : user;
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _auth.signOut();
+    try {
+      await GoogleSignIn.instance.signOut();
+    } on Object catch (e) {
+      debugPrint('Google sign-out: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final current = _auth.currentUser;
+    if (current == null) return;
+    try {
+      // The data goes first: once the account is gone, the rules no longer
+      // let anyone delete it.
+      await _doc(current.uid).delete();
+      try {
+        await current.delete();
+      } on FirebaseAuthException catch (e) {
+        if (e.code != 'requires-recent-login') rethrow;
+        // Deleting needs a fresh sign-in: ask Google once more.
+        if (await _googleCredential(reauthenticate: true) == null) {
+          throw const AccountException('Account not deleted: sign-in was cancelled.');
+        }
+        await _auth.currentUser!.delete();
+      }
+      await GoogleSignIn.instance.disconnect();
+    } on AccountException {
+      rethrow;
+    } on Object catch (e) {
+      throw AccountException('Couldn\'t delete the account: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, String>?> loadProgress() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+    final snap = await _doc(uid).get();
+    final progress = snap.data()?['progress'];
+    if (progress is! Map) return null;
+    return {for (final e in progress.entries) '${e.key}': '${e.value}'};
+  }
+
+  @override
+  Future<void> saveProgress(Map<String, String> progress) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+    await _doc(uid).set({'progress': progress, 'updatedAt': FieldValue.serverTimestamp()});
   }
 }
 

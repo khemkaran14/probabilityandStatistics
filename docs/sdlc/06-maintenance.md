@@ -17,9 +17,8 @@ Ordered by value for learners and for store growth:
 
 1. ~~All 17 chapters~~ (1.1–1.3), ~~"why" panels, reminders, sounds,
    accessibility, tablet layout~~ (1.4).
-2. **Accounts and cloud sync** (optional): Firebase Auth with Google/Apple
-   sign-in, progress in Firestore, account deletion. Only if learners ask to
-   keep progress across devices.
+2. ~~Accounts and cloud sync~~ (1.5, Google sign-in). Add **Sign in with
+   Apple** before an iPhone release (Apple requires it alongside Google).
 3. **Localisation, Hindi first.** Move every lesson's text (titles, big
    ideas, why panels, quizzes) into ARB files with `flutter_localizations`,
    then have a native speaker translate and review the maths wording.

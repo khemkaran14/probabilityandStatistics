@@ -2,7 +2,8 @@
 
 Flutter 3.47 / Dart 3.13. Plugins: `shared_preferences`, `in_app_purchase`,
 `share_plus`, `flutter_local_notifications` (+ `timezone`, `flutter_timezone`)
-and `audioplayers`. Everything else is the Flutter SDK.
+`audioplayers`, and `firebase_core`, `firebase_auth`, `cloud_firestore` and
+`google_sign_in` for accounts. Everything else is the Flutter SDK.
 
 ## Requirement → code
 
@@ -23,6 +24,7 @@ and `audioplayers`. Everything else is the Flutter SDK.
 | F15 reminders | `lib/services/reminder_service.dart`, `_LocalReminderService` in `backends.dart`, `AppState.setReminder` |
 | F16 sounds | `lib/services/sound_service.dart`, `_AudioSoundService` in `backends.dart`, `assets/sounds/` (`tool/make_sounds.py`) |
 | F17 accessibility | `Semantics` on the stage and controls in `lib/screens/lesson_screen.dart` |
+| F18 accounts | `lib/services/account_service.dart`, `_FirebaseAccountService` in `backends.dart` (configured by `--dart-define`s, see `docs/FIREBASE_SETUP.md`), `lib/state/progress_merge.dart`, `AppState.signIn`/`syncWithCloud`, `lib/widgets/account_card.dart`, `firestore.rules` |
 | Tablet layout | `NavigationRail` at ≥ 720 dp in `lib/screens/shell_screen.dart`; every screen capped at 520 dp (`PhoneWidth`) |
 
 ## The lessons

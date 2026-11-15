@@ -1,10 +1,10 @@
 # What's remaining
 
-Status after version 1.4.0: everything that can be done in code is done.
+Status after version 1.5.0: everything that can be done in code is done.
 All 90 lessons, "why" panels, daily reminders, sound effects, badges,
-accessibility, tablet layout, app icon, splash screens, signed CI builds, the
-privacy policy page, store text, feature graphic and screenshots are built,
-and CI is green.
+accessibility, tablet layout, Google sign-in with cloud sync, app icon,
+splash screens, signed CI builds, the privacy policy page, store text,
+feature graphic and screenshots are built.
 
 What's left needs **your** accounts, devices or decisions. Do them in this
 order.
@@ -16,9 +16,6 @@ order.
   one before step 4.
 - [ ] **Price** of "Unlock everything" (a one-time purchase). Typical for
   education apps in India: ₹199–₹499.
-- [ ] **Accounts or not?** The app works without sign-in; progress stays on
-  the phone and the purchase is restored by the store. Cloud sync (Firebase)
-  is optional and can come later.
 
 ## 2. Privacy policy (15 minutes)
 
@@ -57,6 +54,13 @@ order.
 - [ ] Re-run CI (or push anything). The run's `chance-aab` artifact is now
   signed and ready for the Play Store.
 
+## 4b. Turn on sign-in (30 minutes)
+
+- [ ] Follow [FIREBASE_SETUP.md](FIREBASE_SETUP.md): create the Firebase
+  project, enable Google sign-in, create the database, register the app
+  with your upload key's SHA-1, and add 5 repository variables. Until then,
+  builds have no sign-in (everything else works).
+
 ## 5. Create the app in Play Console (1 hour)
 
 - [ ] Create app → name **Chance: Probability & Stats**, app, free, accept
@@ -68,7 +72,9 @@ order.
 - [ ] App content forms:
   - Privacy policy: your URL from step 2
   - Ads: no ads
-  - Data safety: no data collected or shared
+  - Data safety and the delete-account URL: see
+    [FIREBASE_SETUP.md step 7](FIREBASE_SETUP.md#7-update-play-console-when-you-publish)
+    (if you skip sign-in: no data collected or shared)
   - Content rating questionnaire: education, no objectionable content
   - Target audience: 13+ (or include under-13s if you want; that adds
     Families policy checks)
@@ -76,14 +82,23 @@ order.
   (exactly this id), set the price, **activate** it. This option appears only
   after a build has been uploaded.
 - [ ] Settings → License testing → add your Gmail, so test purchases are free.
+- [ ] Add the **App signing key SHA-1** from Play Console to Firebase
+  (FIREBASE_SETUP.md step 4.5), or sign-in fails in the Play version.
 
 ## 6. Test on your phone (1 hour)
+
+Before Play is set up you can already test: download
+**`chance-apk-test-unlock`** from the latest CI run. In that build "Unlock"
+succeeds instantly without paying, so every chapter can be tried. Never
+upload it to Play.
+
 
 - [ ] Join the internal test from its opt-in link and install from Play.
 - [ ] Run the checklist in `docs/sdlc/04-testing.md`, especially:
   - buy the unlock, uninstall, reinstall, **Restore purchase**
   - daily reminder: set it 2 minutes ahead, lock the phone, wait
   - sounds on and off; TalkBack reads the animation description
+  - sign in, finish a lesson, reinstall, sign in again: progress comes back
 - [ ] Tell Claude about anything that looks or feels wrong.
 
 ## 7. Go live (about 2 weeks)
@@ -107,4 +122,9 @@ order.
   It's the next big roadmap item (`docs/sdlc/06-maintenance.md`).
 - **Server-side purchase checks.** They need a server; not worth it until
   piracy shows up.
-- **Accounts / cloud sync.** Waiting on your decision in step 1.
+- **Email/password or Apple sign-in.** Google sign-in covers Android. If
+  you ship on iPhone with Google sign-in, Apple requires "Sign in with
+  Apple" as well; add it before the App Store release.
+- **Syncing the purchase through the account.** Deliberately not synced:
+  the store's "Restore purchase" restores it, and a learner can't fake it
+  by editing their own cloud data.

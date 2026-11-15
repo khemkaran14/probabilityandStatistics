@@ -5,7 +5,7 @@ with short animated lessons. Every lesson follows **watch → understand →
 play → check**: an animation you can play, pause, step and speed up; one big
 idea with a live formula; a control to change the experiment; and a quiz.
 
-**Version 1.4**
+**Version 1.5**
 
 - 90 animated lessons covering all 17 chapters: data & averages, seeing data,
   probability basics, counting, conditional probability, random variables,
@@ -16,6 +16,8 @@ idea with a live formula; a control to change the experiment; and a quiz.
 - 17-chapter, 94-lesson catalogue; chapters 1–3 and preview lessons are free,
   the rest unlock with one in-app purchase
 - XP, levels, a daily goal and a daily streak, saved on the device
+- Optional Google sign-in with cloud sync of progress (Firebase; see
+  [docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md))
 - Daily reminder notification, sound effects, vibration
 - Practice tab: daily challenge and free practice
 - Progress tab: level, stats, 7-day chart, 22 badges

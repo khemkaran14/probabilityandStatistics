@@ -1,3 +1,4 @@
+import 'package:chance/services/account_service.dart';
 import 'package:chance/services/key_value_store.dart';
 import 'package:chance/services/purchase_service.dart';
 import 'package:chance/services/reminder_service.dart';
@@ -13,6 +14,7 @@ class Backends {
     required this.share,
     required this.reminders,
     required this.sounds,
+    required this.accounts,
   });
 
   final KeyValueStore store;
@@ -20,6 +22,7 @@ class Backends {
   final ShareService share;
   final ReminderService reminders;
   final SoundService sounds;
+  final AccountService accounts;
 
   static Future<Backends> create() async => Backends(
         store: MemoryStore(),
@@ -27,5 +30,6 @@ class Backends {
         share: FakeShareService(),
         reminders: FakeReminderService(supported: false),
         sounds: FakeSoundService(),
+        accounts: FakeAccountService(supported: false),
       );
 }

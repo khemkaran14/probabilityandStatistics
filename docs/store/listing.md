@@ -59,10 +59,10 @@ GREAT FOR
 High-school and university students, exam preparation (AP Statistics, A-level, JEE, GRE, CFA), data science and machine-learning beginners, and anyone who wants to finally understand the numbers in the news.
 
 FREE TO START
-Chapters 1–3 and three preview lessons (the Galton board, Monty Hall and Bayes' theorem) are free. Unlock all 90 lessons with a single one-time purchase. No subscription, no ads, no account.
+Chapters 1–3 and three preview lessons (the Galton board, Monty Hall and Bayes' theorem) are free. Unlock all 90 lessons with a single one-time purchase. No subscription, no ads.
 
-PRIVATE
-Your progress stays on your device. No sign-in, no tracking, no ads.
+YOUR PROGRESS, EVERYWHERE
+Sign in with Google (optional) to save your progress and get it back on any phone. Or skip sign-in and keep everything on your device. No tracking, no ads.
 ```
 
 ## Category and tags

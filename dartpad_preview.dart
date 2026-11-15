@@ -18,6 +18,7 @@ Future<void> main() async {
     share: backends.share,
     reminders: backends.reminders,
     sounds: backends.sounds,
+    accounts: backends.accounts,
   );
   runApp(ChanceApp(state: state));
 }
@@ -18239,6 +18240,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
+  /// Returning learners skip onboarding once their progress is back.
+  Future<void> _signIn() async {
+    if (await signInWithFeedback(context) && mounted) {
+      final state = AppScope.read(context);
+      state.finishOnboarding(goal: state.dailyGoal);
+    }
+  }
+
   void _next() {
     if (_page < _pageCount - 1) {
       _pages.nextPage(duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
@@ -18288,6 +18297,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   color: _page < _pageCount - 1 ? AppColors.pink : AppColors.green,
                   onPressed: _next,
                 ),
+                if (_page == 0 && AppScope.of(context).accounts.supported)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: TextButton(
+                      key: const ValueKey('onboarding-sign-in'),
+                      onPressed: _signIn,
+                      child: const Text(
+                        'Already learning on another phone? Sign in',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -19404,7 +19425,7 @@ class _OptionTile extends StatelessWidget {
 }
 
 // ===== lib/screens/settings_screen.dart =====
-const String kAppVersion = '1.4.0';
+const String kAppVersion = '1.5.0';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';
@@ -19481,6 +19502,12 @@ class SettingsScreen extends StatelessWidget {
           children: [
             const Text('Settings', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
             const SizedBox(height: 20),
+            if (s.accounts.supported) ...[
+              const SectionLabel('Account'),
+              const SizedBox(height: 10),
+              const AccountCard(),
+              const SizedBox(height: 22),
+            ],
             const SectionLabel('Daily goal'),
             const SizedBox(height: 10),
             DailyGoalPicker(goal: s.dailyGoal, onChanged: s.setDailyGoal),
@@ -19579,7 +19606,7 @@ class SettingsScreen extends StatelessWidget {
                   const ListTile(
                     leading: Icon(Icons.info_outline_rounded, color: AppColors.muted),
                     title: Text('Version $kAppVersion', style: TextStyle(fontWeight: FontWeight.w800)),
-                    subtitle: Text('No ads. No account. Your progress stays on this device.'),
+                    subtitle: Text('No ads. Sign-in is optional.'),
                   ),
                 ],
               ),
@@ -19661,6 +19688,97 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 }
 
+// ===== lib/services/account_service.dart =====
+/// The signed-in learner.
+class AccountUser {
+  const AccountUser({required this.uid, this.name, this.email, this.photoUrl});
+
+  final String uid;
+  final String? name;
+  final String? email;
+  final String? photoUrl;
+}
+
+/// Sign-in with Google and the learner's progress saved in the cloud, so it
+/// follows them to a new phone.
+abstract class AccountService {
+  /// False when this build has no cloud project configured (or on web):
+  /// the app then hides everything about accounts.
+  bool get supported;
+
+  /// The signed-in user, or null.
+  AccountUser? get user;
+
+  /// Shows Google's account picker. Returns null if the user cancels.
+  /// Throws [AccountException] if sign-in fails.
+  Future<AccountUser?> signInWithGoogle();
+
+  Future<void> signOut();
+
+  /// Deletes the cloud copy of the progress and the account itself.
+  /// Throws [AccountException] if it fails.
+  Future<void> deleteAccount();
+
+  /// The progress saved in the cloud for [user], or null if there is none.
+  Future<Map<String, String>?> loadProgress();
+
+  /// Replaces the cloud copy of the progress for [user].
+  Future<void> saveProgress(Map<String, String> progress);
+}
+
+class AccountException implements Exception {
+  const AccountException(this.message);
+
+  /// A short, user-facing explanation.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// In-memory accounts and cloud. Used by tests and DartPad.
+class FakeAccountService implements AccountService {
+  FakeAccountService({this.supported = true, this.nextUser, this.failWith});
+
+  @override
+  final bool supported;
+
+  /// Who "signs in" next; null means the user cancels the picker.
+  AccountUser? nextUser;
+
+  /// When set, sign-in throws this.
+  AccountException? failWith;
+
+  /// The fake cloud: progress per uid.
+  final Map<String, Map<String, String>> cloud = {};
+
+  @override
+  AccountUser? user;
+
+  @override
+  Future<AccountUser?> signInWithGoogle() async {
+    if (failWith != null) throw failWith!;
+    return user = nextUser;
+  }
+
+  @override
+  Future<void> signOut() async => user = null;
+
+  @override
+  Future<void> deleteAccount() async {
+    cloud.remove(user?.uid);
+    user = null;
+  }
+
+  @override
+  Future<Map<String, String>?> loadProgress() async => cloud[user?.uid];
+
+  @override
+  Future<void> saveProgress(Map<String, String> progress) async {
+    if (user != null) cloud[user!.uid] = {...progress};
+  }
+}
+
 // ===== tool/dartpad_stubs/backends.dart =====
 /// DartPad stand-in for lib/services/backends.dart: no plugins there, so
 /// progress lives in memory and purchases always succeed.
@@ -19671,6 +19789,7 @@ class Backends {
     required this.share,
     required this.reminders,
     required this.sounds,
+    required this.accounts,
   });
 
   final KeyValueStore store;
@@ -19678,6 +19797,7 @@ class Backends {
   final ShareService share;
   final ReminderService reminders;
   final SoundService sounds;
+  final AccountService accounts;
 
   static Future<Backends> create() async => Backends(
         store: MemoryStore(),
@@ -19685,6 +19805,7 @@ class Backends {
         share: FakeShareService(),
         reminders: FakeReminderService(supported: false),
         sounds: FakeSoundService(),
+        accounts: FakeAccountService(supported: false),
       );
 }
 
@@ -19890,9 +20011,11 @@ class AppState extends ChangeNotifier {
     required this.share,
     ReminderService? reminders,
     SoundService? sounds,
+    AccountService? accounts,
     DateTime Function()? clock,
   })  : reminders = reminders ?? FakeReminderService(supported: false),
         sounds = sounds ?? FakeSoundService(),
+        accounts = accounts ?? FakeAccountService(supported: false),
         clock = clock ?? DateTime.now {
     _load();
     purchases.listen((premium) {
@@ -19900,6 +20023,8 @@ class AppState extends ChangeNotifier {
     });
     // Today's reminder is skipped once the goal is met, so refresh it on launch.
     _syncReminder();
+    // Pick up progress made on another phone since the last launch.
+    if (user != null) syncWithCloud();
   }
 
   final KeyValueStore store;
@@ -19907,6 +20032,7 @@ class AppState extends ChangeNotifier {
   final ShareService share;
   final ReminderService reminders;
   final SoundService sounds;
+  final AccountService accounts;
   final DateTime Function() clock;
 
   static const _p = 'chance.';
@@ -20132,6 +20258,90 @@ class AppState extends ChangeNotifier {
     _syncReminder();
   }
 
+  // ---------------------------------------------------------------- account
+
+  /// The signed-in learner, or null.
+  AccountUser? get user => accounts.supported ? accounts.user : null;
+
+  /// True while progress is being merged with the cloud.
+  bool syncing = false;
+
+  /// Signs in with Google and merges this phone's progress with the cloud
+  /// copy. Returns false if the user cancelled. Throws [AccountException].
+  Future<bool> signIn() async {
+    final signedIn = await accounts.signInWithGoogle();
+    notifyListeners();
+    if (signedIn == null) return false;
+    await syncWithCloud();
+    return true;
+  }
+
+  /// Signs out. The progress stays on this phone.
+  Future<void> signOut() async {
+    await accounts.signOut();
+    notifyListeners();
+  }
+
+  /// Deletes the account and its cloud copy. The progress stays on this
+  /// phone until "Reset progress". Throws [AccountException].
+  Future<void> deleteAccount() async {
+    await accounts.deleteAccount();
+    notifyListeners();
+  }
+
+  /// Merges the cloud copy into this phone's progress, then uploads the
+  /// result so both match.
+  Future<void> syncWithCloud() async {
+    if (user == null || syncing) return;
+    syncing = true;
+    notifyListeners();
+    try {
+      final cloud = await accounts.loadProgress();
+      if (cloud != null) {
+        final merged = mergeProgress(_syncedValues(), cloud);
+        merged.forEach((k, v) => store.setString('$_p$k', v));
+        _load();
+        _save(upload: false);
+        _syncReminder();
+      }
+      await _upload();
+    } on Object catch (e) {
+      debugPrint('Cloud sync failed: $e');
+    } finally {
+      syncing = false;
+      notifyListeners();
+    }
+  }
+
+  bool _uploading = false;
+  bool _uploadAgain = false;
+
+  /// Sends the current progress to the cloud. Changes made while an upload
+  /// is in flight are sent straight after it, so the cloud never lags behind.
+  Future<void> _upload() async {
+    if (user == null) return;
+    if (_uploading) {
+      _uploadAgain = true;
+      return;
+    }
+    _uploading = true;
+    try {
+      do {
+        _uploadAgain = false;
+        await accounts.saveProgress(_syncedValues());
+      } while (_uploadAgain && user != null);
+    } on Object catch (e) {
+      debugPrint('Cloud upload failed: $e');
+    } finally {
+      _uploading = false;
+    }
+  }
+
+  Map<String, String> _syncedValues() => {
+        for (final k in kSyncedKeys)
+          if (store.getString('$_p$k') case final v?) k: v,
+      };
+
   // ------------------------------------------------------------ persistence
 
   void _load() {
@@ -20166,7 +20376,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _save() {
+  void _save({bool upload = true}) {
     // Keep two months of daily history.
     final cutoff = dayKey(clock().subtract(const Duration(days: 60)));
     history.removeWhere((k, _) => k.compareTo(cutoff) < 0);
@@ -20191,6 +20401,7 @@ class AppState extends ChangeNotifier {
       'reminderMinute': '$reminderMinute',
     };
     values.forEach((k, v) => v == null ? store.remove('$_p$k') : store.setString('$_p$k', v));
+    if (upload) _upload();
   }
 
   @override
@@ -20209,6 +20420,66 @@ class AppScope extends InheritedNotifier<AppState> {
 
   /// Access without subscribing to changes (for callbacks).
   static AppState read(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
+}
+
+// ===== lib/state/progress_merge.dart =====
+/// The saved keys that sync to the cloud. Settings (goal, sounds, reminder)
+/// stay per device, and so does premium: it comes from the store's restore,
+/// because a learner can write to their own cloud copy.
+const List<String> kSyncedKeys = [
+  'xp',
+  'completed',
+  'perfect',
+  'streak',
+  'bestStreak',
+  'lastActive',
+  'history',
+  'challengeDay',
+  'challengesDone',
+];
+
+/// Combines two copies of the learner's progress (this phone and the cloud)
+/// without losing anything either side earned: the union of finished lessons,
+/// the larger of each count, the most recent streak, and each day's best XP.
+Map<String, String> mergeProgress(Map<String, String> a, Map<String, String> b) {
+  int i(Map<String, String> m, String k) => int.tryParse(m[k] ?? '') ?? 0;
+  Set<String> set(Map<String, String> m, String k) => (m[k] ?? '').split(',').where((s) => s.isNotEmpty).toSet();
+  String? later(String? x, String? y) => x == null ? y : (y == null || x.compareTo(y) >= 0 ? x : y);
+  Map<String, int> hist(Map<String, String> m) {
+    try {
+      return (jsonDecode(m['history'] ?? '{}') as Map<String, dynamic>).map((k, v) => MapEntry(k, (v as num).toInt()));
+    } on Object {
+      return {};
+    }
+  }
+
+  final out = <String, String>{
+    'xp': '${math.max(i(a, 'xp'), i(b, 'xp'))}',
+    'completed': ({...set(a, 'completed'), ...set(b, 'completed')}.toList()..sort()).join(','),
+    'perfect': ({...set(a, 'perfect'), ...set(b, 'perfect')}.toList()..sort()).join(','),
+    'bestStreak': '${math.max(i(a, 'bestStreak'), i(b, 'bestStreak'))}',
+    'challengesDone': '${math.max(i(a, 'challengesDone'), i(b, 'challengesDone'))}',
+  };
+
+  // The current streak belongs to whichever copy was active most recently.
+  final lastA = a['lastActive'], lastB = b['lastActive'];
+  final lastActive = later(lastA, lastB);
+  if (lastActive != null) {
+    out['lastActive'] = lastActive;
+    out['streak'] =
+        '${lastA == lastB ? math.max(i(a, 'streak'), i(b, 'streak')) : i(lastActive == lastA ? a : b, 'streak')}';
+  } else {
+    out['streak'] = '0';
+  }
+
+  final challengeDay = later(a['challengeDay'], b['challengeDay']);
+  if (challengeDay != null) out['challengeDay'] = challengeDay;
+
+  final ha = hist(a), hb = hist(b);
+  out['history'] = jsonEncode({
+    for (final day in {...ha.keys, ...hb.keys}) day: math.max(ha[day] ?? 0, hb[day] ?? 0),
+  });
+  return out;
 }
 
 // ===== lib/theme/app_theme.dart =====
@@ -20269,6 +20540,164 @@ const TextStyle kDisplay = TextStyle(
   letterSpacing: -0.6,
   color: AppColors.ink,
 );
+
+// ===== lib/widgets/account_card.dart =====
+/// Signs in with Google and tells the learner how it went.
+/// Returns true when they are signed in afterwards.
+Future<bool> signInWithFeedback(BuildContext context) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final state = AppScope.read(context);
+  String message;
+  var ok = false;
+  try {
+    ok = await state.signIn();
+    message = ok ? 'Signed in. Your progress is saved to your account.' : 'Sign-in cancelled.';
+  } on AccountException catch (e) {
+    message = e.message;
+  }
+  messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)));
+  return ok;
+}
+
+/// Settings card: sign in, or who is signed in with sign-out and delete.
+class AccountCard extends StatefulWidget {
+  const AccountCard({super.key});
+
+  @override
+  State<AccountCard> createState() => _AccountCardState();
+}
+
+class _AccountCardState extends State<AccountCard> {
+  bool _busy = false;
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: const Text('This permanently deletes your account and the progress saved in it. '
+            'Progress on this phone stays until you reset it. Your purchase is kept by the store.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.pink),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final state = AppScope.read(context);
+    await _run(() async {
+      try {
+        await state.deleteAccount();
+        messenger.showSnackBar(
+          const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Your account has been deleted.')),
+        );
+      } on AccountException catch (e) {
+        messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.message)));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final user = s.user;
+    if (user == null) {
+      return SoftCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.cloud_sync_rounded, color: AppColors.blue),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text('Keep your progress safe', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Sign in to save your XP, streak and lessons to your account and get them back on any phone.',
+              style: TextStyle(color: AppColors.muted, height: 1.35),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.icon(
+                key: const ValueKey('google-sign-in'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.ink,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                onPressed: _busy ? null : () => _run(() => signInWithFeedback(context)),
+                icon: _busy
+                    ? const SizedBox.square(
+                        dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                    : const Icon(Icons.login_rounded),
+                label: const Text('Sign in with Google'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final name = (user.name?.trim().isNotEmpty ?? false) ? user.name!.trim() : (user.email ?? 'Signed in');
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        children: [
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: AppColors.violet,
+              foregroundColor: Colors.white,
+              child: Text(name.characters.first.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900)),
+            ),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text(
+              [
+                if (user.email != null && user.email != name) user.email!,
+                s.syncing ? 'Syncing…' : 'Progress saved to your account',
+              ].join('\n'),
+            ),
+            isThreeLine: user.email != null && user.email != name,
+          ),
+          ListTile(
+            key: const ValueKey('sign-out'),
+            leading: const Icon(Icons.logout_rounded, color: AppColors.blue),
+            title: const Text('Sign out', style: TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: const Text('Progress stays on this phone'),
+            enabled: !_busy,
+            onTap: () => _run(s.signOut),
+          ),
+          ListTile(
+            key: const ValueKey('delete-account'),
+            leading: const Icon(Icons.person_remove_rounded, color: AppColors.pink),
+            title: const Text('Delete account', style: TextStyle(fontWeight: FontWeight.w800)),
+            enabled: !_busy,
+            onTap: _confirmDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // ===== lib/widgets/common.dart =====
 /// Yellow XP pill that updates live.
