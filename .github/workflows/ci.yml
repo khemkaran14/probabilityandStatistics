@@ -98,3 +98,10 @@ jobs:
         with:
           name: chance-aab
           path: build/app/outputs/bundle/release/app-release.aab
+      # Test build for your own phone: "Unlock" succeeds instantly with no
+      # payment, so the paid chapters can be tried. Never upload it to a store.
+      - run: flutter build apk --release --dart-define=CHANCE_DEV=true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chance-apk-test-unlock
+          path: build/app/outputs/flutter-apk/app-release.apk

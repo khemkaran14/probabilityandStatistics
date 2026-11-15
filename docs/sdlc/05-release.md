@@ -7,6 +7,10 @@ attaches them to the workflow run (Actions tab → run → Artifacts). Until the
 signing secrets below are added they are signed with debug keys: the APK
 installs on a phone for testing, but nothing can go to the Play Store.
 
+`chance-apk-test-unlock` is the same app built with `CHANCE_DEV=true`:
+"Unlock" succeeds instantly without a payment, so the paid chapters can be
+tried on a phone before the Play product exists. Never upload it.
+
 ## Google Play (Android)
 
 1. **App id** is `com.khemkaran.chance` (Android `applicationId`/`namespace`,
