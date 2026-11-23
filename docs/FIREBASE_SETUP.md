@@ -38,7 +38,7 @@ and CI builds without your key use a different throwaway key every run.
 
 1. Project overview (top left) → ⚙ **Project settings** → **Your apps** →
    the **Android** icon.
-2. **Package name:** `com.khemkaran.chance` (exactly). Nickname: `Chance`.
+2. **Package name:** `com.divyrs.chance` (exactly). Nickname: `Chance`.
 3. **SHA-1:** run this on your Mac with the upload key from REMAINING.md
    step 4, and copy the `SHA1:` line:
    ```
@@ -117,7 +117,7 @@ registered SHA-1. For debug builds, add your Mac's debug key too:
 
 ## iPhone (later)
 
-In Firebase, add an **iOS app** with bundle ID `com.khemkaran.chance`, then
+In Firebase, add an **iOS app** with bundle ID `com.divyrs.chance`, then
 add `FIREBASE_IOS_APP_ID` and `GOOGLE_IOS_CLIENT_ID` (from the downloaded
 `GoogleService-Info.plist`: `GOOGLE_APP_ID` and `CLIENT_ID`) to your build
 settings. In Xcode, add a URL type whose scheme is the

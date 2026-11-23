@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Package ID changed to `com.divyrs.chance` (Android and iOS) before the
+  first Play upload
+
 ## 1.5.0
 
 - Optional **Sign in with Google** (Settings → Account, or "Sign in" on the
@@ -29,7 +34,7 @@
   playback controls are labelled
 - Tablets and landscape: navigation rail instead of the bottom bar
 - App icon and splash screens on Android, iOS and web; package ID
-  `com.khemkaran.chance`
+  `com.divyrs.chance`
 - CI builds a signed Android App Bundle when the signing secrets are set
 - Privacy policy page, store listing, feature graphic and 8 screenshots
 - Monty Hall: win-rate labels stay readable over the ⅓ and ⅔ markers

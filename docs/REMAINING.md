@@ -11,7 +11,7 @@ order.
 
 ## 1. Decide (5 minutes)
 
-- [ ] **Package ID.** It is `com.khemkaran.chance`. It can never change
+- [ ] **Package ID.** It is `com.divyrs.chance`. It can never change
   after the first Play upload. Happy with it? If not, tell Claude the new
   one before step 4.
 - [ ] **Price** of "Unlock everything" (a one-time purchase). Typical for

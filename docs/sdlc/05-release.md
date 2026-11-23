@@ -13,7 +13,7 @@ tried on a phone before the Play product exists. Never upload it.
 
 ## Google Play (Android)
 
-1. **App id** is `com.khemkaran.chance` (Android `applicationId`/`namespace`,
+1. **App id** is `com.divyrs.chance` (Android `applicationId`/`namespace`,
    iOS bundle id). It can never change after the first upload, so change it
    before then if you want a different one.
 2. **Upload key** (once, keep it safe and backed up):
@@ -57,7 +57,7 @@ tried on a phone before the Play product exists. Never upload it.
 Needs a Mac with Xcode (or a cloud builder such as Codemagic) and an Apple
 Developer account.
 
-1. The bundle id is `com.khemkaran.chance`. In Xcode
+1. The bundle id is `com.divyrs.chance`. In Xcode
    (`ios/Runner.xcworkspace`) choose your team and add the *In-App Purchase*
    capability.
 2. App Store Connect: create the app and a **Non-Consumable** in-app

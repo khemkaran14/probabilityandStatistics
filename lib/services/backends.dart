@@ -97,7 +97,7 @@ class _FirebaseConfig {
         messagingSenderId: senderId,
         projectId: projectId,
         storageBucket: '$projectId.appspot.com',
-        iosBundleId: _ios ? 'com.khemkaran.chance' : null,
+        iosBundleId: _ios ? 'com.divyrs.chance' : null,
         iosClientId: _ios ? iosClientId : null,
       );
 }
