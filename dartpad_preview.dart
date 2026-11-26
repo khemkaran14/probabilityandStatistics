@@ -19012,6 +19012,9 @@ class ProfileForm extends StatefulWidget {
 
 class _ProfileFormState extends State<ProfileForm> {
   late final TextEditingController _name;
+
+  /// The typed mobile number, when SMS verification is off.
+  late final TextEditingController _phoneText;
   String? _photoUrl;
   bool _optIn = false;
   bool _saving = false;
@@ -19023,6 +19026,8 @@ class _ProfileFormState extends State<ProfileForm> {
     super.initState();
     final draft = AppScope.read(context).draftProfile;
     _name = TextEditingController(text: draft.name);
+    final saved = draft.phone ?? '';
+    _phoneText = TextEditingController(text: saved.startsWith('+91') ? saved.substring(3) : saved);
     _photoUrl = draft.photoUrl;
     _optIn = draft.marketingOptIn;
   }
@@ -19030,6 +19035,7 @@ class _ProfileFormState extends State<ProfileForm> {
   @override
   void dispose() {
     _name.dispose();
+    _phoneText.dispose();
     super.dispose();
   }
 
@@ -19052,8 +19058,12 @@ class _ProfileFormState extends State<ProfileForm> {
     final state = AppScope.read(context);
     setState(() => _saving = true);
     try {
-      await state
-          .saveProfile(state.draftProfile.copyWith(name: _name.text, photoUrl: _photoUrl, marketingOptIn: _optIn));
+      await state.saveProfile(state.draftProfile.copyWith(
+        name: _name.text,
+        phone: state.accounts.verifiesPhone ? null : _phoneText.text,
+        photoUrl: _photoUrl,
+        marketingOptIn: _optIn,
+      ));
       if (!widget.setup) _show('Profile saved.');
     } on AccountException catch (e) {
       _show(e.message);
@@ -19065,8 +19075,11 @@ class _ProfileFormState extends State<ProfileForm> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final verifies = state.accounts.verifiesPhone;
     final phone = state.user?.phone;
-    final canSave = _name.text.trim().isNotEmpty && phone != null && !_saving && !_uploading;
+    final typedOk = normalizePhone(_phoneText.text) != null;
+    final phoneOk = verifies ? phone != null : typedOk;
+    final canSave = _name.text.trim().isNotEmpty && phoneOk && !_saving && !_uploading;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -19076,14 +19089,17 @@ class _ProfileFormState extends State<ProfileForm> {
             children: [
               UserAvatar(name: _name.text, photoUrl: _photoUrl, radius: 48),
               const SizedBox(height: 8),
-              TextButton.icon(
-                key: const ValueKey('change-photo'),
-                onPressed: _uploading ? null : _changePhoto,
-                icon: _uploading
-                    ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.photo_camera_rounded),
-                label: Text(_photoUrl == null ? 'Add a photo' : 'Change photo'),
-              ),
+              if (state.accounts.canUploadPhoto)
+                TextButton.icon(
+                  key: const ValueKey('change-photo'),
+                  onPressed: _uploading ? null : _changePhoto,
+                  icon: _uploading
+                      ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.photo_camera_rounded),
+                  label: Text(_photoUrl == null ? 'Add a photo' : 'Change photo'),
+                )
+              else
+                const Text('Photo from your Google account', style: TextStyle(color: AppColors.muted)),
             ],
           ),
         ),
@@ -19102,7 +19118,21 @@ class _ProfileFormState extends State<ProfileForm> {
           child: Text(state.user?.email ?? '', style: const TextStyle(color: AppColors.muted)),
         ),
         const SizedBox(height: 14),
-        if (phone != null && !_changingPhone)
+        if (!verifies)
+          TextField(
+            key: const ValueKey('phone-number'),
+            controller: _phoneText,
+            keyboardType: TextInputType.phone,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'Mobile number',
+              prefixText: '+91 ',
+              helperText: 'For other countries, start with + and the country code',
+              errorText: _phoneText.text.trim().isEmpty || typedOk ? null : 'Enter a valid 10-digit mobile number',
+              border: const OutlineInputBorder(),
+            ),
+          )
+        else if (phone != null && !_changingPhone)
           SoftCard(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: ListTile(
@@ -19134,11 +19164,11 @@ class _ProfileFormState extends State<ProfileForm> {
           color: AppColors.green,
           onPressed: canSave ? _save : null,
         ),
-        if (phone == null)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
+        if (!phoneOk)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Verify your mobile number to continue.',
+              verifies ? 'Verify your mobile number to continue.' : 'Enter your mobile number to continue.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.muted),
             ),
@@ -20263,6 +20293,7 @@ class UserProfile {
     this.name = '',
     this.email,
     this.phone,
+    this.phoneVerified = false,
     this.photoUrl,
     this.marketingOptIn = false,
     this.consentAt,
@@ -20271,8 +20302,12 @@ class UserProfile {
   final String name;
   final String? email;
 
-  /// Verified mobile number (+91…). Only set after SMS verification.
+  /// Mobile number in international form (+91…).
   final String? phone;
+
+  /// True when [phone] was confirmed by an SMS code; false when the learner
+  /// only typed it (builds without SMS verification).
+  final bool phoneVerified;
   final String? photoUrl;
 
   /// Agreed to receive offers and updates.
@@ -20288,6 +20323,7 @@ class UserProfile {
     String? name,
     String? email,
     String? phone,
+    bool? phoneVerified,
     String? photoUrl,
     bool? marketingOptIn,
     String? consentAt,
@@ -20296,6 +20332,7 @@ class UserProfile {
         name: name ?? this.name,
         email: email ?? this.email,
         phone: phone ?? this.phone,
+        phoneVerified: phoneVerified ?? this.phoneVerified,
         photoUrl: photoUrl ?? this.photoUrl,
         marketingOptIn: marketingOptIn ?? this.marketingOptIn,
         consentAt: consentAt ?? this.consentAt,
@@ -20305,6 +20342,7 @@ class UserProfile {
         'name': name,
         'email': email,
         'phone': phone,
+        'phoneVerified': phoneVerified,
         'photoUrl': photoUrl,
         'marketingOptIn': marketingOptIn,
         'consentAt': consentAt,
@@ -20314,6 +20352,7 @@ class UserProfile {
         name: (m['name'] as String?) ?? '',
         email: m['email'] as String?,
         phone: m['phone'] as String?,
+        phoneVerified: m['phoneVerified'] == true,
         photoUrl: m['photoUrl'] as String?,
         marketingOptIn: m['marketingOptIn'] == true,
         consentAt: m['consentAt'] as String?,
@@ -20353,6 +20392,14 @@ abstract class AccountService {
   /// The signed-in user, or null.
   AccountUser? get user;
 
+  /// Whether mobile numbers are verified by an SMS code. Off on Firebase's
+  /// free plan: the learner types the number instead.
+  bool get verifiesPhone;
+
+  /// Whether learners can upload their own photo. Off on Firebase's free
+  /// plan: the Google account photo is used.
+  bool get canUploadPhoto;
+
   /// Shows Google's account picker. Returns null if the user cancels.
   /// Throws [AccountException] if sign-in fails.
   Future<AccountUser?> signInWithGoogle();
@@ -20372,7 +20419,8 @@ abstract class AccountService {
   /// The profile saved for [user], or null if there is none yet.
   Future<UserProfile?> loadProfile();
 
-  /// Saves the profile. Its phone must be the one verified for [user].
+  /// Saves the profile. A phone marked verified must be the one verified
+  /// for [user].
   Future<void> saveProfile(UserProfile profile);
 
   /// Sends an SMS code to [phone] (international form). Returns the id to
@@ -20401,10 +20449,22 @@ class AccountException implements Exception {
 
 /// In-memory accounts and cloud. Used by tests and DartPad.
 class FakeAccountService implements AccountService {
-  FakeAccountService({this.supported = true, this.nextUser, this.failWith});
+  FakeAccountService({
+    this.supported = true,
+    this.nextUser,
+    this.failWith,
+    this.verifiesPhone = true,
+    this.canUploadPhoto = true,
+  });
 
   @override
   final bool supported;
+
+  @override
+  final bool verifiesPhone;
+
+  @override
+  final bool canUploadPhoto;
 
   /// Who "signs in" next; null means the user cancels the picker.
   AccountUser? nextUser;
@@ -20459,7 +20519,9 @@ class FakeAccountService implements AccountService {
   Future<void> saveProfile(UserProfile profile) async {
     final u = user;
     if (u == null) throw const AccountException('Please sign in again.');
-    if (profile.phone != u.phone) throw const AccountException('Please verify your mobile number.');
+    if (profile.phoneVerified ? profile.phone != u.phone : verifiesPhone) {
+      throw const AccountException('Please verify your mobile number.');
+    }
     profiles[u.uid] = profile;
   }
 
@@ -20989,7 +21051,14 @@ class AppState extends ChangeNotifier {
   /// Google tells us.
   UserProfile get draftProfile {
     final u = user;
-    return profile ?? UserProfile(name: u?.name ?? '', email: u?.email, photoUrl: u?.photoUrl, phone: u?.phone);
+    return profile ??
+        UserProfile(
+          name: u?.name ?? '',
+          email: u?.email,
+          photoUrl: u?.photoUrl,
+          phone: u?.phone,
+          phoneVerified: u?.phone != null,
+        );
   }
 
   /// Signs in with Google and merges this phone's progress with the cloud
@@ -21026,15 +21095,26 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Saves the profile with the mobile number verified for this account.
-  /// Records when consent for offers was given or withdrawn.
+  /// Saves the profile with the account's mobile number. Records when
+  /// consent for offers was given or withdrawn.
   /// Throws [AccountException].
   Future<void> saveProfile(UserProfile next) async {
     final consentChanged = next.marketingOptIn != (profile?.marketingOptIn ?? false) || profile == null;
+    // With SMS verification the phone is the one verified for this account;
+    // without it, the number the learner typed, checked for a valid format.
+    final verified = user?.phone;
+    final String? phone;
+    if (accounts.verifiesPhone) {
+      phone = verified;
+    } else {
+      phone = next.phone == null ? null : normalizePhone(next.phone!);
+      if (phone == null) throw const AccountException('Enter a valid 10-digit mobile number.');
+    }
     final saved = UserProfile(
       name: next.name.trim(),
       email: user?.email ?? next.email,
-      phone: user?.phone,
+      phone: phone,
+      phoneVerified: phone != null && phone == verified,
       photoUrl: next.photoUrl,
       marketingOptIn: next.marketingOptIn,
       consentAt: consentChanged ? clock().toUtc().toIso8601String() : next.consentAt,
@@ -21330,20 +21410,28 @@ const TextStyle kDisplay = TextStyle(
 );
 
 // ===== lib/widgets/account_card.dart =====
-/// Signs in with Google and tells the learner how it went.
-/// Returns true when they are signed in afterwards.
-Future<bool> signInWithFeedback(BuildContext context) async {
+/// Signs in with Google and tells the learner if it was cancelled or
+/// failed. With [announceSuccess] it also confirms a successful sign-in;
+/// leave it off when the screen changes anyway, so the message doesn't
+/// cover the next screen's buttons. Returns true when signed in.
+Future<bool> signInWithFeedback(BuildContext context, {bool announceSuccess = false}) async {
   final messenger = ScaffoldMessenger.of(context);
   final state = AppScope.read(context);
-  String message;
+  String? message;
   var ok = false;
   try {
     ok = await state.signIn();
-    message = ok ? 'Signed in. Your progress is saved to your account.' : 'Sign-in cancelled.';
+    if (!ok) {
+      message = 'Sign-in cancelled.';
+    } else if (announceSuccess) {
+      message = 'Signed in. Your progress is saved to your account.';
+    }
   } on AccountException catch (e) {
     message = e.message;
   }
-  messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)));
+  if (message != null) {
+    messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)));
+  }
   return ok;
 }
 
@@ -21401,7 +21489,7 @@ class _AccountCardState extends State<AccountCard> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                 ),
-                onPressed: _busy ? null : () => _run(() => signInWithFeedback(context)),
+                onPressed: _busy ? null : () => _run(() => signInWithFeedback(context, announceSuccess: true)),
                 icon: _busy
                     ? const SizedBox.square(
                         dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))

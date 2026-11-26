@@ -344,6 +344,32 @@ void main() {
     expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
     expect(tester.takeException(), isNull, reason: 'learn header with the profile photo');
   });
+
+  testWidgets('account: free plan asks for the mobile number without SMS and has no upload', (tester) async {
+    final accounts = FakeAccountService(nextUser: _asha, verifiesPhone: false, canUploadPhoto: false);
+    final state = makeState(accounts: accounts);
+    await pumpApp(tester, state);
+    await tester.tap(find.byKey(const ValueKey('required-sign-in')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('send-code')), findsNothing);
+    expect(find.byKey(const ValueKey('change-photo')), findsNothing);
+    expect(find.text('Photo from your Google account'), findsOneWidget);
+    expect(tester.widget<FilledButton>(_saveButton).onPressed, isNull);
+
+    await tester.enterText(find.byKey(const ValueKey('phone-number')), '12345');
+    await tester.pump();
+    expect(find.text('Enter a valid 10-digit mobile number'), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('phone-number')), '9876543210');
+    await tester.pump();
+    await tester.ensureVisible(_saveButton);
+    await tester.tap(_saveButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Learn'), findsOneWidget);
+    expect(accounts.profiles['u1']!.phone, '+919876543210');
+    expect(accounts.profiles['u1']!.phoneVerified, isFalse);
+  });
 }
 
 final _settingsScroll =

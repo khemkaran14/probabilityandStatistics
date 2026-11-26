@@ -68,6 +68,8 @@ jobs:
         --dart-define=FIREBASE_ANDROID_APP_ID=${{ vars.FIREBASE_ANDROID_APP_ID }}
         --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
         --dart-define=FIREBASE_STORAGE_BUCKET=${{ vars.FIREBASE_STORAGE_BUCKET }}
+        --dart-define=FIREBASE_PHONE_OTP=${{ vars.FIREBASE_PHONE_OTP }}
+        --dart-define=FIREBASE_PHOTO_UPLOAD=${{ vars.FIREBASE_PHOTO_UPLOAD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

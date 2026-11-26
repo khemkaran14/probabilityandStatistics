@@ -19,6 +19,7 @@ class UserProfile {
     this.name = '',
     this.email,
     this.phone,
+    this.phoneVerified = false,
     this.photoUrl,
     this.marketingOptIn = false,
     this.consentAt,
@@ -27,8 +28,12 @@ class UserProfile {
   final String name;
   final String? email;
 
-  /// Verified mobile number (+91…). Only set after SMS verification.
+  /// Mobile number in international form (+91…).
   final String? phone;
+
+  /// True when [phone] was confirmed by an SMS code; false when the learner
+  /// only typed it (builds without SMS verification).
+  final bool phoneVerified;
   final String? photoUrl;
 
   /// Agreed to receive offers and updates.
@@ -44,6 +49,7 @@ class UserProfile {
     String? name,
     String? email,
     String? phone,
+    bool? phoneVerified,
     String? photoUrl,
     bool? marketingOptIn,
     String? consentAt,
@@ -52,6 +58,7 @@ class UserProfile {
         name: name ?? this.name,
         email: email ?? this.email,
         phone: phone ?? this.phone,
+        phoneVerified: phoneVerified ?? this.phoneVerified,
         photoUrl: photoUrl ?? this.photoUrl,
         marketingOptIn: marketingOptIn ?? this.marketingOptIn,
         consentAt: consentAt ?? this.consentAt,
@@ -61,6 +68,7 @@ class UserProfile {
         'name': name,
         'email': email,
         'phone': phone,
+        'phoneVerified': phoneVerified,
         'photoUrl': photoUrl,
         'marketingOptIn': marketingOptIn,
         'consentAt': consentAt,
@@ -70,6 +78,7 @@ class UserProfile {
         name: (m['name'] as String?) ?? '',
         email: m['email'] as String?,
         phone: m['phone'] as String?,
+        phoneVerified: m['phoneVerified'] == true,
         photoUrl: m['photoUrl'] as String?,
         marketingOptIn: m['marketingOptIn'] == true,
         consentAt: m['consentAt'] as String?,
@@ -109,6 +118,14 @@ abstract class AccountService {
   /// The signed-in user, or null.
   AccountUser? get user;
 
+  /// Whether mobile numbers are verified by an SMS code. Off on Firebase's
+  /// free plan: the learner types the number instead.
+  bool get verifiesPhone;
+
+  /// Whether learners can upload their own photo. Off on Firebase's free
+  /// plan: the Google account photo is used.
+  bool get canUploadPhoto;
+
   /// Shows Google's account picker. Returns null if the user cancels.
   /// Throws [AccountException] if sign-in fails.
   Future<AccountUser?> signInWithGoogle();
@@ -128,7 +145,8 @@ abstract class AccountService {
   /// The profile saved for [user], or null if there is none yet.
   Future<UserProfile?> loadProfile();
 
-  /// Saves the profile. Its phone must be the one verified for [user].
+  /// Saves the profile. A phone marked verified must be the one verified
+  /// for [user].
   Future<void> saveProfile(UserProfile profile);
 
   /// Sends an SMS code to [phone] (international form). Returns the id to
@@ -157,10 +175,22 @@ class AccountException implements Exception {
 
 /// In-memory accounts and cloud. Used by tests and DartPad.
 class FakeAccountService implements AccountService {
-  FakeAccountService({this.supported = true, this.nextUser, this.failWith});
+  FakeAccountService({
+    this.supported = true,
+    this.nextUser,
+    this.failWith,
+    this.verifiesPhone = true,
+    this.canUploadPhoto = true,
+  });
 
   @override
   final bool supported;
+
+  @override
+  final bool verifiesPhone;
+
+  @override
+  final bool canUploadPhoto;
 
   /// Who "signs in" next; null means the user cancels the picker.
   AccountUser? nextUser;
@@ -215,7 +245,9 @@ class FakeAccountService implements AccountService {
   Future<void> saveProfile(UserProfile profile) async {
     final u = user;
     if (u == null) throw const AccountException('Please sign in again.');
-    if (profile.phone != u.phone) throw const AccountException('Please verify your mobile number.');
+    if (profile.phoneVerified ? profile.phone != u.phone : verifiesPhone) {
+      throw const AccountException('Please verify your mobile number.');
+    }
     profiles[u.uid] = profile;
   }
 

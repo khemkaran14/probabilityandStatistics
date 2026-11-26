@@ -7,20 +7,28 @@ import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/common.dart';
 import 'package:chance/widgets/user_avatar.dart';
 
-/// Signs in with Google and tells the learner how it went.
-/// Returns true when they are signed in afterwards.
-Future<bool> signInWithFeedback(BuildContext context) async {
+/// Signs in with Google and tells the learner if it was cancelled or
+/// failed. With [announceSuccess] it also confirms a successful sign-in;
+/// leave it off when the screen changes anyway, so the message doesn't
+/// cover the next screen's buttons. Returns true when signed in.
+Future<bool> signInWithFeedback(BuildContext context, {bool announceSuccess = false}) async {
   final messenger = ScaffoldMessenger.of(context);
   final state = AppScope.read(context);
-  String message;
+  String? message;
   var ok = false;
   try {
     ok = await state.signIn();
-    message = ok ? 'Signed in. Your progress is saved to your account.' : 'Sign-in cancelled.';
+    if (!ok) {
+      message = 'Sign-in cancelled.';
+    } else if (announceSuccess) {
+      message = 'Signed in. Your progress is saved to your account.';
+    }
   } on AccountException catch (e) {
     message = e.message;
   }
-  messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)));
+  if (message != null) {
+    messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)));
+  }
   return ok;
 }
 
@@ -78,7 +86,7 @@ class _AccountCardState extends State<AccountCard> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                 ),
-                onPressed: _busy ? null : () => _run(() => signInWithFeedback(context)),
+                onPressed: _busy ? null : () => _run(() => signInWithFeedback(context, announceSuccess: true)),
                 icon: _busy
                     ? const SizedBox.square(
                         dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))

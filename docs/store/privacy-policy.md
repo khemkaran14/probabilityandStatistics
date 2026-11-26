@@ -2,14 +2,14 @@
 
 **Developer:** Divyrs
 **App:** Chance: Probability & Stats (Android package `com.divyrs.chance`)
-**Effective date:** 26 November 2026
+**Effective date:** 27 November 2026
 
 This Privacy Policy explains what information the Chance: Probability &
 Stats app ("Chance", "the app") collects, how it is used, and the choices
 you have. Chance is developed by Divyrs ("we", "us"). By using the app, you
 agree to this policy.
 
-**In short:** to use Chance you create a free account with Google and verify
+**In short:** to use Chance you create a free account with Google and add
 your mobile number. We use your details to run your account, save your
 progress and, only if you agree, to send you offers and updates. We never
 sell your data, the app has no ads and no tracking, and you can delete your
@@ -20,9 +20,10 @@ account at any time.
 **When you create your account**
 - **Name, email address and profile photo** from your Google account (when
   you choose "Continue with Google").
-- **Mobile number**, which we verify by sending a one-time code (OTP) by SMS.
+- **Mobile number** you enter. We may verify it by sending a one-time code
+  (OTP) by SMS.
 - **Profile photo** you choose to upload instead of your Google photo
-  (optional).
+  (optional, where the app offers it).
 - **Your choice about offers**: whether you agreed to receive offers and
   updates, and when you agreed or withdrew.
 
@@ -39,7 +40,8 @@ a photo you choose), advertising IDs or payment card details.
 ## 2. How we use your information
 
 - To create and secure your account and let you sign in on any phone.
-- To verify that your mobile number is yours.
+- To check that your mobile number is valid and, where offered, verify by
+  SMS that it is yours.
 - To save your progress and restore it on a new or reinstalled phone.
 - To show your name and photo in the app.
 - To answer your support requests.

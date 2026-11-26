@@ -140,6 +140,15 @@ class _FirebaseAccountService implements AccountService {
   @override
   bool get supported => true;
 
+  /// SMS verification and photo uploads need Firebase's paid Blaze plan, so
+  /// they are switched on per build: `--dart-define=FIREBASE_PHONE_OTP=true`
+  /// and `--dart-define=FIREBASE_PHOTO_UPLOAD=true`.
+  @override
+  bool get verifiesPhone => const bool.fromEnvironment('FIREBASE_PHONE_OTP');
+
+  @override
+  bool get canUploadPhoto => const bool.fromEnvironment('FIREBASE_PHOTO_UPLOAD');
+
   @override
   AccountUser? get user {
     final u = _auth.currentUser;

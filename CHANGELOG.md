@@ -15,8 +15,14 @@
 - `tool/export_users.py`: CSV of users who agreed to offers (or `--all`)
 - Privacy policy rewritten for accounts, phone, photo and offers consent;
   `tool/make_privacy.py` builds `web/privacy.html` from it
+- **Free-plan mode by default:** the mobile number is typed (format
+  checked, saved as unverified) and the Google photo is used; SMS
+  verification and photo upload switch on with the `FIREBASE_PHONE_OTP` and
+  `FIREBASE_PHOTO_UPLOAD` build variables after upgrading Firebase to Blaze
+- No "Signed in" message after the required sign-in: it covered the
+  profile screen's button
 - Builds without Firebase still work without sign-in
-- 242 tests
+- 246 tests
 
 - Package ID changed to `com.divyrs.chance` (Android and iOS) before the
   first Play upload

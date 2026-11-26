@@ -2,102 +2,76 @@
 
 The app's accounts use **Firebase** (Google's backend). Until you do the
 steps below, builds have **no sign-in at all** and work as before. Once the
-5 GitHub variables in step 7 are set, every new build **requires** users to:
+5 GitHub variables in step 6 are set, every new build **requires** users to:
 
 1. sign in with Google (name, email and photo come from their Google account),
-2. verify their mobile number with an SMS code (OTP),
-3. optionally change their photo and tick "Send me offers and updates".
+2. complete a short profile: name, **mobile number**, and an unticked
+   "Send me offers and updates" box,
 
-Their profile and progress are saved in Firebase, where you can see them
-(step 10). Setup takes about 45 minutes.
+and saves their profile and progress in Firebase, where you can see them
+(step 9).
 
-**First do the signing-key step in [REMAINING.md](REMAINING.md) (step 4).**
-Google only lets sign-in and SMS verification work from apps signed with a
-key you've registered.
+**Start on the free Spark plan.** On it, users type their mobile number
+(checked for a valid format, not verified by SMS) and the Google account
+photo is used. When you grow, [upgrade to Blaze](#upgrade-to-blaze-later)
+to switch on **SMS-verified numbers** and **photo upload** with two
+variables, no code change.
+
+Setup takes about 30 minutes. **First do the signing-key step in
+[REMAINING.md](REMAINING.md) (step 4):** Google sign-in only works from apps
+signed with a key you've registered.
 
 ## 1. Create the Firebase project (5 min)
 
 1. Go to <https://console.firebase.google.com> and sign in with the Google
-   account you want to own the data (use your Divyrs account, not a
-   personal one).
+   account that should own the data (your Divyrs account, not a personal
+   one).
 2. **Create a project** → name it `chance` → turn **off** Google Analytics
-   (the app doesn't use it) → **Create project**.
+   → **Create project**. You stay on the free **Spark** plan; no card needed.
 
-## 2. Switch to the Blaze plan (5 min)
-
-SMS codes and photo uploads need Firebase's pay-as-you-go **Blaze** plan.
-Small apps mostly stay inside the free allowance; **you pay for SMS**
-(roughly ₹1 per code in India, see Firebase pricing) and for storage only
-beyond the free limits.
-
-1. Bottom-left **Spark plan → Upgrade** → **Blaze** → add a billing account
-   (card).
-2. Set a **budget alert**: Google Cloud console → **Billing → Budgets &
-   alerts** → e.g. ₹500/month, so you get an email before costs grow.
-
-## 3. Turn on Google and phone sign-in (5 min)
+## 2. Turn on Google sign-in (3 min)
 
 1. Left menu → **Build → Authentication** → **Get started**.
 2. **Sign-in method** tab → **Google** → **Enable** → pick your **support
-   email** (this email is shown on Google's sign-in screen, so use your
-   Divyrs email) → **Save**.
+   email** (shown on Google's sign-in screen, so use your Divyrs email) →
+   **Save**.
 3. Open **Google** again → expand **Web SDK configuration** → copy the
-   **Web client ID** (ends in `.apps.googleusercontent.com`). Keep it for
-   step 7.
-4. **Add new provider → Phone → Enable → Save**.
-5. Still on **Phone**, open **Phone numbers for testing** and add a test
-   number, e.g. `+91 99999 00000` with code `123456`. It never sends a real
-   SMS. You'll give it to Google's app reviewers (step 9) and can use it
-   yourself while testing.
-6. **Settings** tab → **SMS region policy** → **Allow** only the countries
-   you serve (e.g. India). This blocks SMS fraud to expensive countries.
+   **Web client ID** (ends in `.apps.googleusercontent.com`) for step 6.
 
-## 4. Create the database (3 min)
+## 3. Create the database (3 min)
 
 1. **Build → Firestore Database → Create database**.
 2. Location: **asia-south1 (Mumbai)** (can't be changed later) → **Start in
    production mode** → **Create**.
 3. **Rules** tab → replace everything with
    [`firestore.rules`](../firestore.rules) from this repository →
-   **Publish**. Each user can only read and write their own record, and a
-   phone number can only be saved after it was verified.
+   **Publish**. Each user can only read and write their own record.
 
-## 5. Create photo storage (3 min)
-
-1. **Build → Storage → Get started** → same location (asia-south1) →
-   **production mode** → **Done**.
-2. **Rules** tab → replace everything with
-   [`storage.rules`](../storage.rules) → **Publish**. Each user can only
-   upload their own photo (images under 2 MB).
-3. At the top of the **Files** tab you'll see the bucket name, e.g.
-   `gs://chance-12345.firebasestorage.app`. Copy the part after `gs://` for
-   step 7.
-
-## 6. Register the Android app (10 min)
+## 4. Register the Android app (10 min)
 
 1. ⚙ **Project settings → Your apps → Android** icon.
 2. **Package name:** `com.divyrs.chance` (exactly). Nickname: `Chance`.
-3. **SHA-1 and SHA-256** of your upload key. On your Mac run:
+3. **SHA-1** of your upload key. On your Mac:
    ```
    keytool -list -v -keystore ~/upload-keystore.jks -alias upload
    ```
-   Add the `SHA1:` value, then after registering use **Add fingerprint** to
-   add the `SHA256:` value too. (SMS verification needs SHA-256.)
+   Copy the `SHA1:` value. After registering, use **Add fingerprint** to add
+   the `SHA256:` value too (needed later for SMS).
 4. **Register app** → download `google-services.json` (don't add it to the
-   project, you only need values from it) → skip the rest of the wizard.
-5. **Play's app signing key:** Play Console → **Test and release → Setup →
-   App signing** → copy the **SHA-1** and **SHA-256** of the *App signing
-   key certificate* → add both in Firebase (**Add fingerprint**). Without
-   these, sign-in and SMS fail in the version downloaded from Play.
-6. Google Cloud console (<https://console.cloud.google.com>, same project)
-   → **APIs & Services → Library** → enable **Play Integrity API** (Firebase
-   uses it to stop fake SMS requests).
+   project; you only need values from it) → skip the rest of the wizard.
 
-## 7. Give the values to GitHub (5 min)
+## 5. Add Play's signing key (5 min)
 
-Open `google-services.json` in a text editor. In GitHub → repository →
+Play re-signs your app, so sign-in in the Play version needs Play's key too:
+Play Console → **Test and release → Setup → App signing** → copy the
+**SHA-1** and **SHA-256** of the *App signing key certificate* → Firebase →
+**Project settings → Your apps → Add fingerprint** (add both).
+
+## 6. Give the values to GitHub (5 min)
+
+Open `google-services.json` in a text editor. GitHub → repository →
 **Settings → Secrets and variables → Actions → Variables** tab → **New
-repository variable**, add:
+repository variable**:
 
 | Variable name | Where to find it |
 |---|---|
@@ -105,82 +79,109 @@ repository variable**, add:
 | `FIREBASE_PROJECT_ID` | `"project_id"` |
 | `FIREBASE_SENDER_ID` | `"project_number"` |
 | `FIREBASE_ANDROID_APP_ID` | `"mobilesdk_app_id"` (`1:1234…:android:…`) |
-| `GOOGLE_WEB_CLIENT_ID` | the Web client ID from step 3.3 |
-| `FIREBASE_STORAGE_BUCKET` | the bucket from step 5.3 (e.g. `chance-12345.firebasestorage.app`) |
+| `GOOGLE_WEB_CLIENT_ID` | the Web client ID from step 2.3 |
 
-These identify your project; they aren't passwords (the rules in steps 4–5
+These identify your project; they aren't passwords (the rules in step 3
 keep the data safe), so variables are fine.
 
 Then **Actions → latest run → Re-run all jobs**. The new APK and app bundle
 require sign-in.
 
-## 8. Check it works (on your phone)
+## 7. Check it works (on your phone)
 
 1. Install the new `chance-apk` from the CI run.
 2. After the welcome pages: **Continue with Google** → pick your account.
-3. **Complete your profile**: enter your mobile → **Send code** → type the
-   SMS code → **Verify** → optionally **Add a photo** and tick the offers
-   box → **Start learning**.
-4. Firebase → **Authentication → Users** shows you with email and phone;
-   **Firestore Database → Data → users** shows your profile and progress;
-   **Storage** shows your photo.
+3. **Complete your profile**: check your name, type your mobile number,
+   optionally tick the offers box → **Start learning**.
+4. Firebase → **Authentication → Users** shows you; **Firestore Database →
+   Data → users** shows your profile and progress.
 5. Uninstall, reinstall, sign in again: you go straight in with your
    progress.
 
-**Problems?**
-
 | What you see | Fix |
 |---|---|
-| "Sign-in cancelled" right after picking an account | SHA-1 missing/wrong (step 6.3/6.5) or wrong Web client ID (step 3.3) |
-| "Couldn't verify the number (app-not-authorized / missing-client-identifier)" | SHA-256 missing (step 6.3/6.5) or Play Integrity API off (step 6.6) |
-| "Couldn't verify the number (billing-not-enabled)" | Blaze plan not active (step 2) |
-| "Couldn't save your profile (permission-denied)" | Rules not published (step 4.3) |
-| "Couldn't upload the photo" | Storage not created, rules not published (step 5), or wrong `FIREBASE_STORAGE_BUCKET` |
+| "Sign-in cancelled" right after picking an account | SHA-1 missing or wrong (steps 4.3 and 5), or wrong Web client ID (step 2.3) |
+| "Couldn't save your profile (permission-denied)" | Rules not published (step 3.3) |
 
-## 9. Update Play Console before publishing this build
-
-Sign-in is now required, so Google needs to know:
+## 8. Update Play Console before publishing this build
 
 1. **App content → App access** → **All or some functionality is
-   restricted** → **Add instructions**:
-   - Name: `Reviewer login`
-   - Instructions: "Tap Continue with Google and use any Google account.
-     On 'Complete your profile' enter the mobile number 9999900000 and the
-     code 123456 (a Firebase test number; no SMS is sent)."
-   (Use your own test number from step 3.5.)
+   restricted** → **Add instructions**: "Tap Continue with Google and sign
+   in with any Google account. On 'Complete your profile' enter any valid
+   10-digit mobile number, e.g. 9999900000."
 2. **App content → Data safety** → **Yes**, the app collects data:
 
    | Data type | Collected | Shared | Optional? | Purposes |
    |---|---|---|---|---|
    | Personal info → **Name** | Yes | No | Required | App functionality, Account management |
-   | Personal info → **Email address** | Yes | No | Required | App functionality, Account management, Developer communications (only if opted in) |
-   | Personal info → **Phone number** | Yes | No | Required | App functionality, Account management, Developer communications (only if opted in) |
-   | Photos and videos → **Photos** | Yes | No | Optional | App functionality |
+   | Personal info → **Email address** | Yes | No | Required | App functionality, Account management, Developer communications |
+   | Personal info → **Phone number** | Yes | No | Required | App functionality, Account management, Developer communications |
    | App activity → **App interactions** | Yes | No | Required | App functionality |
 
-   - Encrypted in transit: **Yes**
-   - Users can request deletion: **Yes**
+   (Add Photos → **Photos**, optional, App functionality, once photo upload
+   is switched on.)
+   - Encrypted in transit: **Yes**. Users can request deletion: **Yes**.
    - Account creation: **"My app allows users to create an account"** →
-     method **OAuth (Google)** and **phone number**.
+     **OAuth (Google)**.
    - **Delete account URL:** `https://divyrs.com/chance/privacy#delete-account`
-3. **Privacy policy:** publish the updated text from
+3. **Privacy policy:** publish the text from
    [`docs/store/privacy-policy.md`](store/privacy-policy.md) on your site
-   first (it now covers accounts, phone, photo and offers).
+   first (replace `YOUR_PUBLIC_EMAIL`).
 4. **Store listing:** mention that a free account is needed (see
    `docs/store/listing.md`).
 
-## 10. Seeing your users (admin)
+## 9. Seeing your users (admin)
 
 - **Quick look:** Firebase console → **Authentication → Users** (email,
-  phone, sign-up date) and **Firestore Database → Data → users → (user)**
-  → `profile` (name, phone, photo, offers consent) and `progress`.
+  sign-up date) and **Firestore Database → Data → users → (user)** →
+  `profile` (name, phone, whether it's verified, offers consent) and
+  `progress`.
 - **Spreadsheet export:** run [`tool/export_users.py`](../tool/export_users.py)
   on your Mac (instructions at the top of the file). By default it exports
-  **only users who ticked "Send me offers"**, with the time they agreed.
+  **only users who ticked "Send me offers"**, with the time they agreed and
+  whether their number was SMS-verified.
 
 **Use the contact details responsibly:** only send offers to users who
 opted in (India's DPDP Act and Google Play policy require consent), include
 a way to stop messages, and honour deletion requests within 30 days.
+Numbers typed on the free plan aren't verified, so some may be wrong.
+
+## Upgrade to Blaze later
+
+When you want **SMS-verified mobile numbers** and **photo upload**:
+
+1. **Blaze plan:** Firebase console → bottom-left **Spark → Upgrade →
+   Blaze** → add a billing account. Then Google Cloud console → **Billing →
+   Budgets & alerts** → set e.g. ₹500/month. Blaze keeps the free
+   allowances; you mainly pay per SMS (roughly ₹1 per code in India).
+2. **Phone sign-in:** **Authentication → Sign-in method → Add new provider
+   → Phone → Enable**. Under **Phone numbers for testing** add e.g.
+   `+91 99999 00000` with code `123456` (for Google's reviewers). In
+   **Settings → SMS region policy**, allow only the countries you serve.
+3. **Play Integrity:** Google Cloud console → **APIs & Services → Library →
+   Play Integrity API → Enable**. Make sure both **SHA-256** fingerprints
+   are in Firebase (steps 4.3 and 5).
+4. **Photo storage:** **Build → Storage → Get started** → asia-south1 →
+   production mode. **Rules** tab → paste [`storage.rules`](../storage.rules)
+   → **Publish**. Copy the bucket name from the **Files** tab (after
+   `gs://`, e.g. `chance-12345.firebasestorage.app`).
+5. **GitHub variables:** add
+   - `FIREBASE_PHONE_OTP` = `true`
+   - `FIREBASE_PHOTO_UPLOAD` = `true`
+   - `FIREBASE_STORAGE_BUCKET` = the bucket name from step 4
+
+   then re-run CI and publish the new build.
+6. **Play Console:** App access instructions → use the test number
+   `9999900000` and code `123456`; Data safety → add **Photos** (optional).
+
+Existing users keep their typed numbers (marked unverified). New sign-ups,
+and anyone who changes their number, verify it by SMS.
+
+| Problem after upgrading | Fix |
+|---|---|
+| "Couldn't verify the number (app-not-authorized / missing-client-identifier)" | SHA-256 missing or Play Integrity API off (step 3) |
+| "Couldn't verify the number (billing-not-enabled)" | Blaze plan not active (step 1) |
+| "Couldn't upload the photo" | Storage not created, rules not published, or wrong `FIREBASE_STORAGE_BUCKET` (steps 4–5) |
 
 ## Building on your Mac (optional)
 
@@ -201,5 +202,5 @@ add `FIREBASE_IOS_APP_ID` and `GOOGLE_IOS_CLIENT_ID` (from
 `GoogleService-Info.plist`: `GOOGLE_APP_ID` and `CLIENT_ID`) to your build
 settings. In Xcode, add a URL type with the `REVERSED_CLIENT_ID` value
 ([google_sign_in iOS guide](https://pub.dev/packages/google_sign_in_ios#ios-integration)),
-enable Push Notifications + Background Modes for phone auth, and add
-"Sign in with Apple" (Apple requires it when Google sign-in is offered).
+and add "Sign in with Apple" (Apple requires it when Google sign-in is
+offered).

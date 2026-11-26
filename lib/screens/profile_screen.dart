@@ -135,6 +135,9 @@ class ProfileForm extends StatefulWidget {
 
 class _ProfileFormState extends State<ProfileForm> {
   late final TextEditingController _name;
+
+  /// The typed mobile number, when SMS verification is off.
+  late final TextEditingController _phoneText;
   String? _photoUrl;
   bool _optIn = false;
   bool _saving = false;
@@ -146,6 +149,8 @@ class _ProfileFormState extends State<ProfileForm> {
     super.initState();
     final draft = AppScope.read(context).draftProfile;
     _name = TextEditingController(text: draft.name);
+    final saved = draft.phone ?? '';
+    _phoneText = TextEditingController(text: saved.startsWith('+91') ? saved.substring(3) : saved);
     _photoUrl = draft.photoUrl;
     _optIn = draft.marketingOptIn;
   }
@@ -153,6 +158,7 @@ class _ProfileFormState extends State<ProfileForm> {
   @override
   void dispose() {
     _name.dispose();
+    _phoneText.dispose();
     super.dispose();
   }
 
@@ -175,8 +181,12 @@ class _ProfileFormState extends State<ProfileForm> {
     final state = AppScope.read(context);
     setState(() => _saving = true);
     try {
-      await state
-          .saveProfile(state.draftProfile.copyWith(name: _name.text, photoUrl: _photoUrl, marketingOptIn: _optIn));
+      await state.saveProfile(state.draftProfile.copyWith(
+        name: _name.text,
+        phone: state.accounts.verifiesPhone ? null : _phoneText.text,
+        photoUrl: _photoUrl,
+        marketingOptIn: _optIn,
+      ));
       if (!widget.setup) _show('Profile saved.');
     } on AccountException catch (e) {
       _show(e.message);
@@ -188,8 +198,11 @@ class _ProfileFormState extends State<ProfileForm> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    final verifies = state.accounts.verifiesPhone;
     final phone = state.user?.phone;
-    final canSave = _name.text.trim().isNotEmpty && phone != null && !_saving && !_uploading;
+    final typedOk = normalizePhone(_phoneText.text) != null;
+    final phoneOk = verifies ? phone != null : typedOk;
+    final canSave = _name.text.trim().isNotEmpty && phoneOk && !_saving && !_uploading;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -199,14 +212,17 @@ class _ProfileFormState extends State<ProfileForm> {
             children: [
               UserAvatar(name: _name.text, photoUrl: _photoUrl, radius: 48),
               const SizedBox(height: 8),
-              TextButton.icon(
-                key: const ValueKey('change-photo'),
-                onPressed: _uploading ? null : _changePhoto,
-                icon: _uploading
-                    ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.photo_camera_rounded),
-                label: Text(_photoUrl == null ? 'Add a photo' : 'Change photo'),
-              ),
+              if (state.accounts.canUploadPhoto)
+                TextButton.icon(
+                  key: const ValueKey('change-photo'),
+                  onPressed: _uploading ? null : _changePhoto,
+                  icon: _uploading
+                      ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.photo_camera_rounded),
+                  label: Text(_photoUrl == null ? 'Add a photo' : 'Change photo'),
+                )
+              else
+                const Text('Photo from your Google account', style: TextStyle(color: AppColors.muted)),
             ],
           ),
         ),
@@ -225,7 +241,21 @@ class _ProfileFormState extends State<ProfileForm> {
           child: Text(state.user?.email ?? '', style: const TextStyle(color: AppColors.muted)),
         ),
         const SizedBox(height: 14),
-        if (phone != null && !_changingPhone)
+        if (!verifies)
+          TextField(
+            key: const ValueKey('phone-number'),
+            controller: _phoneText,
+            keyboardType: TextInputType.phone,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'Mobile number',
+              prefixText: '+91 ',
+              helperText: 'For other countries, start with + and the country code',
+              errorText: _phoneText.text.trim().isEmpty || typedOk ? null : 'Enter a valid 10-digit mobile number',
+              border: const OutlineInputBorder(),
+            ),
+          )
+        else if (phone != null && !_changingPhone)
           SoftCard(
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: ListTile(
@@ -257,11 +287,11 @@ class _ProfileFormState extends State<ProfileForm> {
           color: AppColors.green,
           onPressed: canSave ? _save : null,
         ),
-        if (phone == null)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
+        if (!phoneOk)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Verify your mobile number to continue.',
+              verifies ? 'Verify your mobile number to continue.' : 'Enter your mobile number to continue.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.muted),
             ),

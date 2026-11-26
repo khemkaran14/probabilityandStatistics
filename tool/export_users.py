@@ -24,7 +24,7 @@ try:
 except ImportError:
     sys.exit("Install the Firebase Admin SDK first: pip3 install firebase-admin")
 
-FIELDS = ["uid", "name", "email", "phone", "marketing_opt_in", "consent_at", "photo_url", "xp", "lessons_done", "updated_at"]
+FIELDS = ["uid", "name", "email", "phone", "phone_verified", "marketing_opt_in", "consent_at", "photo_url", "xp", "lessons_done", "updated_at"]
 
 
 def main():
@@ -52,6 +52,7 @@ def main():
             "name": profile.get("name", ""),
             "email": profile.get("email", ""),
             "phone": profile.get("phone", ""),
+            "phone_verified": "yes" if profile.get("phoneVerified") is True else "no",
             "marketing_opt_in": "yes" if opted_in else "no",
             "consent_at": profile.get("consentAt", ""),
             "photo_url": profile.get("photoUrl", ""),

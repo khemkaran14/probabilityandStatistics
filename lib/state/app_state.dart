@@ -318,7 +318,14 @@ class AppState extends ChangeNotifier {
   /// Google tells us.
   UserProfile get draftProfile {
     final u = user;
-    return profile ?? UserProfile(name: u?.name ?? '', email: u?.email, photoUrl: u?.photoUrl, phone: u?.phone);
+    return profile ??
+        UserProfile(
+          name: u?.name ?? '',
+          email: u?.email,
+          photoUrl: u?.photoUrl,
+          phone: u?.phone,
+          phoneVerified: u?.phone != null,
+        );
   }
 
   /// Signs in with Google and merges this phone's progress with the cloud
@@ -355,15 +362,26 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Saves the profile with the mobile number verified for this account.
-  /// Records when consent for offers was given or withdrawn.
+  /// Saves the profile with the account's mobile number. Records when
+  /// consent for offers was given or withdrawn.
   /// Throws [AccountException].
   Future<void> saveProfile(UserProfile next) async {
     final consentChanged = next.marketingOptIn != (profile?.marketingOptIn ?? false) || profile == null;
+    // With SMS verification the phone is the one verified for this account;
+    // without it, the number the learner typed, checked for a valid format.
+    final verified = user?.phone;
+    final String? phone;
+    if (accounts.verifiesPhone) {
+      phone = verified;
+    } else {
+      phone = next.phone == null ? null : normalizePhone(next.phone!);
+      if (phone == null) throw const AccountException('Enter a valid 10-digit mobile number.');
+    }
     final saved = UserProfile(
       name: next.name.trim(),
       email: user?.email ?? next.email,
-      phone: user?.phone,
+      phone: phone,
+      phoneVerified: phone != null && phone == verified,
       photoUrl: next.photoUrl,
       marketingOptIn: next.marketingOptIn,
       consentAt: consentChanged ? clock().toUtc().toIso8601String() : next.consentAt,

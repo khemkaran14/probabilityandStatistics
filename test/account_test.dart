@@ -175,8 +175,8 @@ void main() {
     test('a profile cannot be saved with an unverified number', () async {
       final s = makeState(accounts: FakeAccountService(nextUser: _me));
       await s.signIn();
-      await expectLater(s.saveProfile(const UserProfile(name: 'Asha')), completes);
-      expect(s.profile!.phone, isNull, reason: 'the phone always comes from verification');
+      await expectLater(s.saveProfile(const UserProfile(name: 'Asha')), throwsA(isA<AccountException>()));
+      expect(s.profile, isNull, reason: 'the phone always comes from verification');
       expect(s.needsProfile, isTrue);
     });
 
@@ -209,6 +209,37 @@ void main() {
       expect(again.profile?.name, 'Asha', reason: 'no flash of the setup screen on launch');
       await again.signOut();
       expect((again.profile, again.needsSignIn), (null, true));
+    });
+  });
+
+  group('free plan (no SMS verification)', () {
+    test('the typed number is saved, marked unverified', () async {
+      final accounts = FakeAccountService(nextUser: _me, verifiesPhone: false, canUploadPhoto: false);
+      final s = makeState(accounts: accounts);
+      await s.signIn();
+      await s.saveProfile(s.draftProfile.copyWith(name: 'Asha', phone: '98765 43210'));
+      expect(s.needsProfile, isFalse);
+      final saved = accounts.profiles['u1']!;
+      expect((saved.phone, saved.phoneVerified), ('+919876543210', false));
+    });
+
+    test('an invalid number is refused', () async {
+      final s = makeState(accounts: FakeAccountService(nextUser: _me, verifiesPhone: false));
+      await s.signIn();
+      await expectLater(
+        s.saveProfile(s.draftProfile.copyWith(name: 'Asha', phone: '12345')),
+        throwsA(isA<AccountException>()),
+      );
+      expect(s.needsProfile, isTrue);
+    });
+
+    test('with SMS verification on, a verified number is marked verified', () async {
+      final accounts = FakeAccountService(nextUser: _me);
+      final s = makeState(accounts: accounts);
+      await s.signIn();
+      await s.confirmPhoneCode((await s.sendPhoneCode('9876543210'))!, FakeAccountService.smsCode);
+      await s.saveProfile(s.draftProfile.copyWith(name: 'Asha'));
+      expect(accounts.profiles['u1']!.phoneVerified, isTrue);
     });
   });
 }

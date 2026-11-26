@@ -3,11 +3,12 @@ rules_version = '2';
 // Chance: each learner can read and write only their own document,
 // users/{uid} = {
 //   progress: { key: string, ... },
-//   profile:  { name, email, phone, photoUrl, marketingOptIn, consentAt },
+//   profile:  { name, email, phone, phoneVerified, photoUrl, marketingOptIn, consentAt },
 //   updatedAt: timestamp
 // }
-// The phone and email in the profile must be the ones Firebase verified for
-// the signed-in user, so nobody can save a number they don't own.
+// The email must be the one Google verified. A phone marked phoneVerified
+// must be the one Firebase verified by SMS; otherwise (free plan, no SMS)
+// it must at least look like an international mobile number.
 // Paste this into Firebase console → Firestore Database → Rules → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -17,9 +18,11 @@ service cloud.firestore {
 
     function validProfile(p) {
       return p is map
-        && p.keys().hasOnly(['name', 'email', 'phone', 'photoUrl', 'marketingOptIn', 'consentAt'])
+        && p.keys().hasOnly(['name', 'email', 'phone', 'phoneVerified', 'photoUrl', 'marketingOptIn', 'consentAt'])
         && p.name is string && p.name.size() <= 60
-        && (p.phone == null || p.phone == request.auth.token.get('phone_number', ''))
+        && (p.phone == null
+            || (p.get('phoneVerified', false) == true && p.phone == request.auth.token.get('phone_number', ''))
+            || (p.get('phoneVerified', false) == false && p.phone is string && p.phone.matches('[+][1-9][0-9]{7,14}')))
         && (p.email == null || p.email == request.auth.token.get('email', ''))
         && (p.photoUrl == null || (p.photoUrl is string && p.photoUrl.size() <= 1000))
         && p.marketingOptIn is bool
