@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.1
+
+- Fix: buying the unlock could spin forever. Google Play reports some
+  failures (e.g. an app not installed from Play) without a product id, and
+  those were ignored; a store error while starting the purchase also left
+  the button spinning. Both now end with a clear message.
+- "Purchase cancelled" instead of "No purchase found to restore" when a
+  purchase is cancelled
+- 248 tests
+
 ## 1.6.0
 
 - **Accounts required** (when Firebase is configured): after the welcome

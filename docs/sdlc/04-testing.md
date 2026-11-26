@@ -1,6 +1,6 @@
 # 4. Quality Assurance & Testing
 
-## Automated tests (`flutter test`, 246 tests)
+## Automated tests (`flutter test`, 248 tests)
 
 | Level | File | Covers |
 |---|---|---|

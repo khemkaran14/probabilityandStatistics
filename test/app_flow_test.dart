@@ -103,6 +103,34 @@ void main() {
     expect(find.textContaining('Central Limit Theorem ·'), findsOneWidget);
   });
 
+  for (final (name, purchases) in [
+    ('fails', () => FakePurchaseService(buyOutcome: PurchaseOutcome.failed)),
+    ('crashes', () => FakePurchaseService(buyThrows: true)),
+  ]) {
+    testWidgets('a purchase that $name stops loading and explains why', (tester) async {
+      final state = makeState(purchases: purchases());
+      await pumpApp(tester, state);
+      final chapter = find.text('The big theorems');
+      await tester.scrollUntilVisible(chapter, 300, scrollable: find.byType(Scrollable).first);
+      await tester.ensureVisible(chapter);
+      await tester.pumpAndSettle();
+      await tester.tap(chapter);
+      await tester.pumpAndSettle();
+      final lesson = find.text('Central Limit Theorem');
+      await tester.ensureVisible(lesson);
+      await tester.pumpAndSettle();
+      await tester.tap(lesson);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Unlock everything'));
+      await tester.pumpAndSettle();
+      expect(state.premium, isFalse);
+      expect(find.textContaining("didn't go through"), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Unlock all of Chance'), findsOneWidget, reason: 'the paywall stays open to try again');
+    });
+  }
+
   testWidgets('daily challenge pays once a day', (tester) async {
     final state = makeState();
     await pumpApp(tester, state);

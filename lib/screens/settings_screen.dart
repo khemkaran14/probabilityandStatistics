@@ -8,7 +8,7 @@ import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/account_card.dart';
 import 'package:chance/widgets/common.dart';
 
-const String kAppVersion = '1.6.0';
+const String kAppVersion = '1.6.1';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';

@@ -27,9 +27,15 @@ abstract class PurchaseService {
 /// Store stand-in for tests, web and the DartPad preview. Every purchase
 /// succeeds instantly so the unlocked flow can be tried.
 class FakePurchaseService implements PurchaseService {
-  FakePurchaseService({this.available = true});
+  FakePurchaseService({this.available = true, this.buyOutcome = PurchaseOutcome.purchased, this.buyThrows = false});
 
   final bool available;
+
+  /// What [buy] reports (tests can simulate a failed or cancelled purchase).
+  final PurchaseOutcome buyOutcome;
+
+  /// Makes [buy] throw, like a store plugin error.
+  final bool buyThrows;
   void Function(bool premium)? _onPremium;
 
   @override
@@ -41,8 +47,9 @@ class FakePurchaseService implements PurchaseService {
   @override
   Future<PurchaseOutcome> buy() async {
     if (!available) return PurchaseOutcome.unavailable;
-    _onPremium?.call(true);
-    return PurchaseOutcome.purchased;
+    if (buyThrows) throw StateError('store error');
+    if (buyOutcome == PurchaseOutcome.purchased) _onPremium?.call(true);
+    return buyOutcome;
   }
 
   @override

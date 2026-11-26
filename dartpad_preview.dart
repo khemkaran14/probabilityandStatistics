@@ -18587,17 +18587,24 @@ class _PaywallScreenState extends State<PaywallScreen> {
     });
   }
 
-  Future<void> _run(Future<PurchaseOutcome> Function() action) async {
+  Future<void> _run(Future<PurchaseOutcome> Function() action, {required bool restoring}) async {
     setState(() => _busy = true);
-    final outcome = await action();
+    PurchaseOutcome outcome;
+    try {
+      outcome = await action();
+    } on Object {
+      // Never leave the button spinning, whatever the store does.
+      outcome = PurchaseOutcome.failed;
+    }
     if (!mounted) return;
     setState(() => _busy = false);
     final message = switch (outcome) {
       PurchaseOutcome.purchased => 'Unlocked! Thank you for supporting Chance.',
       PurchaseOutcome.restored => 'Purchase restored. Everything is unlocked.',
       PurchaseOutcome.pending => 'Payment pending. Lessons unlock as soon as it clears.',
-      PurchaseOutcome.cancelled => 'No purchase found to restore.',
-      PurchaseOutcome.failed => 'Something went wrong. Please try again.',
+      PurchaseOutcome.cancelled => restoring ? 'No purchase found to restore.' : 'Purchase cancelled.',
+      PurchaseOutcome.failed => 'The purchase didn\'t go through. Please try again. '
+          'Purchases only work in the app installed from Google Play.',
       PurchaseOutcome.unavailable => 'The store isn\'t available on this device.',
     };
     ScaffoldMessenger.of(context).showSnackBar(
@@ -18676,11 +18683,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           : 'Store unavailable',
                   color: AppColors.violet,
                   icon: Icons.lock_open_rounded,
-                  onPressed: _busy || !_available ? null : () => _run(state.buyPremium),
+                  onPressed: _busy || !_available ? null : () => _run(state.buyPremium, restoring: false),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: _busy ? null : () => _run(state.restorePurchases),
+                  onPressed: _busy ? null : () => _run(state.restorePurchases, restoring: true),
                   child: const Text('Restore purchase'),
                 ),
               ],
@@ -19900,7 +19907,7 @@ class _OptionTile extends StatelessWidget {
 }
 
 // ===== lib/screens/settings_screen.dart =====
-const String kAppVersion = '1.6.0';
+const String kAppVersion = '1.6.1';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';
@@ -20630,9 +20637,15 @@ abstract class PurchaseService {
 /// Store stand-in for tests, web and the DartPad preview. Every purchase
 /// succeeds instantly so the unlocked flow can be tried.
 class FakePurchaseService implements PurchaseService {
-  FakePurchaseService({this.available = true});
+  FakePurchaseService({this.available = true, this.buyOutcome = PurchaseOutcome.purchased, this.buyThrows = false});
 
   final bool available;
+
+  /// What [buy] reports (tests can simulate a failed or cancelled purchase).
+  final PurchaseOutcome buyOutcome;
+
+  /// Makes [buy] throw, like a store plugin error.
+  final bool buyThrows;
   void Function(bool premium)? _onPremium;
 
   @override
@@ -20644,8 +20657,9 @@ class FakePurchaseService implements PurchaseService {
   @override
   Future<PurchaseOutcome> buy() async {
     if (!available) return PurchaseOutcome.unavailable;
-    _onPremium?.call(true);
-    return PurchaseOutcome.purchased;
+    if (buyThrows) throw StateError('store error');
+    if (buyOutcome == PurchaseOutcome.purchased) _onPremium?.call(true);
+    return buyOutcome;
   }
 
   @override

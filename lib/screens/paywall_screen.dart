@@ -41,17 +41,24 @@ class _PaywallScreenState extends State<PaywallScreen> {
     });
   }
 
-  Future<void> _run(Future<PurchaseOutcome> Function() action) async {
+  Future<void> _run(Future<PurchaseOutcome> Function() action, {required bool restoring}) async {
     setState(() => _busy = true);
-    final outcome = await action();
+    PurchaseOutcome outcome;
+    try {
+      outcome = await action();
+    } on Object {
+      // Never leave the button spinning, whatever the store does.
+      outcome = PurchaseOutcome.failed;
+    }
     if (!mounted) return;
     setState(() => _busy = false);
     final message = switch (outcome) {
       PurchaseOutcome.purchased => 'Unlocked! Thank you for supporting Chance.',
       PurchaseOutcome.restored => 'Purchase restored. Everything is unlocked.',
       PurchaseOutcome.pending => 'Payment pending. Lessons unlock as soon as it clears.',
-      PurchaseOutcome.cancelled => 'No purchase found to restore.',
-      PurchaseOutcome.failed => 'Something went wrong. Please try again.',
+      PurchaseOutcome.cancelled => restoring ? 'No purchase found to restore.' : 'Purchase cancelled.',
+      PurchaseOutcome.failed => 'The purchase didn\'t go through. Please try again. '
+          'Purchases only work in the app installed from Google Play.',
       PurchaseOutcome.unavailable => 'The store isn\'t available on this device.',
     };
     ScaffoldMessenger.of(context).showSnackBar(
@@ -130,11 +137,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           : 'Store unavailable',
                   color: AppColors.violet,
                   icon: Icons.lock_open_rounded,
-                  onPressed: _busy || !_available ? null : () => _run(state.buyPremium),
+                  onPressed: _busy || !_available ? null : () => _run(state.buyPremium, restoring: false),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: _busy ? null : () => _run(state.restorePurchases),
+                  onPressed: _busy ? null : () => _run(state.restorePurchases, restoring: true),
                   child: const Text('Restore purchase'),
                 ),
               ],

@@ -493,10 +493,16 @@ class StorePurchaseService implements PurchaseService {
   Future<PurchaseOutcome> buy() async {
     final product = await _loadProduct();
     if (product == null) return PurchaseOutcome.unavailable;
-    _pending = Completer<PurchaseOutcome>();
-    final started = await _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product));
-    if (!started) _finish(PurchaseOutcome.failed);
-    return _pending!.future;
+    final pending = _pending = Completer<PurchaseOutcome>();
+    try {
+      final started = await _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product));
+      if (!started) _finish(PurchaseOutcome.failed);
+    } on Object catch (e) {
+      // e.g. billing unavailable, or the item is already owned.
+      debugPrint('Purchase not started: $e');
+      _finish(PurchaseOutcome.failed);
+    }
+    return pending.future;
   }
 
   @override
@@ -511,7 +517,11 @@ class StorePurchaseService implements PurchaseService {
 
   Future<void> _onUpdates(List<PurchaseDetails> updates) async {
     for (final p in updates) {
-      if (p.productID != kPremiumProductId) continue;
+      // Play reports some failures (e.g. "this version of the app is not
+      // configured for billing") with an empty product id: they still end
+      // the purchase in progress.
+      if (p.productID.isNotEmpty && p.productID != kPremiumProductId) continue;
+      if (p.error != null) debugPrint('Purchase update: ${p.status} ${p.error}');
       switch (p.status) {
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
