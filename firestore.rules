@@ -1,17 +1,38 @@
 rules_version = '2';
 
-// Chance: each learner can read and write only their own progress document,
-// users/{uid} = { progress: { key: string, ... }, updatedAt: timestamp }.
+// Chance: each learner can read and write only their own document,
+// users/{uid} = {
+//   progress: { key: string, ... },
+//   profile:  { name, email, phone, photoUrl, marketingOptIn, consentAt },
+//   updatedAt: timestamp
+// }
+// The phone and email in the profile must be the ones Firebase verified for
+// the signed-in user, so nobody can save a number they don't own.
 // Paste this into Firebase console → Firestore Database → Rules → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validProfile(p) {
+      return p is map
+        && p.keys().hasOnly(['name', 'email', 'phone', 'photoUrl', 'marketingOptIn', 'consentAt'])
+        && p.name is string && p.name.size() <= 60
+        && (p.phone == null || p.phone == request.auth.token.get('phone_number', ''))
+        && (p.email == null || p.email == request.auth.token.get('email', ''))
+        && (p.photoUrl == null || (p.photoUrl is string && p.photoUrl.size() <= 1000))
+        && p.marketingOptIn is bool
+        && (p.consentAt == null || p.consentAt is string);
+    }
+
     match /users/{uid} {
-      allow read, delete: if request.auth != null && request.auth.uid == uid;
-      allow create, update: if request.auth != null
-        && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['progress', 'updatedAt'])
-        && request.resource.data.progress is map
-        && request.resource.data.progress.size() <= 20;
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['progress', 'profile', 'updatedAt'])
+        && (!('progress' in request.resource.data)
+            || (request.resource.data.progress is map && request.resource.data.progress.size() <= 20))
+        && (!('profile' in request.resource.data) || validProfile(request.resource.data.profile));
     }
     // Everything else is closed.
     match /{document=**} {

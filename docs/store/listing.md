@@ -65,12 +65,12 @@ PRIVATE
 Your progress stays on your device. No ads, no tracking.
 ```
 
-When sign-in is switched on (docs/FIREBASE_SETUP.md), replace the last
-section with:
+When sign-in is switched on (docs/FIREBASE_SETUP.md), the app requires a
+free account, so replace the last section with:
 
 ```
 YOUR PROGRESS, EVERYWHERE
-Sign in with Google (optional) to save your progress and get it back on any phone. Or skip sign-in and keep everything on your device. No tracking, no ads.
+Create a free account with Google to save your progress and get it back on any phone. No ads, no tracking, and you can delete your account at any time.
 ```
 
 ## Category and tags

@@ -148,4 +148,67 @@ void main() {
       expect(s.user, isNull);
     });
   });
+
+  group('profile', () {
+    test('phone numbers are normalised to international form', () {
+      expect(normalizePhone('98765 43210'), '+919876543210');
+      expect(normalizePhone('098765-43210'), '+919876543210');
+      expect(normalizePhone('919876543210'), '+919876543210');
+      expect(normalizePhone('+44 7700 900123'), '+447700900123');
+      expect(normalizePhone('12345'), isNull);
+      expect(normalizePhone('5876543210'), isNull, reason: 'Indian mobiles start with 6-9');
+    });
+
+    test('gates: sign in first, then a complete profile', () async {
+      final accounts = FakeAccountService(nextUser: _me);
+      final s = makeState(accounts: accounts);
+      expect((s.needsSignIn, s.needsProfile), (true, false));
+      await s.signIn();
+      expect((s.needsSignIn, s.needsProfile), (false, true));
+      final id = await s.sendPhoneCode('9876543210');
+      await s.confirmPhoneCode(id!, FakeAccountService.smsCode);
+      await s.saveProfile(s.draftProfile.copyWith(name: 'Asha'));
+      expect(s.needsProfile, isFalse);
+      expect(s.profile!.phone, '+919876543210');
+    });
+
+    test('a profile cannot be saved with an unverified number', () async {
+      final s = makeState(accounts: FakeAccountService(nextUser: _me));
+      await s.signIn();
+      await expectLater(s.saveProfile(const UserProfile(name: 'Asha')), completes);
+      expect(s.profile!.phone, isNull, reason: 'the phone always comes from verification');
+      expect(s.needsProfile, isTrue);
+    });
+
+    test('consent time is recorded when the choice changes', () async {
+      final clock = TestClock(DateTime(2026, 3, 10, 9));
+      final accounts = FakeAccountService(nextUser: _me);
+      final s = makeState(accounts: accounts, clock: clock);
+      await s.signIn();
+      await s.confirmPhoneCode((await s.sendPhoneCode('9876543210'))!, FakeAccountService.smsCode);
+      await s.saveProfile(s.draftProfile.copyWith(name: 'Asha', marketingOptIn: true));
+      final first = s.profile!.consentAt;
+      expect(first, isNotNull);
+      clock.advanceDays(1);
+      await s.saveProfile(s.profile!.copyWith(name: 'Asha K'));
+      expect(s.profile!.consentAt, first, reason: 'unchanged choice keeps its time');
+      await s.saveProfile(s.profile!.copyWith(marketingOptIn: false));
+      expect(s.profile!.consentAt, isNot(first));
+      expect(accounts.profiles['u1']!.marketingOptIn, isFalse);
+    });
+
+    test('the profile is remembered on this phone and cleared on sign-out', () async {
+      final store = MemoryStore();
+      final accounts = FakeAccountService(nextUser: _me);
+      final s = makeState(store: store, accounts: accounts);
+      await s.signIn();
+      await s.confirmPhoneCode((await s.sendPhoneCode('9876543210'))!, FakeAccountService.smsCode);
+      await s.saveProfile(s.draftProfile.copyWith(name: 'Asha'));
+
+      final again = makeState(store: store, accounts: accounts);
+      expect(again.profile?.name, 'Asha', reason: 'no flash of the setup screen on launch');
+      await again.signOut();
+      expect((again.profile, again.needsSignIn), (null, true));
+    });
+  });
 }

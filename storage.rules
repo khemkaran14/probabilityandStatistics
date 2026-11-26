@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Chance: each learner's profile photo at users/{uid}/avatar.jpg.
+// Paste this into Firebase console → Storage → Rules → Publish.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{uid}/avatar.jpg {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    // Everything else is closed.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

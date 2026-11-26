@@ -51,3 +51,7 @@ app.*.map.json
 firebase_config.json
 google-services.json
 GoogleService-Info.plist
+
+# Firebase service-account keys (tool/export_users.py)
+*service-account*.json
+chance-users*.csv

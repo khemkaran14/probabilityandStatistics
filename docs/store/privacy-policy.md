@@ -2,127 +2,123 @@
 
 **Developer:** Divyrs
 **App:** Chance: Probability & Stats (Android package `com.divyrs.chance`)
-**Effective date:** 24 November 2026
+**Effective date:** 26 November 2026
 
-This Privacy Policy explains how the Chance: Probability & Stats app ("Chance",
-"the app") handles your information. Chance is developed by Divyrs ("we",
-"us"). By using the app, you agree to this policy.
+This Privacy Policy explains what information the Chance: Probability &
+Stats app ("Chance", "the app") collects, how it is used, and the choices
+you have. Chance is developed by Divyrs ("we", "us"). By using the app, you
+agree to this policy.
 
-**In short:** Chance does not collect, sell or share your personal
-information. Your learning progress stays on your device. The app has no
-ads, no analytics and no tracking.
+**In short:** to use Chance you create a free account with Google and verify
+your mobile number. We use your details to run your account, save your
+progress and, only if you agree, to send you offers and updates. We never
+sell your data, the app has no ads and no tracking, and you can delete your
+account at any time.
 
-## 1. Information stored on your device
+## 1. Information we collect
 
-To work, the app saves the following **only on your device**:
+**When you create your account**
+- **Name, email address and profile photo** from your Google account (when
+  you choose "Continue with Google").
+- **Mobile number**, which we verify by sending a one-time code (OTP) by SMS.
+- **Profile photo** you choose to upload instead of your Google photo
+  (optional).
+- **Your choice about offers**: whether you agreed to receive offers and
+  updates, and when you agreed or withdrew.
 
-- your learning progress: XP, level, finished lessons, quiz results, daily
-  goal, streak and daily-challenge history;
-- your settings: daily reminder on/off and time, sound effects, vibration;
-- whether you have unlocked the full course.
+**When you use the app**
+- **Learning progress:** XP, finished lessons, quiz results, streak,
+  daily-challenge count and daily XP for the last two months.
 
-This information is not sent to us or to anyone else, and we cannot see it.
-You can delete it at any time with **Settings → Reset progress** in the app,
-or by uninstalling the app.
+**Stored only on your device** (never sent to us): settings such as the
+daily reminder time, sound effects and vibration.
 
-## 2. Information we collect
+We do **not** collect your location, contacts, messages, files (other than
+a photo you choose), advertising IDs or payment card details.
 
-We do not collect any personal information. The app does not ask for your
-name, email address, phone number, location, contacts, photos or any other
-personal data, and it does not use advertising IDs.
+## 2. How we use your information
 
-## 3. Purchases
+- To create and secure your account and let you sign in on any phone.
+- To verify that your mobile number is yours.
+- To save your progress and restore it on a new or reinstalled phone.
+- To show your name and photo in the app.
+- To answer your support requests.
+- **Offers and updates (only with your consent):** if you tick "Send me
+  offers and updates from Divyrs", we may contact you by email, SMS or
+  WhatsApp about new lessons, features and offers for Divyrs products. You
+  can withdraw at any time in the app (Profile → untick the box) or by
+  replying to any message or emailing us. We do not contact users who have
+  not agreed.
 
-Chance is free to download. An optional one-time purchase unlocks all
-lessons. Payments are processed entirely by **Google Play**. We never
-receive your card or payment details. Google Play only tells the app
-whether the purchase was successful, so it can unlock the lessons. Your
-payment is covered by Google's privacy policy:
-<https://policies.google.com/privacy>.
+## 3. Where your information is stored
 
-## 4. Notifications
+Your account and data are stored with **Google Firebase** (Firebase
+Authentication, Cloud Firestore and Cloud Storage), operated by Google, in
+data centres that may be located in India or other countries. Data is
+encrypted in transit and access is restricted by security rules: each
+account can read only its own data. See
+<https://firebase.google.com/support/privacy>.
+
+## 4. Sharing
+
+We do **not** sell, rent or share your personal information with third
+parties for their own purposes. It is processed only by the service
+providers that run the app for us:
+
+- **Google Firebase**: accounts, phone verification (SMS), database and
+  photo storage.
+- **Google Play**: purchases. Payments are handled entirely by Google Play.
+  We never receive your card or payment details; Google tells the app only
+  whether a purchase succeeded. See <https://policies.google.com/privacy>.
+
+We may disclose information if required by law.
+
+## 5. Notifications
 
 If you turn on the daily reminder, the app schedules a notification **on
-your device** at the time you choose. No information is sent to a server.
-You can turn reminders off in the app's Settings or in your phone's
-settings.
+your device**. No server is involved. You can turn it off in the app's
+Settings or your phone's settings.
 
-## 5. Sharing
+## 6. Data retention
 
-If you tap **Share**, the app opens your phone's share menu with a short
-text message. Nothing is sent unless you choose an app to share with, and
-we do not receive anything.
+We keep your account information and progress while your account exists.
+When you delete your account, your profile, photo and progress are deleted
+immediately from our database and storage (backups, if any, are removed
+within 30 days).
 
-## 6. Third-party services
+## 7. Deleting your account and data {#delete-account}
 
-The app uses Google Play's billing service for purchases (see section 3).
-It does not include advertising, analytics or tracking services.
+- **In the app:** Profile (tap your photo) → **Delete account**. This
+  permanently deletes your account, profile, photo and saved progress.
+- **By email:** write to **YOUR_PUBLIC_EMAIL** from the email address of
+  your account and ask us to delete it. We will delete your account and its
+  data within 30 days and confirm by email.
 
-## 7. Data security and retention
-
-Because your progress is stored only on your device, it stays there until
-you reset it or uninstall the app. We do not keep copies on any server.
+You can also ask us for a copy of your data or to correct it at the same
+address.
 
 ## 8. Children's privacy
 
-Chance is an educational app for students and adults. It does not knowingly
-collect personal information from anyone, including children under 13.
+Chance is an educational app intended for users aged **13 and over**. We do
+not knowingly collect personal information from children under 13. If you
+believe a child under 13 has created an account, contact us and we will
+delete it.
 
-## 9. Your choices and data deletion
+## 9. Your rights
 
-All data the app stores is on your device and under your control:
-
-- **Reset progress:** open the app → Settings → Reset progress.
-- **Delete everything:** uninstall the app.
-
-If you have any question about your data, contact us at the address below.
+Depending on where you live (including under India's Digital Personal Data
+Protection Act, 2023), you can ask to access, correct or delete your
+personal data, withdraw consent for offers, and raise a complaint with us.
+Contact us at the address below and we will respond within 30 days.
 
 ## 10. Changes to this policy
 
 We may update this policy when the app changes. The new version will be
-published on this page with a new effective date. Significant changes will
-also be mentioned in the app's release notes.
+published on this page with a new effective date, and significant changes
+will be shown in the app or its release notes.
 
 ## 11. Contact
 
 Divyrs
 Email: **YOUR_PUBLIC_EMAIL**
 Website: <https://divyrs.com>
-
----
-
-<!--
-ADD THIS SECTION (as section 2, replacing the current section 2) ONLY WHEN
-Google sign-in is switched on (docs/FIREBASE_SETUP.md). Also update the
-"In short" paragraph, the Play Console Data safety form, and the
-delete-account URL (#delete-account below).
-
-## 2. Optional account (Sign in with Google)
-
-Signing in is optional; every lesson works without an account. If you
-choose **Sign in with Google**, the app uses Google Firebase (Firebase
-Authentication and Cloud Firestore, operated by Google) to store:
-
-- your Google account's name, email address and a user ID, to identify
-  your account;
-- your learning progress (XP, finished lessons, quiz results, streak,
-  daily-challenge count and daily XP for the last two months).
-
-We use this only to save your progress and restore it when you sign in on
-another device. Your settings and your purchase are not stored in your
-account. The data is encrypted in transit, can be accessed only by your
-signed-in account, and is never sold or shared for advertising. Google's
-role is described at <https://firebase.google.com/support/privacy>.
-
-The data is kept until you delete your account.
-
-### Deleting your account {#delete-account}
-
-- **In the app:** Settings → Account → **Delete account**. This permanently
-  deletes your account and all progress stored in it immediately.
-- **By email:** write to YOUR_PUBLIC_EMAIL from the Google account you
-  signed in with and ask us to delete your account. We will delete it and
-  its data within 30 days and confirm by email.
-
-Signing out keeps your account but stops syncing on that device.
--->

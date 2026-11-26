@@ -41,16 +41,23 @@ class ChanceApp extends StatelessWidget {
   }
 }
 
-/// Onboarding on first launch, the tabbed app afterwards.
+/// Onboarding on first launch, then sign-in and the profile (when this build
+/// has a cloud project), then the tabbed app.
 class _Root extends StatelessWidget {
   const _Root();
 
   @override
   Widget build(BuildContext context) {
-    final onboarded = AppScope.of(context).onboarded;
+    final s = AppScope.of(context);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 350),
-      child: onboarded ? const ShellScreen() : const OnboardingScreen(),
+      child: !s.onboarded
+          ? const OnboardingScreen()
+          : s.needsSignIn
+              ? const SignInScreen()
+              : s.needsProfile
+                  ? const ProfileSetupScreen()
+                  : const ShellScreen(),
     );
   }
 }
@@ -17298,6 +17305,7 @@ class LearnScreen extends StatelessWidget {
                 StreakChip(),
                 SizedBox(width: 8),
                 XpChip(),
+                _ProfileButton(),
               ],
             ),
             const SizedBox(height: 22),
@@ -17735,6 +17743,35 @@ class _LessonRow extends StatelessWidget {
             else
               const Text('soon', style: TextStyle(fontSize: 12, color: AppColors.muted)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The learner's photo in the header; opens their profile.
+class _ProfileButton extends StatelessWidget {
+  const _ProfileButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final user = s.user;
+    if (user == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Semantics(
+        button: true,
+        label: 'Your profile',
+        child: InkWell(
+          key: const ValueKey('header-profile'),
+          customBorder: const CircleBorder(),
+          onTap: () => Navigator.of(context).push(ProfileScreen.route()),
+          child: UserAvatar(
+            name: s.profile?.name ?? user.name ?? '',
+            photoUrl: s.profile?.photoUrl ?? user.photoUrl,
+            radius: 18,
+          ),
         ),
       ),
     );
@@ -18845,6 +18882,414 @@ class PracticeScreen extends StatelessWidget {
   }
 }
 
+// ===== lib/screens/profile_screen.dart =====
+/// Shown once after sign-in until the profile is complete: name, verified
+/// mobile number, photo and consent for offers.
+class ProfileSetupScreen extends StatelessWidget {
+  const ProfileSetupScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: PhoneWidth(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+            children: [
+              Text('Complete your profile', style: kDisplay.copyWith(fontSize: 28)),
+              const SizedBox(height: 6),
+              const Text(
+                'Just once. We\'ll verify your mobile number with a code by SMS.',
+                style: TextStyle(fontSize: 15, color: AppColors.muted),
+              ),
+              const SizedBox(height: 20),
+              const ProfileForm(setup: true),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () => AppScope.read(context).signOut(),
+                  child: const Text('Use a different Google account'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The learner's profile, from Settings: edit it, sign out, delete account.
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  static Route<void> route() => MaterialPageRoute<void>(builder: (_) => const ProfileScreen());
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: const Text('This permanently deletes your account, profile, photo and the progress saved in it. '
+            'Your purchase is kept by Google Play.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.pink),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await AppScope.read(context).deleteAccount();
+      navigator.popUntil((r) => r.isFirst);
+      messenger.showSnackBar(const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Your account has been deleted.'),
+      ));
+    } on AccountException catch (e) {
+      messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.message)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Your profile'), backgroundColor: AppColors.bg),
+      body: SafeArea(
+        child: PhoneWidth(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+            children: [
+              const ProfileForm(setup: false),
+              const SizedBox(height: 24),
+              SoftCard(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: [
+                    ListTile(
+                      key: const ValueKey('sign-out'),
+                      leading: const Icon(Icons.logout_rounded, color: AppColors.blue),
+                      title: const Text('Sign out', style: TextStyle(fontWeight: FontWeight.w800)),
+                      onTap: () {
+                        Navigator.of(context).popUntil((r) => r.isFirst);
+                        AppScope.read(context).signOut();
+                      },
+                    ),
+                    ListTile(
+                      key: const ValueKey('delete-account'),
+                      leading: const Icon(Icons.person_remove_rounded, color: AppColors.pink),
+                      title: const Text('Delete account', style: TextStyle(fontWeight: FontWeight.w800)),
+                      subtitle: const Text('Permanently removes your account and its data'),
+                      onTap: () => _confirmDelete(context),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Photo, name, email, verified mobile and consent, with a save button.
+class ProfileForm extends StatefulWidget {
+  const ProfileForm({super.key, required this.setup});
+
+  /// First-time setup (button says "Start learning") or editing.
+  final bool setup;
+
+  @override
+  State<ProfileForm> createState() => _ProfileFormState();
+}
+
+class _ProfileFormState extends State<ProfileForm> {
+  late final TextEditingController _name;
+  String? _photoUrl;
+  bool _optIn = false;
+  bool _saving = false;
+  bool _uploading = false;
+  bool _changingPhone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = AppScope.read(context).draftProfile;
+    _name = TextEditingController(text: draft.name);
+    _photoUrl = draft.photoUrl;
+    _optIn = draft.marketingOptIn;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _show(String message) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)));
+
+  Future<void> _changePhoto() async {
+    setState(() => _uploading = true);
+    try {
+      final url = await AppScope.read(context).pickPhoto();
+      if (url != null && mounted) setState(() => _photoUrl = url);
+    } on AccountException catch (e) {
+      _show(e.message);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    final state = AppScope.read(context);
+    setState(() => _saving = true);
+    try {
+      await state
+          .saveProfile(state.draftProfile.copyWith(name: _name.text, photoUrl: _photoUrl, marketingOptIn: _optIn));
+      if (!widget.setup) _show('Profile saved.');
+    } on AccountException catch (e) {
+      _show(e.message);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final phone = state.user?.phone;
+    final canSave = _name.text.trim().isNotEmpty && phone != null && !_saving && !_uploading;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Column(
+            children: [
+              UserAvatar(name: _name.text, photoUrl: _photoUrl, radius: 48),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                key: const ValueKey('change-photo'),
+                onPressed: _uploading ? null : _changePhoto,
+                icon: _uploading
+                    ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.photo_camera_rounded),
+                label: Text(_photoUrl == null ? 'Add a photo' : 'Change photo'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          key: const ValueKey('profile-name'),
+          controller: _name,
+          textCapitalization: TextCapitalization.words,
+          maxLength: 60,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(labelText: 'Your name', border: OutlineInputBorder(), counterText: ''),
+        ),
+        const SizedBox(height: 14),
+        InputDecorator(
+          decoration: const InputDecoration(labelText: 'Email (from Google)', border: OutlineInputBorder()),
+          child: Text(state.user?.email ?? '', style: const TextStyle(color: AppColors.muted)),
+        ),
+        const SizedBox(height: 14),
+        if (phone != null && !_changingPhone)
+          SoftCard(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: ListTile(
+              leading: const Icon(Icons.verified_rounded, color: AppColors.green),
+              title: Text(phone, style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: const Text('Mobile number verified'),
+              trailing: TextButton(
+                onPressed: () => setState(() => _changingPhone = true),
+                child: const Text('Change'),
+              ),
+            ),
+          )
+        else
+          _PhoneVerifier(onVerified: () => setState(() => _changingPhone = false)),
+        const SizedBox(height: 14),
+        CheckboxListTile(
+          key: const ValueKey('marketing-consent'),
+          value: _optIn,
+          onChanged: (v) => setState(() => _optIn = v ?? false),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Send me offers and updates from Divyrs'),
+          subtitle: const Text('By email, SMS or WhatsApp. You can turn this off any time.'),
+        ),
+        const SizedBox(height: 14),
+        BigButton(
+          key: const ValueKey('save-profile'),
+          label: widget.setup ? 'Start learning' : 'Save changes',
+          color: AppColors.green,
+          onPressed: canSave ? _save : null,
+        ),
+        if (phone == null)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text(
+              'Verify your mobile number to continue.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.muted),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Mobile number → "Send code" → 6-digit code → "Verify".
+class _PhoneVerifier extends StatefulWidget {
+  const _PhoneVerifier({required this.onVerified});
+  final VoidCallback onVerified;
+
+  @override
+  State<_PhoneVerifier> createState() => _PhoneVerifierState();
+}
+
+class _PhoneVerifierState extends State<_PhoneVerifier> {
+  final _phone = TextEditingController();
+  final _code = TextEditingController();
+  String? _verificationId;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+    } on AccountException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _send() => _run(() async {
+        final state = AppScope.read(context);
+        final id = await state.sendPhoneCode(_phone.text);
+        if (!mounted) return;
+        if (id == null) {
+          // Verified automatically from the SMS.
+          widget.onVerified();
+        } else {
+          setState(() => _verificationId = id);
+        }
+      });
+
+  Future<void> _verify() => _run(() async {
+        await AppScope.read(context).confirmPhoneCode(_verificationId!, _code.text);
+        if (mounted) widget.onVerified();
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final sent = _verificationId != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                key: const ValueKey('phone-number'),
+                controller: _phone,
+                enabled: !sent,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Mobile number',
+                  prefixText: '+91 ',
+                  helperText: 'For other countries, start with + and the country code',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              height: 56,
+              child: FilledButton(
+                key: const ValueKey('send-code'),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.blue),
+                onPressed: _busy
+                    ? null
+                    : sent
+                        ? () => setState(() {
+                              _verificationId = null;
+                              _code.clear();
+                            })
+                        : _send,
+                child: Text(sent ? 'Edit' : 'Send code'),
+              ),
+            ),
+          ],
+        ),
+        if (sent) ...[
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('sms-code'),
+                  controller: _code,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: const InputDecoration(
+                    labelText: '6-digit code from SMS',
+                    border: OutlineInputBorder(),
+                    counterText: '',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                height: 56,
+                child: FilledButton(
+                  key: const ValueKey('verify-code'),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.green),
+                  onPressed: _busy ? null : _verify,
+                  child: const Text('Verify'),
+                ),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(onPressed: _busy ? null : _send, child: const Text('Resend code')),
+          ),
+        ],
+        if (_busy) const LinearProgressIndicator(),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(_error!, style: const TextStyle(color: AppColors.pink, fontWeight: FontWeight.w700)),
+          ),
+      ],
+    );
+  }
+}
+
 // ===== lib/screens/progress_screen.dart =====
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -19425,7 +19870,7 @@ class _OptionTile extends StatelessWidget {
 }
 
 // ===== lib/screens/settings_screen.dart =====
-const String kAppVersion = '1.5.0';
+const String kAppVersion = '1.6.0';
 
 const String kShareAppText = 'I\'m learning probability & statistics with Chance: '
     'short animated lessons that show why the formulas work. Try it!';
@@ -19688,22 +20133,221 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 }
 
+// ===== lib/screens/sign_in_screen.dart =====
+/// Shown after the welcome pages until the learner signs in with Google.
+class SignInScreen extends StatefulWidget {
+  const SignInScreen({super.key});
+
+  @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  bool _busy = false;
+
+  Future<void> _signIn() async {
+    setState(() => _busy = true);
+    try {
+      await signInWithFeedback(context);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: PhoneWidth(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+            children: [
+              const Center(child: AppLogo(size: 72)),
+              const SizedBox(height: 24),
+              Text.rich(
+                const TextSpan(
+                  children: [
+                    TextSpan(text: 'Create your '),
+                    TextSpan(text: 'free', style: TextStyle(color: AppColors.pink)),
+                    TextSpan(text: ' account'),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+                style: kDisplay.copyWith(fontSize: 30),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Sign in to start learning. Your progress is saved to your account, so you never lose it.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: AppColors.muted, height: 1.4),
+              ),
+              const SizedBox(height: 28),
+              const _Benefit(Icons.cloud_done_rounded, AppColors.blue, 'Progress saved on every phone'),
+              const _Benefit(Icons.local_fire_department_rounded, AppColors.orange, 'Keep your streak and badges'),
+              const _Benefit(Icons.school_rounded, AppColors.green, 'Chapters 1–3 free to start'),
+              const SizedBox(height: 32),
+              SizedBox(
+                height: 56,
+                child: FilledButton.icon(
+                  key: const ValueKey('required-sign-in'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.ink,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                  onPressed: _busy ? null : _signIn,
+                  icon: _busy
+                      ? const SizedBox.square(
+                          dimension: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                      : const Icon(Icons.login_rounded),
+                  label: const Text('Continue with Google'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'By continuing you agree to our privacy policy at divyrs.com/chance/privacy.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12.5, color: AppColors.muted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Benefit extends StatelessWidget {
+  const _Benefit(this.icon, this.color, this.text);
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+  }
+}
+
 // ===== lib/services/account_service.dart =====
-/// The signed-in learner.
+/// The signed-in learner, as the sign-in provider knows them.
 class AccountUser {
-  const AccountUser({required this.uid, this.name, this.email, this.photoUrl});
+  const AccountUser({required this.uid, this.name, this.email, this.photoUrl, this.phone});
 
   final String uid;
   final String? name;
   final String? email;
   final String? photoUrl;
+
+  /// The mobile number verified by SMS, in international form (+91…).
+  final String? phone;
 }
 
-/// Sign-in with Google and the learner's progress saved in the cloud, so it
-/// follows them to a new phone.
+/// What the learner tells us about themselves, saved with their account.
+class UserProfile {
+  const UserProfile({
+    this.name = '',
+    this.email,
+    this.phone,
+    this.photoUrl,
+    this.marketingOptIn = false,
+    this.consentAt,
+  });
+
+  final String name;
+  final String? email;
+
+  /// Verified mobile number (+91…). Only set after SMS verification.
+  final String? phone;
+  final String? photoUrl;
+
+  /// Agreed to receive offers and updates.
+  final bool marketingOptIn;
+
+  /// When [marketingOptIn] was last changed (ISO 8601), as a consent record.
+  final String? consentAt;
+
+  /// Everything needed before the learner can use the app.
+  bool get complete => name.trim().isNotEmpty && phone != null;
+
+  UserProfile copyWith({
+    String? name,
+    String? email,
+    String? phone,
+    String? photoUrl,
+    bool? marketingOptIn,
+    String? consentAt,
+  }) =>
+      UserProfile(
+        name: name ?? this.name,
+        email: email ?? this.email,
+        phone: phone ?? this.phone,
+        photoUrl: photoUrl ?? this.photoUrl,
+        marketingOptIn: marketingOptIn ?? this.marketingOptIn,
+        consentAt: consentAt ?? this.consentAt,
+      );
+
+  Map<String, Object?> toMap() => {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'photoUrl': photoUrl,
+        'marketingOptIn': marketingOptIn,
+        'consentAt': consentAt,
+      };
+
+  static UserProfile fromMap(Map<Object?, Object?> m) => UserProfile(
+        name: (m['name'] as String?) ?? '',
+        email: m['email'] as String?,
+        phone: m['phone'] as String?,
+        photoUrl: m['photoUrl'] as String?,
+        marketingOptIn: m['marketingOptIn'] == true,
+        consentAt: m['consentAt'] as String?,
+      );
+
+  String encode() => jsonEncode(toMap());
+
+  static UserProfile? decode(String? s) {
+    if (s == null) return null;
+    try {
+      return fromMap(jsonDecode(s) as Map<String, dynamic>);
+    } on Object {
+      return null;
+    }
+  }
+}
+
+/// Turns what the learner typed into an international mobile number:
+/// 10-digit Indian mobiles get +91; numbers starting with + are kept.
+/// Returns null if it doesn't look like a mobile number.
+String? normalizePhone(String input) {
+  final digits = input.replaceAll(RegExp(r'[\s\-()]'), '');
+  if (RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(digits)) return digits;
+  final local = digits.startsWith('0') ? digits.substring(1) : digits;
+  if (RegExp(r'^[6-9]\d{9}$').hasMatch(local)) return '+91$local';
+  if (RegExp(r'^91[6-9]\d{9}$').hasMatch(local)) return '+$local';
+  return null;
+}
+
+/// Sign-in with Google, a profile with an SMS-verified mobile number and a
+/// photo, and the learner's progress saved in the cloud.
 abstract class AccountService {
   /// False when this build has no cloud project configured (or on web):
-  /// the app then hides everything about accounts.
+  /// the app then works without accounts.
   bool get supported;
 
   /// The signed-in user, or null.
@@ -19715,7 +20359,7 @@ abstract class AccountService {
 
   Future<void> signOut();
 
-  /// Deletes the cloud copy of the progress and the account itself.
+  /// Deletes the account, its profile, photo and progress.
   /// Throws [AccountException] if it fails.
   Future<void> deleteAccount();
 
@@ -19724,6 +20368,25 @@ abstract class AccountService {
 
   /// Replaces the cloud copy of the progress for [user].
   Future<void> saveProgress(Map<String, String> progress);
+
+  /// The profile saved for [user], or null if there is none yet.
+  Future<UserProfile?> loadProfile();
+
+  /// Saves the profile. Its phone must be the one verified for [user].
+  Future<void> saveProfile(UserProfile profile);
+
+  /// Sends an SMS code to [phone] (international form). Returns the id to
+  /// pass to [confirmPhoneCode], or null if the phone verified itself
+  /// automatically (Android can read the SMS). Throws [AccountException].
+  Future<String?> sendPhoneCode(String phone);
+
+  /// Checks the SMS [code] and attaches the number to the account.
+  /// Throws [AccountException] on a wrong or expired code.
+  Future<void> confirmPhoneCode(String verificationId, String code);
+
+  /// Lets the learner pick a photo and uploads it. Returns its URL, or null
+  /// if they cancelled. Throws [AccountException].
+  Future<String?> pickAndUploadPhoto();
 }
 
 class AccountException implements Exception {
@@ -19749,8 +20412,18 @@ class FakeAccountService implements AccountService {
   /// When set, sign-in throws this.
   AccountException? failWith;
 
-  /// The fake cloud: progress per uid.
+  /// The SMS code that [confirmPhoneCode] accepts.
+  static const smsCode = '123456';
+
+  /// The fake cloud: progress and profiles per uid.
   final Map<String, Map<String, String>> cloud = {};
+  final Map<String, UserProfile> profiles = {};
+
+  /// Numbers SMS codes were sent to.
+  final List<String> codesSentTo = [];
+
+  /// What [pickAndUploadPhoto] returns (null = cancelled).
+  String? nextPhotoUrl;
 
   @override
   AccountUser? user;
@@ -19767,6 +20440,7 @@ class FakeAccountService implements AccountService {
   @override
   Future<void> deleteAccount() async {
     cloud.remove(user?.uid);
+    profiles.remove(user?.uid);
     user = null;
   }
 
@@ -19777,6 +20451,37 @@ class FakeAccountService implements AccountService {
   Future<void> saveProgress(Map<String, String> progress) async {
     if (user != null) cloud[user!.uid] = {...progress};
   }
+
+  @override
+  Future<UserProfile?> loadProfile() async => profiles[user?.uid];
+
+  @override
+  Future<void> saveProfile(UserProfile profile) async {
+    final u = user;
+    if (u == null) throw const AccountException('Please sign in again.');
+    if (profile.phone != u.phone) throw const AccountException('Please verify your mobile number.');
+    profiles[u.uid] = profile;
+  }
+
+  String? _pendingPhone;
+
+  @override
+  Future<String?> sendPhoneCode(String phone) async {
+    codesSentTo.add(phone);
+    _pendingPhone = phone;
+    return 'verification-1';
+  }
+
+  @override
+  Future<void> confirmPhoneCode(String verificationId, String code) async {
+    final u = user;
+    if (u == null || _pendingPhone == null) throw const AccountException('Please send a new code.');
+    if (code != smsCode) throw const AccountException('That code is not right. Check the SMS and try again.');
+    user = AccountUser(uid: u.uid, name: u.name, email: u.email, photoUrl: u.photoUrl, phone: _pendingPhone);
+  }
+
+  @override
+  Future<String?> pickAndUploadPhoto() async => nextPhotoUrl;
 }
 
 // ===== tool/dartpad_stubs/backends.dart =====
@@ -20023,8 +20728,11 @@ class AppState extends ChangeNotifier {
     });
     // Today's reminder is skipped once the goal is met, so refresh it on launch.
     _syncReminder();
-    // Pick up progress made on another phone since the last launch.
-    if (user != null) syncWithCloud();
+    // Pick up progress and profile changes made on another phone.
+    if (user != null) {
+      syncWithCloud();
+      refreshProfile();
+    }
   }
 
   final KeyValueStore store;
@@ -20266,26 +20974,103 @@ class AppState extends ChangeNotifier {
   /// True while progress is being merged with the cloud.
   bool syncing = false;
 
+  /// The learner's saved profile (name, verified mobile, photo, consent),
+  /// or null until they complete it.
+  UserProfile? profile;
+
+  /// Builds with a cloud project require an account before the app can be
+  /// used; builds without one work as before.
+  bool get needsSignIn => accounts.supported && user == null;
+
+  /// Signed in, but the profile (name and verified mobile) isn't finished.
+  bool get needsProfile => user != null && !(profile?.complete ?? false);
+
+  /// A starting point for the profile form: the saved profile, or what
+  /// Google tells us.
+  UserProfile get draftProfile {
+    final u = user;
+    return profile ?? UserProfile(name: u?.name ?? '', email: u?.email, photoUrl: u?.photoUrl, phone: u?.phone);
+  }
+
   /// Signs in with Google and merges this phone's progress with the cloud
   /// copy. Returns false if the user cancelled. Throws [AccountException].
   Future<bool> signIn() async {
     final signedIn = await accounts.signInWithGoogle();
     notifyListeners();
     if (signedIn == null) return false;
-    await syncWithCloud();
+    await Future.wait([syncWithCloud(), refreshProfile()]);
     return true;
   }
 
   /// Signs out. The progress stays on this phone.
   Future<void> signOut() async {
     await accounts.signOut();
+    _setProfile(null);
+  }
+
+  /// Deletes the account, its profile and cloud copy. The progress stays on
+  /// this phone until "Reset progress". Throws [AccountException].
+  Future<void> deleteAccount() async {
+    await accounts.deleteAccount();
+    _setProfile(null);
+  }
+
+  /// Loads the profile saved in the cloud.
+  Future<void> refreshProfile() async {
+    if (user == null) return;
+    try {
+      final cloud = await accounts.loadProfile();
+      if (cloud != null) _setProfile(cloud);
+    } on Object catch (e) {
+      debugPrint('Profile not loaded: $e');
+    }
+  }
+
+  /// Saves the profile with the mobile number verified for this account.
+  /// Records when consent for offers was given or withdrawn.
+  /// Throws [AccountException].
+  Future<void> saveProfile(UserProfile next) async {
+    final consentChanged = next.marketingOptIn != (profile?.marketingOptIn ?? false) || profile == null;
+    final saved = UserProfile(
+      name: next.name.trim(),
+      email: user?.email ?? next.email,
+      phone: user?.phone,
+      photoUrl: next.photoUrl,
+      marketingOptIn: next.marketingOptIn,
+      consentAt: consentChanged ? clock().toUtc().toIso8601String() : next.consentAt,
+    );
+    await accounts.saveProfile(saved);
+    _setProfile(saved);
+  }
+
+  /// Sends an SMS code to the number the learner typed. Returns the id for
+  /// [confirmPhoneCode], or null if the phone verified itself.
+  /// Throws [AccountException].
+  Future<String?> sendPhoneCode(String typed) async {
+    final phone = normalizePhone(typed);
+    if (phone == null) throw const AccountException('Enter a valid 10-digit mobile number.');
+    final id = await accounts.sendPhoneCode(phone);
+    notifyListeners();
+    return id;
+  }
+
+  /// Checks the SMS code. Throws [AccountException].
+  Future<void> confirmPhoneCode(String verificationId, String code) async {
+    await accounts.confirmPhoneCode(verificationId, code.trim());
     notifyListeners();
   }
 
-  /// Deletes the account and its cloud copy. The progress stays on this
-  /// phone until "Reset progress". Throws [AccountException].
-  Future<void> deleteAccount() async {
-    await accounts.deleteAccount();
+  /// Lets the learner pick and upload a photo; returns its URL or null.
+  Future<String?> pickPhoto() => accounts.pickAndUploadPhoto();
+
+  void _setProfile(UserProfile? next) {
+    profile = next;
+    if (next == null) {
+      store.remove('${_p}profile');
+    } else {
+      store.setString('${_p}profile', next.encode());
+      store.setString('${_p}profileUid', user?.uid ?? '');
+    }
     notifyListeners();
   }
 
@@ -20363,6 +21148,9 @@ class AppState extends ChangeNotifier {
     challengesDone = i('challengesDone', 0);
     premium = s('premium') == 'true';
     onboarded = s('onboarded') == 'true';
+    // The cached profile belongs to whoever is signed in on this phone.
+    final cachedFor = s('profileUid');
+    profile = cachedFor != null && cachedFor == accounts.user?.uid ? UserProfile.decode(s('profile')) : null;
     haptics = s('haptics') != 'false';
     sound = s('sound') != 'false';
     reminderOn = s('reminderOn') == 'true';
@@ -20579,38 +21367,6 @@ class _AccountCardState extends State<AccountCard> {
     }
   }
 
-  Future<void> _confirmDelete() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete your account?'),
-        content: const Text('This permanently deletes your account and the progress saved in it. '
-            'Progress on this phone stays until you reset it. Your purchase is kept by the store.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.pink),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final state = AppScope.read(context);
-    await _run(() async {
-      try {
-        await state.deleteAccount();
-        messenger.showSnackBar(
-          const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Your account has been deleted.')),
-        );
-      } on AccountException catch (e) {
-        messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.message)));
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -20658,42 +21414,24 @@ class _AccountCardState extends State<AccountCard> {
       );
     }
 
-    final name = (user.name?.trim().isNotEmpty ?? false) ? user.name!.trim() : (user.email ?? 'Signed in');
+    final profile = s.profile;
+    final name = profile?.name.isNotEmpty ?? false ? profile!.name : (user.name ?? user.email ?? 'Signed in');
     return SoftCard(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.violet,
-              foregroundColor: Colors.white,
-              child: Text(name.characters.first.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900)),
-            ),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: Text(
-              [
-                if (user.email != null && user.email != name) user.email!,
-                s.syncing ? 'Syncing…' : 'Progress saved to your account',
-              ].join('\n'),
-            ),
-            isThreeLine: user.email != null && user.email != name,
-          ),
-          ListTile(
-            key: const ValueKey('sign-out'),
-            leading: const Icon(Icons.logout_rounded, color: AppColors.blue),
-            title: const Text('Sign out', style: TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: const Text('Progress stays on this phone'),
-            enabled: !_busy,
-            onTap: () => _run(s.signOut),
-          ),
-          ListTile(
-            key: const ValueKey('delete-account'),
-            leading: const Icon(Icons.person_remove_rounded, color: AppColors.pink),
-            title: const Text('Delete account', style: TextStyle(fontWeight: FontWeight.w800)),
-            enabled: !_busy,
-            onTap: _confirmDelete,
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        key: const ValueKey('open-profile'),
+        leading: UserAvatar(name: name, photoUrl: profile?.photoUrl ?? user.photoUrl),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(
+          [
+            if (user.email != null) user.email!,
+            if (user.phone != null) user.phone!,
+            if (s.syncing) 'Syncing…',
+          ].join('\n'),
+        ),
+        isThreeLine: user.email != null && user.phone != null,
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => Navigator.of(context).push(ProfileScreen.route()),
       ),
     );
   }
@@ -20900,6 +21638,31 @@ class BigButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ===== lib/widgets/user_avatar.dart =====
+/// The learner's photo, or their initial on a coloured circle while the
+/// photo loads or if there is none.
+class UserAvatar extends StatelessWidget {
+  const UserAvatar({super.key, required this.name, this.photoUrl, this.radius = 20});
+
+  final String name;
+  final String? photoUrl;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.trim().isEmpty ? '?' : name.trim().characters.first.toUpperCase();
+    final url = photoUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppColors.violet,
+      foregroundColor: Colors.white,
+      foregroundImage: url == null ? null : NetworkImage(url),
+      onForegroundImageError: url == null ? null : (_, __) {},
+      child: Text(initial, style: TextStyle(fontWeight: FontWeight.w900, fontSize: radius * 0.85)),
     );
   }
 }

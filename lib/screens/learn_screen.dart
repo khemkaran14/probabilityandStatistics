@@ -5,9 +5,11 @@ import 'package:chance/engine/lesson_spec.dart';
 import 'package:chance/lessons/registry.dart';
 import 'package:chance/screens/lesson_screen.dart';
 import 'package:chance/screens/paywall_screen.dart';
+import 'package:chance/screens/profile_screen.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/common.dart';
+import 'package:chance/widgets/user_avatar.dart';
 
 class LearnScreen extends StatelessWidget {
   const LearnScreen({super.key});
@@ -35,6 +37,7 @@ class LearnScreen extends StatelessWidget {
                 StreakChip(),
                 SizedBox(width: 8),
                 XpChip(),
+                _ProfileButton(),
               ],
             ),
             const SizedBox(height: 22),
@@ -472,6 +475,35 @@ class _LessonRow extends StatelessWidget {
             else
               const Text('soon', style: TextStyle(fontSize: 12, color: AppColors.muted)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The learner's photo in the header; opens their profile.
+class _ProfileButton extends StatelessWidget {
+  const _ProfileButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final user = s.user;
+    if (user == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Semantics(
+        button: true,
+        label: 'Your profile',
+        child: InkWell(
+          key: const ValueKey('header-profile'),
+          customBorder: const CircleBorder(),
+          onTap: () => Navigator.of(context).push(ProfileScreen.route()),
+          child: UserAvatar(
+            name: s.profile?.name ?? user.name ?? '',
+            photoUrl: s.profile?.photoUrl ?? user.photoUrl,
+            radius: 18,
+          ),
         ),
       ),
     );

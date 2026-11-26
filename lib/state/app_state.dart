@@ -57,8 +57,11 @@ class AppState extends ChangeNotifier {
     });
     // Today's reminder is skipped once the goal is met, so refresh it on launch.
     _syncReminder();
-    // Pick up progress made on another phone since the last launch.
-    if (user != null) syncWithCloud();
+    // Pick up progress and profile changes made on another phone.
+    if (user != null) {
+      syncWithCloud();
+      refreshProfile();
+    }
   }
 
   final KeyValueStore store;
@@ -300,26 +303,103 @@ class AppState extends ChangeNotifier {
   /// True while progress is being merged with the cloud.
   bool syncing = false;
 
+  /// The learner's saved profile (name, verified mobile, photo, consent),
+  /// or null until they complete it.
+  UserProfile? profile;
+
+  /// Builds with a cloud project require an account before the app can be
+  /// used; builds without one work as before.
+  bool get needsSignIn => accounts.supported && user == null;
+
+  /// Signed in, but the profile (name and verified mobile) isn't finished.
+  bool get needsProfile => user != null && !(profile?.complete ?? false);
+
+  /// A starting point for the profile form: the saved profile, or what
+  /// Google tells us.
+  UserProfile get draftProfile {
+    final u = user;
+    return profile ?? UserProfile(name: u?.name ?? '', email: u?.email, photoUrl: u?.photoUrl, phone: u?.phone);
+  }
+
   /// Signs in with Google and merges this phone's progress with the cloud
   /// copy. Returns false if the user cancelled. Throws [AccountException].
   Future<bool> signIn() async {
     final signedIn = await accounts.signInWithGoogle();
     notifyListeners();
     if (signedIn == null) return false;
-    await syncWithCloud();
+    await Future.wait([syncWithCloud(), refreshProfile()]);
     return true;
   }
 
   /// Signs out. The progress stays on this phone.
   Future<void> signOut() async {
     await accounts.signOut();
+    _setProfile(null);
+  }
+
+  /// Deletes the account, its profile and cloud copy. The progress stays on
+  /// this phone until "Reset progress". Throws [AccountException].
+  Future<void> deleteAccount() async {
+    await accounts.deleteAccount();
+    _setProfile(null);
+  }
+
+  /// Loads the profile saved in the cloud.
+  Future<void> refreshProfile() async {
+    if (user == null) return;
+    try {
+      final cloud = await accounts.loadProfile();
+      if (cloud != null) _setProfile(cloud);
+    } on Object catch (e) {
+      debugPrint('Profile not loaded: $e');
+    }
+  }
+
+  /// Saves the profile with the mobile number verified for this account.
+  /// Records when consent for offers was given or withdrawn.
+  /// Throws [AccountException].
+  Future<void> saveProfile(UserProfile next) async {
+    final consentChanged = next.marketingOptIn != (profile?.marketingOptIn ?? false) || profile == null;
+    final saved = UserProfile(
+      name: next.name.trim(),
+      email: user?.email ?? next.email,
+      phone: user?.phone,
+      photoUrl: next.photoUrl,
+      marketingOptIn: next.marketingOptIn,
+      consentAt: consentChanged ? clock().toUtc().toIso8601String() : next.consentAt,
+    );
+    await accounts.saveProfile(saved);
+    _setProfile(saved);
+  }
+
+  /// Sends an SMS code to the number the learner typed. Returns the id for
+  /// [confirmPhoneCode], or null if the phone verified itself.
+  /// Throws [AccountException].
+  Future<String?> sendPhoneCode(String typed) async {
+    final phone = normalizePhone(typed);
+    if (phone == null) throw const AccountException('Enter a valid 10-digit mobile number.');
+    final id = await accounts.sendPhoneCode(phone);
+    notifyListeners();
+    return id;
+  }
+
+  /// Checks the SMS code. Throws [AccountException].
+  Future<void> confirmPhoneCode(String verificationId, String code) async {
+    await accounts.confirmPhoneCode(verificationId, code.trim());
     notifyListeners();
   }
 
-  /// Deletes the account and its cloud copy. The progress stays on this
-  /// phone until "Reset progress". Throws [AccountException].
-  Future<void> deleteAccount() async {
-    await accounts.deleteAccount();
+  /// Lets the learner pick and upload a photo; returns its URL or null.
+  Future<String?> pickPhoto() => accounts.pickAndUploadPhoto();
+
+  void _setProfile(UserProfile? next) {
+    profile = next;
+    if (next == null) {
+      store.remove('${_p}profile');
+    } else {
+      store.setString('${_p}profile', next.encode());
+      store.setString('${_p}profileUid', user?.uid ?? '');
+    }
     notifyListeners();
   }
 
@@ -397,6 +477,9 @@ class AppState extends ChangeNotifier {
     challengesDone = i('challengesDone', 0);
     premium = s('premium') == 'true';
     onboarded = s('onboarded') == 'true';
+    // The cached profile belongs to whoever is signed in on this phone.
+    final cachedFor = s('profileUid');
+    profile = cachedFor != null && cachedFor == accounts.user?.uid ? UserProfile.decode(s('profile')) : null;
     haptics = s('haptics') != 'false';
     sound = s('sound') != 'false';
     reminderOn = s('reminderOn') == 'true';

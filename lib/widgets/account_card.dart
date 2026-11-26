@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'package:chance/screens/profile_screen.dart';
 import 'package:chance/services/account_service.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
 import 'package:chance/widgets/common.dart';
+import 'package:chance/widgets/user_avatar.dart';
 
 /// Signs in with Google and tells the learner how it went.
 /// Returns true when they are signed in afterwards.
@@ -40,38 +42,6 @@ class _AccountCardState extends State<AccountCard> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-  }
-
-  Future<void> _confirmDelete() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete your account?'),
-        content: const Text('This permanently deletes your account and the progress saved in it. '
-            'Progress on this phone stays until you reset it. Your purchase is kept by the store.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.pink),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final state = AppScope.read(context);
-    await _run(() async {
-      try {
-        await state.deleteAccount();
-        messenger.showSnackBar(
-          const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Your account has been deleted.')),
-        );
-      } on AccountException catch (e) {
-        messenger.showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.message)));
-      }
-    });
   }
 
   @override
@@ -121,42 +91,24 @@ class _AccountCardState extends State<AccountCard> {
       );
     }
 
-    final name = (user.name?.trim().isNotEmpty ?? false) ? user.name!.trim() : (user.email ?? 'Signed in');
+    final profile = s.profile;
+    final name = profile?.name.isNotEmpty ?? false ? profile!.name : (user.name ?? user.email ?? 'Signed in');
     return SoftCard(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.violet,
-              foregroundColor: Colors.white,
-              child: Text(name.characters.first.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900)),
-            ),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: Text(
-              [
-                if (user.email != null && user.email != name) user.email!,
-                s.syncing ? 'Syncing…' : 'Progress saved to your account',
-              ].join('\n'),
-            ),
-            isThreeLine: user.email != null && user.email != name,
-          ),
-          ListTile(
-            key: const ValueKey('sign-out'),
-            leading: const Icon(Icons.logout_rounded, color: AppColors.blue),
-            title: const Text('Sign out', style: TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: const Text('Progress stays on this phone'),
-            enabled: !_busy,
-            onTap: () => _run(s.signOut),
-          ),
-          ListTile(
-            key: const ValueKey('delete-account'),
-            leading: const Icon(Icons.person_remove_rounded, color: AppColors.pink),
-            title: const Text('Delete account', style: TextStyle(fontWeight: FontWeight.w800)),
-            enabled: !_busy,
-            onTap: _confirmDelete,
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        key: const ValueKey('open-profile'),
+        leading: UserAvatar(name: name, photoUrl: profile?.photoUrl ?? user.photoUrl),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(
+          [
+            if (user.email != null) user.email!,
+            if (user.phone != null) user.phone!,
+            if (s.syncing) 'Syncing…',
+          ].join('\n'),
+        ),
+        isThreeLine: user.email != null && user.phone != null,
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => Navigator.of(context).push(ProfileScreen.route()),
       ),
     );
   }

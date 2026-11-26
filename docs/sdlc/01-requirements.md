@@ -37,6 +37,7 @@ and the probability/statistics niche has no strong animated app.
 | F15 | Daily reminder notification, skipped once the day's goal is met (1.4) | Should |
 | F16 | Sound effects with an off switch (1.4) | Could |
 | F17 | Screen-reader descriptions of animations and labelled controls (1.4) | Should |
+| F19 | Sign-in required (when configured); profile with name, SMS-verified mobile, photo and offers consent; profile screen; admin export of opted-in users (1.6) | Must |
 | F18 | Optional Google sign-in; progress synced to the cloud and merged without loss; sign out; delete account (1.5) | Should |
 
 ## Non-functional requirements

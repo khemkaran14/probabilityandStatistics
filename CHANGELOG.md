@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased
+## 1.6.0
+
+- **Accounts required** (when Firebase is configured): after the welcome
+  pages learners continue with Google, then complete a profile once: name,
+  **mobile number verified by SMS code**, optional photo (Google's or their
+  own upload) and an unticked "Send me offers and updates" consent box
+  (time of consent recorded)
+- **Profile screen** (photo in the Learn header, or Settings → Account):
+  edit name, photo, mobile and offers consent; sign out; delete account
+  (also deletes the photo)
+- Firestore rules check that the saved phone and email are the ones Firebase
+  verified; new `storage.rules` for profile photos
+- `tool/export_users.py`: CSV of users who agreed to offers (or `--all`)
+- Privacy policy rewritten for accounts, phone, photo and offers consent;
+  `tool/make_privacy.py` builds `web/privacy.html` from it
+- Builds without Firebase still work without sign-in
+- 242 tests
 
 - Package ID changed to `com.divyrs.chance` (Android and iOS) before the
   first Play upload

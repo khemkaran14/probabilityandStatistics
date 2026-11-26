@@ -4,10 +4,12 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,6 +81,11 @@ class _FirebaseConfig {
   /// The iOS OAuth client id (iOS only).
   static const iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
 
+  /// Cloud Storage bucket for profile photos. Projects made since late 2024
+  /// use `<project>.firebasestorage.app`, older ones `<project>.appspot.com`.
+  static const _bucket = String.fromEnvironment('FIREBASE_STORAGE_BUCKET');
+  static String get storageBucket => _bucket.isNotEmpty ? _bucket : '$projectId.firebasestorage.app';
+
   static bool get _ios => defaultTargetPlatform == TargetPlatform.iOS;
 
   static String get appId => _ios ? iosAppId : androidAppId;
@@ -96,7 +103,7 @@ class _FirebaseConfig {
         appId: appId,
         messagingSenderId: senderId,
         projectId: projectId,
-        storageBucket: '$projectId.appspot.com',
+        storageBucket: storageBucket,
         iosBundleId: _ios ? 'com.divyrs.chance' : null,
         iosClientId: _ios ? iosClientId : null,
       );
@@ -136,8 +143,12 @@ class _FirebaseAccountService implements AccountService {
   @override
   AccountUser? get user {
     final u = _auth.currentUser;
-    return u == null ? null : AccountUser(uid: u.uid, name: u.displayName, email: u.email, photoUrl: u.photoURL);
+    return u == null
+        ? null
+        : AccountUser(uid: u.uid, name: u.displayName, email: u.email, photoUrl: u.photoURL, phone: u.phoneNumber);
   }
+
+  Reference _photo(String uid) => FirebaseStorage.instance.ref('users/$uid/avatar.jpg');
 
   /// Google's account picker, then a Firebase credential from its token.
   Future<UserCredential?> _googleCredential({bool reauthenticate = false}) async {
@@ -182,6 +193,11 @@ class _FirebaseAccountService implements AccountService {
       // let anyone delete it.
       await _doc(current.uid).delete();
       try {
+        await _photo(current.uid).delete();
+      } on FirebaseException catch (e) {
+        if (e.code != 'object-not-found') rethrow;
+      }
+      try {
         await current.delete();
       } on FirebaseAuthException catch (e) {
         if (e.code != 'requires-recent-login') rethrow;
@@ -213,7 +229,101 @@ class _FirebaseAccountService implements AccountService {
   Future<void> saveProgress(Map<String, String> progress) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
-    await _doc(uid).set({'progress': progress, 'updatedAt': FieldValue.serverTimestamp()});
+    await _doc(uid).set({'progress': progress, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
+  }
+
+  @override
+  Future<UserProfile?> loadProfile() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+    final profile = (await _doc(uid).get()).data()?['profile'];
+    return profile is Map ? UserProfile.fromMap(profile) : null;
+  }
+
+  @override
+  Future<void> saveProfile(UserProfile profile) async {
+    final current = _auth.currentUser;
+    if (current == null) throw const AccountException('Please sign in again.');
+    try {
+      // The rules check the phone against the verified one in the sign-in
+      // token, so make sure the token is fresh.
+      await current.getIdToken(true);
+      await _doc(current.uid).set(
+        {'profile': profile.toMap(), 'updatedAt': FieldValue.serverTimestamp()},
+        SetOptions(merge: true),
+      );
+    } on FirebaseException catch (e) {
+      throw AccountException('Couldn\'t save your profile (${e.code}). Check your connection and try again.');
+    }
+  }
+
+  @override
+  Future<String?> sendPhoneCode(String phone) {
+    final done = Completer<String?>();
+    _auth.verifyPhoneNumber(
+      phoneNumber: phone,
+      timeout: const Duration(seconds: 60),
+      // Android sometimes reads the SMS itself: attach the number straight away.
+      verificationCompleted: (credential) async {
+        try {
+          await _auth.currentUser?.updatePhoneNumber(credential);
+          if (!done.isCompleted) done.complete(null);
+        } on FirebaseAuthException catch (e) {
+          if (!done.isCompleted) done.completeError(_phoneError(e));
+        }
+      },
+      verificationFailed: (e) {
+        if (!done.isCompleted) done.completeError(_phoneError(e));
+      },
+      codeSent: (verificationId, _) {
+        if (!done.isCompleted) done.complete(verificationId);
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
+    return done.future;
+  }
+
+  @override
+  Future<void> confirmPhoneCode(String verificationId, String code) async {
+    final current = _auth.currentUser;
+    if (current == null) throw const AccountException('Please sign in again.');
+    try {
+      await current.updatePhoneNumber(PhoneAuthProvider.credential(verificationId: verificationId, smsCode: code));
+      await current.reload();
+    } on FirebaseAuthException catch (e) {
+      throw _phoneError(e);
+    }
+  }
+
+  AccountException _phoneError(FirebaseAuthException e) => AccountException(switch (e.code) {
+        'invalid-verification-code' => 'That code is not right. Check the SMS and try again.',
+        'session-expired' || 'code-expired' => 'The code has expired. Send a new one.',
+        'invalid-phone-number' => 'That mobile number doesn\'t look right.',
+        'credential-already-in-use' ||
+        'account-exists-with-different-credential' =>
+          'This number is already used by another account.',
+        'too-many-requests' || 'quota-exceeded' => 'Too many attempts. Please try again later.',
+        _ => 'Couldn\'t verify the number (${e.code}). Please try again.',
+      });
+
+  @override
+  Future<String?> pickAndUploadPhoto() async {
+    final current = _auth.currentUser;
+    if (current == null) throw const AccountException('Please sign in again.');
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return null;
+    try {
+      final ref = _photo(current.uid);
+      await ref.putData(await picked.readAsBytes(), SettableMetadata(contentType: 'image/jpeg'));
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      throw AccountException('Couldn\'t upload the photo (${e.code}). Please try again.');
+    }
   }
 }
 

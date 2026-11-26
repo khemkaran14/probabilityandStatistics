@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:chance/screens/onboarding_screen.dart';
+import 'package:chance/screens/profile_screen.dart';
 import 'package:chance/screens/shell_screen.dart';
+import 'package:chance/screens/sign_in_screen.dart';
 import 'package:chance/services/backends.dart';
 import 'package:chance/state/app_state.dart';
 import 'package:chance/theme/app_theme.dart';
@@ -38,16 +40,23 @@ class ChanceApp extends StatelessWidget {
   }
 }
 
-/// Onboarding on first launch, the tabbed app afterwards.
+/// Onboarding on first launch, then sign-in and the profile (when this build
+/// has a cloud project), then the tabbed app.
 class _Root extends StatelessWidget {
   const _Root();
 
   @override
   Widget build(BuildContext context) {
-    final onboarded = AppScope.of(context).onboarded;
+    final s = AppScope.of(context);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 350),
-      child: onboarded ? const ShellScreen() : const OnboardingScreen(),
+      child: !s.onboarded
+          ? const OnboardingScreen()
+          : s.needsSignIn
+              ? const SignInScreen()
+              : s.needsProfile
+                  ? const ProfileSetupScreen()
+                  : const ShellScreen(),
     );
   }
 }

@@ -2,7 +2,8 @@
 
 Status after version 1.5.0: everything that can be done in code is done.
 All 90 lessons, "why" panels, daily reminders, sound effects, badges,
-accessibility, tablet layout, Google sign-in with cloud sync, app icon,
+accessibility, tablet layout, accounts (Google sign-in, SMS-verified
+mobile, profile photo, offers consent) with cloud sync, app icon,
 splash screens, signed CI builds, the privacy policy page, store text,
 feature graphic and screenshots are built.
 
@@ -54,12 +55,16 @@ order.
 - [ ] Re-run CI (or push anything). The run's `chance-aab` artifact is now
   signed and ready for the Play Store.
 
-## 4b. Turn on sign-in (30 minutes)
+## 4b. Turn on accounts (45 minutes)
 
 - [ ] Follow [FIREBASE_SETUP.md](FIREBASE_SETUP.md): create the Firebase
-  project, enable Google sign-in, create the database, register the app
-  with your upload key's SHA-1, and add 5 repository variables. Until then,
-  builds have no sign-in (everything else works).
+  project, switch to the Blaze plan, enable Google and phone sign-in, create
+  the database and photo storage, register the app with your keys'
+  SHA-1/SHA-256, and add 6 repository variables. Until then builds have no
+  sign-in (everything else works); afterwards sign-in, a verified mobile
+  number and the profile are **required**.
+- [ ] Publish the updated privacy policy (`docs/store/privacy-policy.md`) on
+  divyrs.com before releasing a build with accounts.
 
 ## 5. Create the app in Play Console (1 hour)
 
@@ -73,8 +78,8 @@ order.
   - Privacy policy: your URL from step 2
   - Ads: no ads
   - Data safety and the delete-account URL: see
-    [FIREBASE_SETUP.md step 7](FIREBASE_SETUP.md#7-update-play-console-when-you-publish)
-    (if you skip sign-in: no data collected or shared)
+    [FIREBASE_SETUP.md step 9](FIREBASE_SETUP.md#9-update-play-console-before-publishing-this-build)
+    (before accounts are switched on: no data collected or shared)
   - Content rating questionnaire: education, no objectionable content
   - Target audience: 13+ (or include under-13s if you want; that adds
     Families policy checks)
@@ -83,7 +88,7 @@ order.
   after a build has been uploaded.
 - [ ] Settings → License testing → add your Gmail, so test purchases are free.
 - [ ] Add the **App signing key SHA-1** from Play Console to Firebase
-  (FIREBASE_SETUP.md step 4.5), or sign-in fails in the Play version.
+  (FIREBASE_SETUP.md step 6.5), or sign-in fails in the Play version.
 
 ## 6. Test on your phone (1 hour)
 

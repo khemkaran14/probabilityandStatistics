@@ -209,57 +209,73 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('account: sign in from Settings, then sign out and delete', (tester) async {
-    final accounts =
-        FakeAccountService(nextUser: const AccountUser(uid: 'u1', name: 'Asha', email: 'asha@example.com'));
+  testWidgets('account: sign in is required, then the profile with a verified mobile', (tester) async {
+    final accounts = FakeAccountService(nextUser: _asha);
     final state = makeState(accounts: accounts);
     await pumpApp(tester, state);
-    await tester.tap(find.text('Settings'));
+
+    // Signed out: only the sign-in screen.
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Learn'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('required-sign-in')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
-    await tester.pumpAndSettle();
-    expect(find.text('Asha'), findsOneWidget);
-    expect(find.textContaining('Signed in.'), findsOneWidget);
-    expect(accounts.cloud, contains('u1'));
+    // Profile setup: name from Google, can't continue without a verified mobile.
+    expect(find.text('Complete your profile'), findsOneWidget);
+    expect(find.text('Asha'), findsWidgets);
+    expect(tester.widget<FilledButton>(_saveButton).onPressed, isNull);
 
-    await tester.tap(find.byKey(const ValueKey('delete-account')));
+    await tester.enterText(find.byKey(const ValueKey('phone-number')), '98765 43210');
+    await tester.tap(find.byKey(const ValueKey('send-code')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-    expect(accounts.cloud, isEmpty);
-    expect(find.byKey(const ValueKey('google-sign-in')), findsOneWidget);
+    expect(accounts.codesSentTo, ['+919876543210']);
 
-    accounts.nextUser = const AccountUser(uid: 'u2', name: 'Ravi');
-    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
+    await tester.enterText(find.byKey(const ValueKey('sms-code')), '000000');
+    await tester.tap(find.byKey(const ValueKey('verify-code')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('sign-out')));
+    expect(find.textContaining('code is not right'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const ValueKey('sms-code')), FakeAccountService.smsCode);
+    await tester.tap(find.byKey(const ValueKey('verify-code')));
     await tester.pumpAndSettle();
-    expect(state.user, isNull);
-    expect(find.byKey(const ValueKey('google-sign-in')), findsOneWidget);
+    expect(find.text('Mobile number verified'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const ValueKey('marketing-consent')));
+    await tester.tap(find.byKey(const ValueKey('marketing-consent')));
+    await tester.pump();
+    await tester.ensureVisible(_saveButton);
+    await tester.tap(_saveButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Learn'), findsOneWidget);
+    final saved = accounts.profiles['u1']!;
+    expect((saved.name, saved.email, saved.phone, saved.marketingOptIn),
+        ('Asha', 'asha@example.com', '+919876543210', true));
+    expect(saved.consentAt, isNotNull);
   });
 
   testWidgets('account: a failed sign-in shows the reason', (tester) async {
     final state = makeState(accounts: FakeAccountService(failWith: const AccountException('No internet connection')));
     await pumpApp(tester, state);
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
+    await tester.tap(find.byKey(const ValueKey('required-sign-in')));
     await tester.pumpAndSettle();
     expect(find.text('No internet connection'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
   });
 
-  testWidgets('account: hidden when the build has no cloud project', (tester) async {
+  testWidgets('account: no sign-in at all when the build has no cloud project', (tester) async {
     final state = makeState();
     await pumpApp(tester, state);
+    expect(find.text('Learn'), findsOneWidget);
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('google-sign-in')), findsNothing);
   });
 
-  testWidgets('account: a returning learner signs in during onboarding and skips it', (tester) async {
-    final accounts = FakeAccountService(nextUser: const AccountUser(uid: 'u1', name: 'Asha'));
+  testWidgets('account: a returning learner signs in during onboarding and goes straight in', (tester) async {
+    final accounts = FakeAccountService(nextUser: _ashaVerified);
     accounts.cloud['u1'] = {'xp': '700', 'completed': 'galton'};
+    accounts.profiles['u1'] = const UserProfile(name: 'Asha', email: 'asha@example.com', phone: '+919876543210');
     final state = makeState(accounts: accounts, onboarded: false);
     await pumpApp(tester, state);
     await tester.tap(find.byKey(const ValueKey('onboarding-sign-in')));
@@ -268,7 +284,72 @@ void main() {
     expect(state.xp, 700);
     expect(find.text('Learn'), findsOneWidget);
   });
+
+  testWidgets('account: profile screen edits name and photo, then deletes the account', (tester) async {
+    final accounts = FakeAccountService()..user = _ashaVerified;
+    accounts.profiles['u1'] = const UserProfile(name: 'Asha', email: 'asha@example.com', phone: '+919876543210');
+    final state = makeState(accounts: accounts);
+    await state.refreshProfile();
+    await pumpApp(tester, state);
+
+    await tester.tap(find.byKey(const ValueKey('header-profile')));
+    await tester.pumpAndSettle();
+    expect(find.text('Your profile'), findsOneWidget);
+    expect(find.text('+919876543210'), findsOneWidget);
+
+    accounts.nextPhotoUrl = 'https://example.com/asha.jpg';
+    await tester.tap(find.byKey(const ValueKey('change-photo')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Asha K');
+    await tester.ensureVisible(_saveButton);
+    await tester.tap(_saveButton);
+    await tester.pumpAndSettle();
+    expect(accounts.profiles['u1']!.name, 'Asha K');
+    expect(accounts.profiles['u1']!.photoUrl, 'https://example.com/asha.jpg');
+
+    await tester.ensureVisible(find.byKey(const ValueKey('delete-account')));
+    await tester.tap(find.byKey(const ValueKey('delete-account')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(accounts.profiles, isEmpty);
+    expect(find.text('Continue with Google'), findsOneWidget);
+  });
+
+  testWidgets('account screens fit a small 360 dp phone', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2220);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final accounts = FakeAccountService(nextUser: _asha);
+    final state = makeState(accounts: accounts);
+    await tester.pumpWidget(ChanceApp(state: state));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'sign-in screen');
+
+    await tester.tap(find.byKey(const ValueKey('required-sign-in')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('phone-number')), '9876543210');
+    await tester.ensureVisible(find.byKey(const ValueKey('send-code')));
+    await tester.tap(find.byKey(const ValueKey('send-code')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'profile setup with code field');
+
+    await tester.enterText(find.byKey(const ValueKey('sms-code')), FakeAccountService.smsCode);
+    await tester.ensureVisible(find.byKey(const ValueKey('verify-code')));
+    await tester.tap(find.byKey(const ValueKey('verify-code')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(_saveButton);
+    await tester.tap(_saveButton);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'learn header with the profile photo');
+  });
 }
 
 final _settingsScroll =
     find.descendant(of: find.byKey(const ValueKey('settings-list')), matching: find.byType(Scrollable)).first;
+
+const _asha = AccountUser(uid: 'u1', name: 'Asha', email: 'asha@example.com');
+const _ashaVerified = AccountUser(uid: 'u1', name: 'Asha', email: 'asha@example.com', phone: '+919876543210');
+final _saveButton =
+    find.descendant(of: find.byKey(const ValueKey('save-profile')), matching: find.byType(FilledButton));

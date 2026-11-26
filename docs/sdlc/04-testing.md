@@ -1,6 +1,6 @@
 # 4. Quality Assurance & Testing
 
-## Automated tests (`flutter test`, 235 tests)
+## Automated tests (`flutter test`, 242 tests)
 
 | Level | File | Covers |
 |---|---|---|
@@ -9,9 +9,9 @@
 | Unit: chapters 1–6 | `test/lessons_ch1_6_test.dart` | Each of the 30 newer lessons against its maths: quantiles and fences, z-scores, histogram counts, correlation sign, stem-and-leaf rebuild, complement and birthday formulas, card counts, nPr / nCr / repeats, pigeonhole guarantee, conditional counts, independence, tree and total-probability convergence, CDF, expected value, variance k, hat-check average 1 |
 | Unit: chapters 7–17 | `test/lessons_ch7_17_test.dart` | Each of the 52 newest lessons against its maths: distribution means and variances, waiting times, Poisson counts, the 68-95-99.7 rule, covariance vs correlation under unit changes, confounding, Chebyshev bound, sampling methods and bias, standard error, n − 1 unbiasedness, MLE, interval coverage, test error rates and power, least squares and R² = r², multiple and logistic regression, Bayesian updating and credible intervals, Monte Carlo π, random-walk distance, Markov stationary shares, softmax, Simpson's paradox, gambler's fallacy, St Petersburg |
 | Unit: distributions | `test/kit_test.dart` | Every pdf integrates to 1, `lgamma`, `normalCdf`, and textbook critical values (t, χ², F) |
-| Unit: accounts | `test/account_test.dart` | Merging phone and cloud progress (union of lessons, larger counts, latest streak, per-day XP, corrupt data); premium and settings never sync; sign-in merges and keeps the cloud current; new phone restores progress; cancel, failure, sign-out, delete, reset; hidden without a cloud project |
+| Unit: accounts | `test/account_test.dart` | Merging phone and cloud progress (union of lessons, larger counts, latest streak, per-day XP, corrupt data); premium and settings never sync; sign-in merges and keeps the cloud current; new phone restores progress; cancel, failure, sign-out, delete, reset; hidden without a cloud project; phone normalisation, sign-in/profile gates, unverified phone never saved, consent time recorded, profile cached and cleared on sign-out |
 | Widget: every lesson | `test/lesson_screens_test.dart` | Each lesson screen runs its animation for 5 s, opens its "why" panel and scrolls end to end on a 360 dp phone with no overflow or exception |
-| Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → sounds → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset; reminder on/off, time picker, skipped after the goal, refused permission; tablet navigation rail; screen-reader labels; account sign-in, failure message, sign-out, delete with confirmation, hidden without Firebase, sign-in from onboarding |
+| Widget: user flows | `test/app_flow_test.dart` | Onboarding → tabs; free lesson → quiz → XP → sounds → share; locked lesson → paywall → purchase → plays; daily challenge pays once; progress & settings, reset; reminder on/off, time picker, skipped after the goal, refused permission; tablet navigation rail; screen-reader labels; required sign-in, profile setup with SMS code (wrong and right code), consent, profile screen edits name and photo and deletes the account, no sign-in without Firebase, returning learner from onboarding, account screens on a 360 dp phone |
 
 Tests run against in-memory fakes (`MemoryStore`, `FakePurchaseService`,
 `FakeShareService`) and an injected clock, on a 390×844 phone screen so
